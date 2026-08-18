@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Pulse — Entrar</title>
+
+<!-- Tailwind CSS via CDN (gratuito) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Tema compartilhado do app (cores, glow, fontes) -->
+<script src="../js/config/tailwind.config.js"></script>
+
+<!-- Fonte Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Ícones Lucide -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- Estilos globais compartilhados -->
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body class="bg-base-black text-white min-h-screen select-none">
+
+  <!-- Glow radial de fundo, dá profundidade sem sair do preto absoluto -->
+  <div class="fixed inset-0 bg-radial-glow pointer-events-none"></div>
+
+  <div class="relative max-w-md mx-auto min-h-screen flex flex-col justify-between px-6 py-10">
+
+    <!-- ================= LOGO / MARCA ================= -->
+    <div class="flex-1 flex flex-col items-center justify-center text-center">
+
+      <!-- Ícone da marca: pulso/batimento dentro de um anel neon -->
+      <div class="w-20 h-20 rounded-2xl bg-card-dark border border-neon/30 flex items-center justify-center mb-6 shadow-glow-md">
+        <i data-lucide="activity" class="w-9 h-9 text-neon"></i>
+      </div>
+
+      <h1 class="text-4xl font-black tracking-tight text-glow">PULSE</h1>
+      <p class="text-sm text-gray-400 font-medium mt-2 max-w-[260px]">
+        Treinos, dieta e evolução — tudo em um só lugar.
+      </p>
+    </div>
+
+    <!-- ================= AÇÕES DE LOGIN ================= -->
+    <div class="w-full space-y-4 pb-2">
+
+      <!-- Mensagem de erro (escondida por padrão, controlada via JS) -->
+      <p id="loginError" class="hidden text-danger text-xs font-medium text-center"></p>
+
+      <!-- Botão principal: Entrar com Google -->
+      <button
+        id="googleLoginBtn"
+        class="w-full bg-white text-black font-bold text-sm rounded-2xl py-4 flex items-center justify-center gap-3 transition-fluid active:scale-[0.98] hover:shadow-glow-sm"
+      >
+        <!-- Logo oficial do Google em SVG (multi-cor) -->
+        <svg class="w-5 h-5" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.8-.4-4.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 45c5.5 0 10.5-2.1 14.3-5.5l-6.6-5.6C29.6 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.9 36 44 30.6 44 24c0-1.4-.1-2.8-.4-3.5z"/>
+        </svg>
+        Continuar com Google
+      </button>
+
+      <!-- Divisor -->
+      <div class="flex items-center gap-3 py-1">
+        <span class="flex-1 h-px bg-white/10"></span>
+        <span class="text-[11px] text-gray-600 font-medium">SEGURO E GRATUITO</span>
+        <span class="flex-1 h-px bg-white/10"></span>
+      </div>
+
+      <!-- Termos -->
+      <p class="text-[11px] text-gray-600 text-center leading-relaxed px-4">
+        Ao continuar, você concorda com os
+        <a href="#" class="text-neon/80 underline underline-offset-2">Termos de Uso</a>
+        e a
+        <a href="#" class="text-neon/80 underline underline-offset-2">Política de Privacidade</a>
+        do Pulse.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT (ES6 Modules)
+       ============================================================ -->
+  <script type="module" src="../js/pages/login.js"></script>
+</body>
+</html>

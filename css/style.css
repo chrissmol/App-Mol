@@ -1,0 +1,55 @@
+/* ==================================================================
+   style.css
+   ------------------------------------------------------------------
+   Estilos globais do Pulse que o Tailwind (utilitário) não cobre
+   bem: fontes, glow, scrollbar, transições. Importado por TODAS
+   as páginas via <link rel="stylesheet" href="../css/style.css">
+   ================================================================== */
+
+html, body {
+  background-color: #000000;
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+/* Esconde a barra de rolagem mas mantém o scroll funcional */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* Texto com leve brilho neon — usado em números/títulos de destaque */
+.text-glow {
+  text-shadow: 0 0 16px rgba(0, 210, 255, 0.55);
+}
+
+/* Transição fluida padrão para elementos interativos */
+.transition-fluid {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Foco visível para acessibilidade (navegação por teclado) */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #00d2ff;
+  outline-offset: 2px;
+}
+
+/* Respeita usuários que preferem menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Gradiente radial sutil de fundo, usado na tela de Login para dar
+   profundidade sem sair do preto absoluto */
+.bg-radial-glow {
+  background: radial-gradient(
+    ellipse 70% 50% at 50% 0%,
+    rgba(0, 210, 255, 0.14),
+    transparent 70%
+  );
+}
