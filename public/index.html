@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-  <title>PULSE — Dashboard</title>
+  <title>Mol</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -13,10 +13,10 @@
           colors: {
             'base-black': '#000000',
             'card-dark': '#121212',
-            'neon': '#00d2ff',
+            'neon': '#1E7349', /* Verde Esmeralda Atualizado */
           },
           fontFamily: { sans: ['Inter', 'sans-serif'] },
-          boxShadow: { 'glow-sm': '0 0 12px 0 rgba(0, 210, 255, 0.35)' }
+          boxShadow: { 'glow-sm': '0 0 12px 0 rgba(30, 115, 73, 0.35)' }
         }
       }
     }
@@ -28,7 +28,7 @@
   <style>
     html, body { background-color: #000000; font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { display: none; }
-    .text-glow { text-shadow: 0 0 16px rgba(0, 210, 255, 0.55); }
+    .text-glow { text-shadow: 0 0 16px rgba(30, 115, 73, 0.55); }
     .transition-fluid { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
   </style>
 </head>
@@ -39,7 +39,7 @@
       <div>
         <p class="text-sm text-gray-500 font-medium">Resumo de Hoje</p>
         <h1 class="text-2xl font-extrabold tracking-tight mt-0.5">
-          Olá, <span id="user-name" class="text-neon text-glow">Carregando...</span> 👋
+          Olá, <span id="user-name" style="color: #1E7349;">Carregando...</span> 👋
         </h1>
       </div>
 
@@ -59,7 +59,7 @@
         <div class="relative w-24 h-24 shrink-0">
           <svg class="w-24 h-24 -rotate-90">
             <circle cx="48" cy="48" r="40" stroke="#1f1f1f" stroke-width="8" fill="none" />
-            <circle id="calorieRing" cx="48" cy="48" r="40" stroke="#00d2ff" stroke-width="8" fill="none" stroke-linecap="round" style="stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: stroke-dashoffset 1s ease-in-out;" />
+            <circle id="calorieRing" cx="48" cy="48" r="40" stroke="#1E7349" stroke-width="8" fill="none" stroke-linecap="round" style="stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: stroke-dashoffset 1s ease-in-out;" />
           </svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <span class="text-lg font-extrabold">0%</span>
@@ -69,34 +69,37 @@
     </section>
   </div>
 
-  <nav class="fixed bottom-0 left-0 right-0 bg-card-dark/90 backdrop-blur-lg border-t border-white/10 z-50">
-  <div class="max-w-md mx-auto px-8 py-3 flex items-center justify-between">
-    <!-- Início: Como já estamos nele, deixamos apenas '#' ou './index.html' -->
-    <a href="#" class="flex flex-col items-center gap-1 text-neon transition-fluid">
-      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-      <span class="text-[10px] font-semibold">Início</span>
-    </a>
-    
-    <!-- Treino: Entra na pasta pages -->
-    <a href="./pages/treino.html" class="flex flex-col items-center gap-1 text-gray-500 transition-fluid hover:text-neon">
-      <i data-lucide="dumbbell" class="w-5 h-5"></i>
-      <span class="text-[10px] font-medium">Treino</span>
-    </a>
-    
-    <a href="#" class="flex flex-col items-center gap-1 text-gray-500 transition-fluid hover:text-neon">
-      <i data-lucide="apple" class="w-5 h-5"></i>
-      <span class="text-[10px] font-medium">Dieta</span>
-    </a>
-    
-    <a href="#" class="flex flex-col items-center gap-1 text-gray-500 transition-fluid hover:text-neon">
-      <i data-lucide="user" class="w-5 h-5"></i>
-      <span class="text-[10px] font-medium">Perfil</span>
-    </a>
-  </div>
-</nav>
+  <nav class="fixed bottom-0 left-0 right-0 bg-card-dark/95 backdrop-blur-lg border-t border-white/10 z-50">
+    <div class="max-w-md mx-auto px-8 py-3 flex items-center justify-between">
+      
+      <!-- Aba Início (Ativa -> Verde) -->
+      <a href="#" class="flex flex-col items-center gap-1 text-[#1E7349] transition-fluid">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold">Início</span>
+      </a>
+      
+      <!-- Aba Treino (Inativa -> Cinza que vira verde no hover) -->
+      <a href="./pages/treino.html" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
+        <i data-lucide="dumbbell" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Treino</span>
+      </a>
+      
+      <!-- Aba Dieta (Inativa -> Cinza que vira verde no hover) -->
+      <a href="#" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
+        <i data-lucide="apple" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Dieta</span>
+      </a>
+      
+      <!-- Aba Perfil (Inativa -> Cinza que vira verde no hover) -->
+      <a href="#" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
+        <i data-lucide="user" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Perfil</span>
+      </a>
+
+    </div>
+  </nav>
 
   <script>lucide.createIcons();</script>
-  
   <script type="module" src="./js/pages/dashboard.js"></script>
 </body>
 </html>

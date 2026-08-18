@@ -1,7 +1,7 @@
 /**
  * auth.js
  * ------------------------------------------------------------------
- * Módulo responsável por TODA a lógica de autenticação do Pulse.
+ * Módulo responsável por TODA a lógica de autenticação do Mol.
  * Nenhuma página deve chamar o Firebase Auth diretamente — sempre
  * passe por estas funções. Isso mantém o app fácil de manter e
  * testar (Single Responsibility Principle).
