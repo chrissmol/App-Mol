@@ -49,3 +49,4 @@ googleBtn.addEventListener("click", async () => {
     setButtonLoading(googleBtn, false, ORIGINAL_BTN_HTML);
   }
 });
+document.title = 'Mol';

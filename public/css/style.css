@@ -7,11 +7,22 @@
    ================================================================== */
 
 html, body {
-  background-color: #000000;
+  background-color: #070a08;
   font-family: 'Inter', sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
+  min-height: 100dvh;
 }
+
+/* Mobile first: evita que a barra fixa e o notch cubram conteúdo ou controles. */
+body { padding-bottom: max(7rem, calc(5.5rem + env(safe-area-inset-bottom))); }
+nav.fixed { padding-bottom: env(safe-area-inset-bottom); }
+input, textarea, select { font-size: max(16px, 1em); }
+
+/* Campos numéricos mantêm o teclado numérico no celular, sem steppers visuais. */
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* Esconde a barra de rolagem mas mantém o scroll funcional */
 ::-webkit-scrollbar { display: none; }
@@ -19,7 +30,7 @@ html, body {
 
 /* Texto com leve brilho neon — usado em números/títulos de destaque */
 .text-glow {
-  text-shadow: 0 0 16px rgba(0, 210, 255, 0.55);
+  text-shadow: 0 0 18px rgba(47, 191, 120, 0.38);
 }
 
 /* Transição fluida padrão para elementos interativos */
@@ -31,7 +42,7 @@ html, body {
 button:focus-visible,
 input:focus-visible,
 a:focus-visible {
-  outline: 2px solid #00d2ff;
+  outline: 2px solid #2fbf78;
   outline-offset: 2px;
 }
 
@@ -49,7 +60,67 @@ a:focus-visible {
 .bg-radial-glow {
   background: radial-gradient(
     ellipse 70% 50% at 50% 0%,
-    rgba(0, 210, 255, 0.14),
+    rgba(30, 115, 73, 0.18),
     transparent 70%
   );
+}
+
+.app-surface {
+  color: #f8fafc;
+  background:
+    radial-gradient(ellipse 90% 42% at 50% -10%, rgba(30, 115, 73, 0.16), transparent 66%),
+    #070a08;
+}
+
+select {
+  color-scheme: dark;
+}
+
+select option {
+  color: #f8fafc;
+  background-color: #151a17;
+}
+
+/* A busca é um controle discreto; não exibe contorno neon ao receber foco. */
+#input-busca-rotina:focus-visible {
+  outline: none;
+}
+
+.glass-card {
+  background: linear-gradient(145deg, rgba(28, 32, 29, 0.94), rgba(15, 18, 16, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up .32s ease-out both; }
+
+/* Tablets: mantém a leitura em uma largura confortável e aproveita espaço para listas. */
+@media (min-width: 768px) {
+  .max-w-md { max-width: 56rem; }
+  body { padding-bottom: max(7.5rem, calc(6rem + env(safe-area-inset-bottom))); }
+  /* Nunca cria cards estreitos: só abre uma nova coluna com ao menos 22rem livres. */
+  #rotinas-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; }
+  #rotinas-list > * { margin-bottom: 0; }
+  #view-detalhe, #view-biblioteca, #view-explorar, #view-nova-rotina { max-width: 44rem; margin-left: auto; margin-right: auto; }
+  #exercicios-list { max-width: 44rem; margin-left: auto; margin-right: auto; }
+  #rest-timer { width: min(24rem, calc(100% - 3rem)); }
+}
+
+/* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */
+@media (min-width: 1024px) {
+  .max-w-md { max-width: 68rem; }
+  #view-detalhe { max-width: 52rem; }
+  #exercicios-list { max-width: 52rem; }
+}
+
+/* Celular horizontal: reduz respiros verticais e preserva controles acima da navegação. */
+@media (orientation: landscape) and (max-height: 600px) {
+  body { padding-bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
+  .pt-8 { padding-top: 1.25rem; }
+  .pb-6, .pb-7 { padding-bottom: 1rem; }
+  #rest-timer { bottom: max(4.75rem, calc(4rem + env(safe-area-inset-bottom))); }
+  nav.fixed .py-3 { padding-top: .5rem; padding-bottom: .5rem; }
 }
