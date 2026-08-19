@@ -1,6 +1,9 @@
 import { auth, db } from '../config/firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { Timestamp, addDoc, collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { enhanceSelects, setButtonLoading, showToast } from '../utils/ui.js';
+
+enhanceSelects();
 
 let currentUser;
 const $ = (id) => document.getElementById(id);
@@ -126,7 +129,18 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 $('save').onclick = async () => {
-  await setDoc(doc(db, 'users', currentUser.uid), { alturaCm: numericValue($('height').value), metaPesoKg: numericValue($('goal-weight').value), objetivo: $('goal').value, metaSemanal: numericValue($('weekly').value) }, { merge: true });
-  history.back();
+  if (!currentUser) return showToast('Aguarde o carregamento da sua conta.');
+  const button = $('save');
+  const original = button.innerHTML;
+  setButtonLoading(button, true, original);
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { alturaCm: numericValue($('height').value), metaPesoKg: numericValue($('goal-weight').value), objetivo: $('goal').value, metaSemanal: numericValue($('weekly').value) }, { merge: true });
+    showToast('Dados salvos.', 'success');
+    setTimeout(() => { location.href = './perfil.html'; }, 350);
+  } catch (error) {
+    console.error(error);
+    showToast('Não foi possível salvar seus dados.');
+    setButtonLoading(button, false, original);
+  }
 };
-$('back').onclick = () => history.back();
+$('back').onclick = () => { window.location.href = './perfil.html'; };

@@ -27,6 +27,8 @@ export async function requestReminderPermission() {
 }
 
 export async function sendTestReminder() {
+  if (!('Notification' in window)) throw new Error('Este navegador não oferece notificações.');
+  if (Notification.permission !== 'granted') await requestReminderPermission();
   await notify('Mol', 'Lembretes ativados. Seu pr\u00f3ximo aviso aparecer\u00e1 no hor\u00e1rio escolhido.');
 }
 

@@ -1,11 +1,12 @@
 // js/pages/treino.js
-document.title = 'Mol';
+document.title = 'Mol — Treinos';
 import { auth, db } from '../config/firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { showToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 setupAppShell();
+const renderIcons = (root = document) => window.lucide?.createIcons({ root });
 
 let usuarioAtual = null;
 let rotinasReais = []; 
@@ -79,6 +80,7 @@ const inputBuscaRotina = document.getElementById('input-busca-rotina');
 const restTimer = document.getElementById('rest-timer');
 const restTime = document.getElementById('rest-time');
 const restProgress = document.getElementById('rest-progress');
+document.getElementById('btn-concluir-treino')?.addEventListener('click', () => window.finalizarEConcluirTreino());
 
 onAuthStateChanged(auth, (user) => {
   if (!user) window.location.href = './login.html';
@@ -89,6 +91,8 @@ onAuthStateChanged(auth, (user) => {
     void carregarUltimasPerformances();
     carregarRotinasDoBanco();
     renderizarBiblioteca();
+    document.body.setAttribute('aria-busy', 'false');
+    renderIcons();
   }
 });
 
@@ -125,27 +129,13 @@ function esconderTudo() {
   viewBiblioteca.classList.add('hidden');
 }
 
-btnNovaRotina.addEventListener('click', () => { esconderTudo(); viewNovaRotina.classList.remove('hidden'); lucide.createIcons(); });
+btnNovaRotina.addEventListener('click', () => { esconderTudo(); viewNovaRotina.classList.remove('hidden'); inputNomeRotina.focus(); renderIcons(); });
 btnExplorar?.addEventListener('click', () => {
   esconderTudo();
   viewExplorar.classList.remove('hidden');
   viewExplorar.querySelector('.text-center')?.remove();
   if (!document.getElementById('templates-list')) viewExplorar.insertAdjacentHTML('beforeend', `<div id="templates-list" class="space-y-3"><p class="text-sm text-gray-400">Comece com uma estrutura editável.</p>${[['Upper / Lower','4 dias · foco em força e hipertrofia'],['Push Pull Legs','6 dias · divisão clássica'],['Full Body','3 dias · ótimo para iniciantes']].map(([name,description])=>`<button onclick="criarTemplate('${name}')" class="w-full rounded-2xl border border-white/10 bg-card-dark p-4 text-left active:scale-[.98]"><span class="block font-bold">${name}</span><span class="mt-1 block text-xs text-gray-500">${description}</span></button>`).join('')}</div>`);
-  lucide.createIcons();
-});
-
-// A ação principal é pesquisa nas próprias rotinas, não descoberta de modelos.
-btnExplorar?.addEventListener('click', () => {
-  esconderTudo();
-  viewRotinas.classList.remove('hidden');
-  const ficouOculta = buscaRotinas.classList.toggle('hidden');
-  if (ficouOculta) {
-    inputBuscaRotina.value = '';
-    renderRotinas();
-  } else {
-    inputBuscaRotina.focus();
-  }
-  lucide.createIcons();
+  renderIcons();
 });
 
 inputBuscaRotina?.addEventListener('input', renderRotinas);
@@ -193,11 +183,6 @@ if (btnVoltar) {
 btnVoltarNova.addEventListener('click', () => { esconderTudo(); viewRotinas.classList.remove('hidden'); });
 btnVoltarExplorar.addEventListener('click', () => { esconderTudo(); viewRotinas.classList.remove('hidden'); });
 btnVoltarBiblioteca.addEventListener('click', () => { esconderTudo(); viewDetalhe.classList.remove('hidden'); });
-
-btnAddExercicio.addEventListener('click', () => {
-  esconderTudo();
-  viewBiblioteca.classList.remove('hidden');
-});
 
 function atualizarDescanso() {
   const minutos = Math.floor(descansoSegundos / 60);
@@ -282,7 +267,7 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao }) {
   modal.id = 'mol-workout-summary';
   modal.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl border border-neon/30 bg-[#151b17] p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-3 gap-2"><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div></div><p class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p><button class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black active:scale-[.98]" onclick="this.closest('#mol-workout-summary').remove()">Concluído</button></section>`;
-  document.body.appendChild(modal); lucide.createIcons();
+  document.body.appendChild(modal); renderIcons();
 }
 
 window.mostrarInfoTreino = (tipo) => {
@@ -334,13 +319,40 @@ function renderRotinas() {
       <button onclick="duplicarRotina('${rotina.id}')" class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-300 active:bg-white/5"><i data-lucide="copy" class="h-4 w-4"></i> Duplicar rotina</button>
     </div>
   `).join('');
-  lucide.createIcons();
+  renderIcons();
 }
 
-window.clicarIniciarRotina = (id) => {
-  iniciarCronometroGlobal();
-  abrirRotina(id);
-};
+function solicitarCheckin() {
+  return new Promise(resolve => {
+    document.getElementById('workout-checkin')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'workout-checkin';
+    modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
+    modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'checkin-title');
+    modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-[#151b17] p-6 shadow-2xl"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Antes de começar</p><h2 id="checkin-title" class="mt-1 text-xl font-extrabold">Como você está hoje?</h2><p class="mt-2 text-sm text-gray-400">Isso ajuda a ajustar a intensidade com segurança.</p><div class="mt-5 grid grid-cols-3 gap-3"><label class="text-xs font-bold text-gray-400">Energia<input data-checkin="energia" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Sono<input data-checkin="sono" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Dor<input data-checkin="dor" type="number" inputmode="numeric" min="0" max="5" value="0" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-white"></label></div><p class="mt-2 text-[11px] text-gray-500">Energia e sono: 1–5 · Dor muscular: 0–5</p><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl bg-white/5 text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-start class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Iniciar treino</button></div></section>`;
+    const close = value => { modal.remove(); resolve(value); };
+    modal.querySelector('[data-cancel]').onclick = () => close(null);
+    modal.querySelector('[data-start]').onclick = () => {
+      const value = name => Number(modal.querySelector(`[data-checkin="${name}"]`).value);
+      const energia = value('energia'), sono = value('sono'), dor = value('dor');
+      if (energia < 1 || energia > 5 || sono < 1 || sono > 5 || dor < 0 || dor > 5) return showToast('Use valores válidos nas escalas informadas.');
+      close({ energia, sono, dor });
+    };
+    modal.onclick = event => { if (event.target === modal) close(null); };
+    modal.onkeydown = event => { if (event.key === 'Escape') close(null); };
+    document.body.appendChild(modal); modal.querySelector('input')?.focus();
+  });
+}
+
+async function iniciarRotinaComCheckin(id) {
+  const checkin = await solicitarCheckin();
+  if (!checkin) return;
+  checkinPreTreino = checkin;
+  if (checkin.energia <= 2 || checkin.dor >= 4) showToast('Hoje priorize técnica e reduza carga se necessário.');
+  iniciarCronometroGlobal(); abrirRotina(id);
+}
+
+window.clicarIniciarRotina = iniciarRotinaComCheckin;
 
 // Editar abre a ficha sem iniciar cronômetro, sessão ou descanso.
 window.editarRotina = (id) => {
@@ -348,16 +360,9 @@ window.editarRotina = (id) => {
   abrirRotina(id);
 };
 
-window.iniciarTreinoDaEdicao = () => {
+window.iniciarTreinoDaEdicao = async () => {
   if (!rotinaAbertaId) return;
-  const energia = prompt('Check-in rápido — energia de 1 a 5', '3');
-  if (energia === null) return;
-  const sono = prompt('Sono de 1 a 5', '3');
-  const dor = prompt('Dor muscular de 0 a 5', '0');
-  checkinPreTreino = { energia: Math.min(5, Math.max(1, Number(energia) || 3)), sono: Math.min(5, Math.max(1, Number(sono) || 3)), dor: Math.min(5, Math.max(0, Number(dor) || 0)) };
-  if (checkinPreTreino.energia <= 2 || checkinPreTreino.dor >= 4) showToast('Hoje priorize técnica e reduza carga se necessário.');
-  iniciarCronometroGlobal();
-  abrirRotina(rotinaAbertaId);
+  await iniciarRotinaComCheckin(rotinaAbertaId);
 };
 
 window.salvarNomeRotina = async () => {
@@ -393,6 +398,7 @@ btnSalvarNova.addEventListener('click', async () => {
   const nome = inputNomeRotina.value.trim();
   if (!nome) return showToast('Dê um nome para a rotina.');
   if (!usuarioAtual) return showToast('A sessão expirou. Entre novamente.');
+  btnSalvarNova.disabled = true;
   btnSalvarNova.textContent = "Salvando...";
   try {
     const diasSemana = [...routineDays.querySelectorAll('input:checked')].map(input => Number(input.value));
@@ -406,7 +412,7 @@ btnSalvarNova.addEventListener('click', async () => {
   } catch (error) {
     console.error('Erro ao criar rotina:', error);
     showToast(error.code === 'permission-denied' ? 'O Firestore bloqueou a criação. Revise as regras de treinos.' : 'Não foi possível criar a rotina. Tente novamente.');
-  } finally { btnSalvarNova.textContent = "Salvar"; }
+  } finally { btnSalvarNova.textContent = "Salvar"; btnSalvarNova.disabled = false; }
 });
 
 window.criarTemplate = async (nome) => {
@@ -416,8 +422,11 @@ window.criarTemplate = async (nome) => {
     'Full Body': [{ nome: 'Agachamento Goblet com Halter', grupo: 'Pernas' }, { nome: 'Supino Reto (Halter)', grupo: 'Peito' }, { nome: 'Remada Curvada (Halter)', grupo: 'Costas' }]
   };
   const exercicios = (modelos[nome] || []).map(ex => ({ ...ex, descansoSegundos: 90, series: Array.from({ length: 3 }, () => ({ tipo: 'N', kg: '', reps: '', rir: '2', anteriorKg: '', anteriorReps: '', concluida: false })) }));
-  await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: 'Modelo Mol editável', exercicios, criadoEm: serverTimestamp() });
-  showToast('Modelo criado. Ajuste-o para sua realidade.', 'success'); carregarRotinasDoBanco(); esconderTudo(); viewRotinas.classList.remove('hidden');
+  if (!usuarioAtual) return showToast('A sessão ainda está carregando.');
+  try {
+    await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: 'Modelo Mol editável', exercicios, criadoEm: serverTimestamp() });
+    showToast('Modelo criado. Ajuste-o para sua realidade.', 'success'); await carregarRotinasDoBanco(); esconderTudo(); viewRotinas.classList.remove('hidden');
+  } catch (error) { console.error(error); showToast('Não foi possível criar o modelo.'); }
 };
 
 window.duplicarRotina = async (id) => {
@@ -442,7 +451,7 @@ window.escolherExercicio = async (nomeExercicio) => {
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); }
+  } catch (error) { rotina.exercicios.pop(); console.error(error); showToast('Não foi possível adicionar o exercício.'); }
 };
 
 // ---------------------------------------------
@@ -506,21 +515,28 @@ function renderizarBiblioteca(filtro = '') {
     return;
   }
 
-  bibliotecaList.innerHTML = exerciciosFiltrados.map(ex => `
+  bibliotecaList.innerHTML = exerciciosFiltrados.map((ex, index) => `
     <div class="flex items-center justify-between bg-card-dark p-3 rounded-xl border border-white/5 active:bg-white/5 transition-colors mb-2">
       <img src="${exerciseFigure}" alt="" class="mr-3 h-12 w-10 shrink-0 rounded-lg bg-white/5 p-1">
       <div class="min-w-0 flex-1 text-left">
-        <p class="font-bold text-sm text-white">${ex.nome}</p>
-        <p class="text-xs text-gray-500">${grupoDetalhado(ex)} · ${ex.grupo}</p>
+        <p class="font-bold text-sm text-white">${escapeHTML(ex.nome)}</p>
+        <p class="text-xs text-gray-500">${escapeHTML(grupoDetalhado(ex))} · ${escapeHTML(ex.grupo)}</p>
         ${ultimaPerformance.has(ex.nome) ? `<p class="mt-1 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="mt-1 text-xs text-gray-600">Sem histórico ainda</p>'}
       </div>
-      <button type="button" onclick="alternarFavoritoExercicio('${ex.nome}')" aria-label="Favoritar ${ex.nome}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 active:bg-white/10 ${favoritosExercicios.includes(ex.nome) ? 'text-neon' : 'text-gray-500'}"><i data-lucide="star" class="h-5 w-5 ${favoritosExercicios.includes(ex.nome) ? 'fill-current' : ''}"></i></button>
-      <button type="button" onclick="abrirDetalheExercicio('${ex.nome}')" aria-label="Ver detalhes de ${ex.nome}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-400 active:bg-white/10"><i data-lucide="info" class="h-5 w-5"></i></button>
-      <button type="button" onclick="escolherExercicio('${ex.nome}')" aria-label="Adicionar ${ex.nome}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neon/15 text-neon active:bg-neon active:text-black"><i data-lucide="plus" class="h-5 w-5"></i></button>
+      <button type="button" data-exercise-action="favorite" data-exercise-index="${index}" aria-label="Favoritar ${escapeHTML(ex.nome)}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 active:bg-white/10 ${favoritosExercicios.includes(ex.nome) ? 'text-neon' : 'text-gray-500'}"><i data-lucide="star" class="h-5 w-5 ${favoritosExercicios.includes(ex.nome) ? 'fill-current' : ''}"></i></button>
+      <button type="button" data-exercise-action="detail" data-exercise-index="${index}" aria-label="Ver detalhes de ${escapeHTML(ex.nome)}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-400 active:bg-white/10"><i data-lucide="info" class="h-5 w-5"></i></button>
+      <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neon/15 text-neon active:bg-neon active:text-black"><i data-lucide="plus" class="h-5 w-5"></i></button>
     </div>
   `).join('');
+  bibliotecaList.querySelectorAll('[data-exercise-action]').forEach(button => button.onclick = () => {
+    const exercise = exerciciosFiltrados[Number(button.dataset.exerciseIndex)];
+    if (!exercise) return;
+    if (button.dataset.exerciseAction === 'favorite') window.alternarFavoritoExercicio(exercise.nome);
+    if (button.dataset.exerciseAction === 'detail') window.abrirDetalheExercicio(exercise.nome);
+    if (button.dataset.exerciseAction === 'add') window.escolherExercicio(exercise.nome);
+  });
   
-  lucide.createIcons();
+  renderIcons();
 }
 
 // Ouvinte do input de busca para filtrar em tempo real
@@ -544,12 +560,28 @@ function prepararAtalhosBiblioteca() {
   if (document.getElementById('library-shortcuts')) return;
   bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button data-library-filter="Favoritos" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button data-library-filter="Recentes" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button data-library-filter="Máquina" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button data-library-filter="Polia" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
   document.querySelectorAll('[data-library-filter]').forEach(button => button.onclick = () => { filtroMuscular = button.dataset.libraryFilter; renderizarBiblioteca(inputBuscaExercicio?.value || ''); });
-  document.getElementById('create-custom-exercise').onclick = () => {
-    const nome = prompt('Nome do exercício'); if (!nome?.trim()) return;
-    const grupo = prompt('Grupo muscular', 'Outros')?.trim() || 'Outros';
-    const novo = { nome: nome.trim(), grupo, personalizado: true };
-    exerciciosPersonalizados.push(novo); bibliotecaDeExercicios.push(novo); salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); showToast('Exercício personalizado criado.', 'success');
+  document.getElementById('create-custom-exercise').onclick = abrirCriadorExercicio;
+}
+
+function abrirCriadorExercicio() {
+  document.getElementById('custom-exercise-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'custom-exercise-modal'; modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
+  modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'custom-exercise-title');
+  modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-[#151b17] p-6"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Biblioteca pessoal</p><h2 id="custom-exercise-title" class="mt-1 text-xl font-extrabold">Novo exercício</h2><label class="mt-5 block text-xs font-bold text-gray-400" for="custom-exercise-name">Nome</label><input id="custom-exercise-name" maxlength="80" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-white" placeholder="Ex.: Remada unilateral"><label class="mt-4 block text-xs font-bold text-gray-400" for="custom-exercise-group">Grupo muscular</label><input id="custom-exercise-group" maxlength="40" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-white" value="Outros"><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl bg-white/5 text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-save class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Criar</button></div></section>`;
+  const close = () => modal.remove();
+  modal.querySelector('[data-cancel]').onclick = close;
+  modal.querySelector('[data-save]').onclick = () => {
+    const nome = modal.querySelector('#custom-exercise-name').value.trim();
+    const grupo = modal.querySelector('#custom-exercise-group').value.trim() || 'Outros';
+    if (!nome) return showToast('Digite o nome do exercício.');
+    if (bibliotecaDeExercicios.some(item => item.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'))) return showToast('Esse exercício já existe na biblioteca.');
+    const novo = { nome, grupo, personalizado: true };
+    exerciciosPersonalizados.push(novo); bibliotecaDeExercicios.push(novo); salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); close(); showToast('Exercício personalizado criado.', 'success');
   };
+  modal.onclick = event => { if (event.target === modal) close(); };
+  modal.onkeydown = event => { if (event.key === 'Escape') close(); };
+  document.body.appendChild(modal); modal.querySelector('#custom-exercise-name').focus();
 }
 
 // Garantir que a busca limpa ao abrir a tela de adicionar exercício
@@ -560,7 +592,7 @@ if (btnAddExercicio) {
     if (inputBuscaExercicio) inputBuscaExercicio.value = '';
     renderizarBiblioteca('');
     viewBiblioteca.classList.remove('hidden');
-    lucide.createIcons();
+    renderIcons();
   });
 }
 
@@ -596,11 +628,13 @@ window.abrirRotina = (id) => {
       btnConcluir.classList.add('hidden');
     } else if (totalSeries > 0 && seriesFeitas === totalSeries) {
       btnConcluir.classList.remove('hidden');
-      btnConcluir.className = "px-4 py-2 rounded-xl text-xs font-bold bg-neon text-black transition-all active:scale-95 shadow-lg shadow-neon/20 cursor-pointer";
+      btnConcluir.disabled = false;
+      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold bg-neon text-black transition-all active:scale-95 shadow-lg shadow-neon/20 cursor-pointer";
       btnConcluir.textContent = 'Finalizar';
     } else {
       btnConcluir.classList.remove('hidden');
-      btnConcluir.className = "px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon transition-all active:scale-95 opacity-50 cursor-not-allowed";
+      btnConcluir.disabled = true;
+      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon transition-all opacity-50 cursor-not-allowed";
       btnConcluir.textContent = totalSeries ? `Faltam ${totalSeries - seriesFeitas}` : 'Finalizar';
     }
   }
@@ -717,7 +751,7 @@ window.abrirRotina = (id) => {
   
   esconderTudo();
   viewDetalhe.classList.remove('hidden');
-  lucide.createIcons();
+  renderIcons();
   atualizarDisplayTempo();
 };
 
@@ -776,7 +810,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
     abrirRotina(rotinaAbertaId);
     salvarRascunho();
     if (serie.concluida) iniciarDescanso(indexEx);
-  } catch (error) { console.error(error); }
+  } catch (error) { console.error(error); showToast('Não foi possível salvar a série.'); await carregarRotinasDoBanco(); }
 };
 
 // ---------------------------------------------
@@ -882,11 +916,13 @@ window.adicionarSerie = async (indexEx) => {
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); }
+  } catch (error) { console.error(error); showToast('Não foi possível adicionar a série.'); await carregarRotinasDoBanco(); }
 };
 
 window.excluirSerie = async (indexEx, indexSerie) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  if (!rotina?.exercicios?.[indexEx]?.series?.[indexSerie]) return;
+  if (!await confirmAction({ title: 'Excluir série?', message: 'Os dados preenchidos nesta série serão removidos.', confirmText: 'Excluir', danger: true })) return;
   rotina.exercicios[indexEx].series.splice(indexSerie, 1); 
 
   if (rotina.exercicios[indexEx].series.length === 0) {
@@ -896,7 +932,7 @@ window.excluirSerie = async (indexEx, indexSerie) => {
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); }
+  } catch (error) { console.error(error); showToast('Não foi possível excluir a série.'); await carregarRotinasDoBanco(); }
 };
 
 window.moverExercicio = async (indexEx, direcao) => {
@@ -910,24 +946,35 @@ window.moverExercicio = async (indexEx, direcao) => {
 
 window.excluirExercicio = async (indexEx) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  if (!rotina?.exercicios?.[indexEx]) return;
+  if (!await confirmAction({ title: 'Excluir exercício?', message: `${rotina.exercicios[indexEx].nome} e todas as suas séries serão removidos da rotina.`, confirmText: 'Excluir', danger: true })) return;
   rotina.exercicios.splice(indexEx, 1);
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); }
+  } catch (error) { console.error(error); showToast('Não foi possível excluir o exercício.'); await carregarRotinasDoBanco(); }
 };
 
 const modalTipoSerie = document.getElementById('modal-tipo-serie');
 const modalTipoSerieContent = document.getElementById('modal-tipo-serie-content');
 let editandoSerie = { ex: null, serie: null }; 
+let focoAntesDoModal = null;
+
+function fecharModalTipoSerie() {
+  modalTipoSerie.classList.add('opacity-0');
+  modalTipoSerieContent.classList.add('translate-y-full');
+  setTimeout(() => { modalTipoSerie.classList.add('hidden'); focoAntesDoModal?.focus(); }, 300);
+}
 
 window.abrirModalTipoSerie = (indexEx, indexSerie) => {
   editandoSerie = { ex: indexEx, serie: indexSerie };
+  focoAntesDoModal = document.activeElement;
   modalTipoSerie.classList.remove('hidden');
   setTimeout(() => {
     modalTipoSerie.classList.remove('opacity-0');
     modalTipoSerieContent.classList.remove('translate-y-full');
+    modalTipoSerieContent.querySelector('button')?.focus();
   }, 10);
 };
 
@@ -935,29 +982,30 @@ window.mudarTipoSerie = async (novoTipo) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   rotina.exercicios[editandoSerie.ex].series[editandoSerie.serie].tipo = novoTipo;
 
-  modalTipoSerie.classList.add('opacity-0');
-  modalTipoSerieContent.classList.add('translate-y-full');
-  setTimeout(() => modalTipoSerie.classList.add('hidden'), 300);
+  fecharModalTipoSerie();
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
     abrirRotina(rotinaAbertaId); 
-  } catch (error) { console.error(error); }
+  } catch (error) { console.error(error); showToast('Não foi possível alterar o tipo da série.'); await carregarRotinasDoBanco(); }
 };
 
 window.removerSerieAberta = () => {
   excluirSerie(editandoSerie.ex, editandoSerie.serie);
-  modalTipoSerie.classList.add('opacity-0');
-  modalTipoSerieContent.classList.add('translate-y-full');
-  setTimeout(() => modalTipoSerie.classList.add('hidden'), 300);
+  fecharModalTipoSerie();
 };
+
+modalTipoSerie.querySelectorAll('[data-series-type]').forEach(button => button.addEventListener('click', () => window.mudarTipoSerie(button.dataset.seriesType)));
+modalTipoSerie.querySelector('[data-remove-series]')?.addEventListener('click', () => window.removerSerieAberta());
 
 modalTipoSerie.addEventListener('click', (e) => {
   if (e.target === modalTipoSerie) {
-    modalTipoSerie.classList.add('opacity-0');
-    modalTipoSerieContent.classList.add('translate-y-full');
-    setTimeout(() => modalTipoSerie.classList.add('hidden'), 300);
+    fecharModalTipoSerie();
   }
 });
 
-lucide.createIcons();
+modalTipoSerie.addEventListener('keydown', event => {
+  if (event.key === 'Escape') fecharModalTipoSerie();
+});
+
+window.addEventListener('load', () => renderIcons(), { once: true });

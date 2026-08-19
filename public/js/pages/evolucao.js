@@ -249,4 +249,4 @@ $('progress-photos').onclick = async (event) => {
   await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: photos }, { merge: true });
   await load();
 };
-$('back').onclick = () => history.back();
+$('back').onclick = () => document.referrer && new URL(document.referrer).origin === location.origin ? history.back() : location.href = './perfil.html';

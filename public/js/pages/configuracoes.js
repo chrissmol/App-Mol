@@ -64,7 +64,7 @@ remindersEnabled.onchange = async () => {
 };
 [workoutTime, mealTime].forEach((input) => input.onchange = () => saveReminderPreferences({ [input === workoutTime ? 'workoutTime' : 'mealTime']: input.value }));
 document.getElementById('test-reminder').onclick = async () => {
-  try { await sendTestReminder(); }
+  try { await sendTestReminder(); reminderNote.textContent = 'Notificação de teste enviada.'; }
   catch (error) { alert(error.message); }
 };
 
@@ -158,7 +158,7 @@ onAuthStateChanged(auth, (user) => {
     }
   };
 });
-document.getElementById('back').onclick = () => history.back();
+document.getElementById('back').onclick = () => document.referrer && new URL(document.referrer).origin === location.origin ? history.back() : location.href = './perfil.html';
 apply();
 renderReminders();
 renderInstall();

@@ -1,9 +1,19 @@
-const labels = { 'index.html': 'Início', 'treino.html': 'Treino', 'dieta.html': 'Dieta', 'perfil.html': 'Perfil', 'historico.html': 'Histórico', 'progresso.html': 'Progresso' };
-
 import { startReminderMonitor } from './reminders.js';
+import { enhanceSelects } from './ui.js';
 
 export function setupAppShell() {
   startReminderMonitor();
+  enhanceSelects();
+  const inPages = location.pathname.includes('/pages/');
+  const faviconHref = `${inPages ? '../' : './'}assets/mol-mark.svg?v=2`;
+  let favicon = document.querySelector('link[rel="icon"]');
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/svg+xml';
+    document.head.appendChild(favicon);
+  }
+  favicon.href = faviconHref;
   document.documentElement.lang = localStorage.getItem('mol-language') || 'pt-BR';
   if (!window.__molPwaPromptListener) {
     window.__molPwaPromptListener = true;
@@ -28,23 +38,24 @@ export function setupAppShell() {
   }
   const nav = document.querySelector('nav.fixed');
   if (nav) {
+    document.body.classList.add('has-bottom-nav');
     nav.classList.add('mol-bottom-nav');
-    nav.querySelectorAll('a,button').forEach(control => {
+    const prefix = inPages ? '.' : './pages';
+    nav.innerHTML = `<div class="mol-nav-inner">
+      <a href="${inPages ? '../index.html' : './index.html'}" data-page="index.html"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
+      <a href="${prefix}/treino.html" data-page="treino.html"><i data-lucide="dumbbell"></i><span>Treino</span></a>
+      <a href="${prefix}/dieta.html" data-page="dieta.html"><i data-lucide="apple"></i><span>Dieta</span></a>
+      <a href="${prefix}/perfil.html" data-page="perfil.html"><i data-lucide="user"></i><span>Perfil</span></a>
+    </div>`;
+    nav.querySelectorAll('a').forEach(control => {
       const path = control.getAttribute('href')?.split('/').pop();
-      const isDiet = control.dataset.comingSoon === 'Dieta' || control.querySelector('[data-lucide="apple"]');
-      const dietHref = location.pathname.includes('/pages/') ? './dieta.html' : './pages/dieta.html';
-      if (isDiet && control.tagName === 'A') control.setAttribute('href', dietHref);
-      if (isDiet && control.tagName === 'BUTTON') control.onclick = () => window.location.href = dietHref;
-      const label = labels[path] || (isDiet ? 'Dieta' : control.dataset.comingSoon);
-      const isActive = path === location.pathname.split('/').pop() || (isDiet && location.pathname.endsWith('/dieta.html'));
+      const isActive = path === location.pathname.split('/').pop();
       control.classList.toggle('text-neon', isActive);
       control.classList.toggle('text-gray-500', !isActive);
       if (isActive) control.setAttribute('aria-current', 'page');
-      if (label && !control.querySelector('span')) {
-        const text = document.createElement('span'); text.className = 'text-[10px] font-semibold'; text.textContent = label; control.appendChild(text);
-      }
       control.classList.add('mol-nav-item');
     });
+    window.lucide?.createIcons();
   }
   document.body.classList.add('mol-shell-ready');
 }

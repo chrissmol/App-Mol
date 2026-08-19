@@ -2,8 +2,10 @@ import { auth, db } from '../config/firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { sessionMetrics } from '../modules/workout-analytics.js';
+import { dateOf, monday, safeJSON, sessionsInWeek, weeklyStreak } from '../modules/dashboard-analytics.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
+const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
 
@@ -24,25 +26,35 @@ const defaultCards = [
 let dashboardCards = [...defaultCards];
 let dashboardUser = null;
 
-function dateOf(session) { return session.concluidoEm?.toDate?.() || null; }
-function monday(date = new Date()) { const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
+function normalizeCards(value) {
+  if (!Array.isArray(value)) return defaultCards.map(card => ({ ...card }));
+  const known = new Map(defaultCards.map(card => [card.id, card]));
+  const seen = new Set();
+  const valid = value.flatMap(item => {
+    const base = known.get(item?.id);
+    if (!base || seen.has(base.id)) return [];
+    seen.add(base.id);
+    return [{ ...base, visible: item.visible !== false }];
+  });
+  return [...valid, ...defaultCards.filter(card => !seen.has(card.id)).map(card => ({ ...card }))];
+}
+
 function setWeek(sessions) {
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
-  const thisWeek = sessions.filter(s => { const d = dateOf(s); return d && d >= start; });
+  const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);
-  $('week-days').innerHTML = days.map(d => { const done = sessions.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center"><span class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()]}</span><span class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-black' : today ? 'border border-neon text-neon' : 'bg-white/5 text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
+  $('week-days').innerHTML = days.map(d => { const done = sessions.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center"><span class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()]}</span><span class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'bg-white/5 text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
   $('weekly-title').textContent = `${thisWeek.length} treino${thisWeek.length === 1 ? '' : 's'} concluído${thisWeek.length === 1 ? '' : 's'}`;
   $('weekly-sessions').textContent = thisWeek.length;
   $('weekly-volume').textContent = Math.round(volume).toLocaleString('pt-BR');
-  let weeks = 0; let cursor = start; while (sessions.some(s => { const d=dateOf(s); return d && d >= cursor && d < new Date(cursor.getTime()+604800000); })) { weeks++; cursor = new Date(cursor.getTime()-604800000); }
-  $('weekly-streak').textContent = weeks;
-  const last = sessions.sort((a,b) => (dateOf(b)?.getTime() || 0) - (dateOf(a)?.getTime() || 0))[0];
+  $('weekly-streak').textContent = weeklyStreak(sessions);
+  const last = [...sessions].sort((a,b) => (dateOf(b)?.getTime() || 0) - (dateOf(a)?.getTime() || 0))[0];
   $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg.` : 'Conclua o primeiro treino para acompanhar sua evolução.';
   if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg · ${sessionMetrics(last).sets} séries`; }
 }
 
 function setToday(routines, user) {
-  const draft = JSON.parse(localStorage.getItem(draftKey(user.uid)) || 'null');
+  const draft = safeJSON(localStorage.getItem(draftKey(user.uid)), null);
   const card = $('today-workout-cta');
   if (draft && routines.some(r => r.id === draft.rotinaId)) {
     const routine = routines.find(r => r.id === draft.rotinaId); const series = (draft.exercicios || []).flatMap(ex => ex.series || []); const done = series.filter(s => s.concluida).length;
@@ -59,7 +71,7 @@ function setToday(routines, user) {
     $('today-eyebrow').textContent = 'Comece por aqui'; $('today-workout-title').textContent = 'Crie sua primeira rotina'; $('today-workout-subtitle').textContent = 'Monte uma ficha ou use um modelo pronto para treinar hoje.';
     card.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i><span>Criar rotina</span>';
   }
-  lucide.createIcons();
+  renderIcons();
 }
 
 function setNextMeal(meals) {
@@ -70,7 +82,8 @@ function setNextMeal(meals) {
   const next = ordered.find(meal => meal.hora >= now) || ordered[0];
   if (!next) { card.classList.add('hidden'); return; }
   $('next-meal-name').textContent = next.nome || 'Refeição';
-  $('next-meal-meta').textContent = `${next.hora} Â· ${(next.alimentos || next.itens || []).length} alimento(s)`;
+  const tomorrow = !ordered.some(meal => meal.hora >= now);
+  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${next.hora} · ${(next.alimentos || next.itens || []).length} alimento(s)`;
   card.classList.remove('hidden');
 }
 
@@ -95,12 +108,12 @@ function setupDashboardCards() {
   }
   if (!document.getElementById('next-meal-card')) {
     const card = document.createElement('section'); card.id = 'next-meal-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
-    card.innerHTML = '<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400"></p></div><a href="./pages/dieta.html" aria-label="Abrir dieta" class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></a></div>';
+    card.innerHTML = '<a href="./pages/dieta.html" class="flex items-start justify-between gap-4" aria-label="Abrir próxima refeição na dieta"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400" aria-live="polite"></p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></span></a>';
     document.getElementById('today-card').after(card);
   }
   if (!document.getElementById('weight-card')) {
     const card = document.createElement('section'); card.id = 'weight-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
-    card.innerHTML = '<div class="flex items-center justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><a href="./pages/perfil.html" class="rounded-xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></a></div>';
+    card.innerHTML = '<a href="./pages/perfil.html" class="flex items-center justify-between" aria-label="Abrir evolução corporal no perfil"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold" aria-live="polite">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></span></a>';
     document.getElementById('last-session-card').after(card);
   }
   const header = document.querySelector('header');
@@ -108,10 +121,12 @@ function setupDashboardCards() {
   if (!document.getElementById('dashboard-brand')) {
     headerContent.insertAdjacentHTML('afterbegin', '<a id="dashboard-brand" class="mol-brand" href="./index.html" aria-label="Ir para o início"><img src="./assets/mol-mark.svg" alt="">Mol</a>');
   }
-  if (!document.getElementById('btn-edit-dashboard')) {
-    const button = document.createElement('button'); button.id = 'btn-edit-dashboard'; button.className = 'mt-3 text-xs font-bold text-gray-500 active:text-neon'; button.innerHTML = '<i data-lucide="sliders-horizontal" class="mr-1 inline h-3.5 w-3.5"></i> Editar painel';
-    headerContent.appendChild(button); button.addEventListener('click', openDashboardEditor);
+  let button = document.getElementById('btn-edit-dashboard');
+  if (!button) {
+    button = document.createElement('button'); button.type = 'button'; button.id = 'btn-edit-dashboard'; button.className = 'mt-2 min-h-11 rounded-xl pr-3 text-xs font-bold text-gray-400 active:text-neon'; button.innerHTML = '<i data-lucide="sliders-horizontal" class="mr-1 inline h-3.5 w-3.5"></i> Editar painel';
+    headerContent.appendChild(button);
   }
+  button.onclick = openDashboardEditor;
 }
 
 function applyDashboardCards() {
@@ -127,13 +142,27 @@ async function saveDashboardCards() {
 }
 
 function openDashboardEditor() {
+  const opener = document.activeElement;
+  const originalCards = dashboardCards.map(card => ({ ...card }));
   document.getElementById('mol-dashboard-editor')?.remove();
-  const panel = document.createElement('div'); panel.id = 'mol-dashboard-editor'; panel.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm';
-  const render = () => { panel.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl border border-white/10 bg-[#161a17] p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Seu início</p><h2 class="mt-1 text-xl font-extrabold">Editar painel</h2><p class="mt-2 text-sm text-gray-400">Escolha o que quer ver e use as setas para mudar a ordem.</p><div class="mt-5 space-y-2">${dashboardCards.map((card, index) => `<div class="flex min-h-14 items-center gap-2 rounded-2xl bg-white/5 px-3"><button data-toggle="${card.id}" class="h-9 w-9 rounded-xl ${card.visible ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${card.visible ? 'eye' : 'eye-off'}" class="mx-auto h-4 w-4"></i></button><span class="flex-1 text-sm font-bold">${card.label}</span><button data-move="${index},-1" class="h-9 w-9 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="mx-auto h-5 w-5"></i></button><button data-move="${index},1" class="h-9 w-9 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="mx-auto h-5 w-5"></i></button></div>`).join('')}</div><div class="mt-6 grid grid-cols-2 gap-3"><button data-reset class="min-h-12 rounded-2xl bg-white/5 text-sm font-bold text-gray-300">Restaurar</button><button data-done class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Concluído</button></div></section>`; lucide.createIcons(); panel.querySelectorAll('[data-toggle]').forEach(button => button.onclick = () => { const card = dashboardCards.find(c => c.id === button.dataset.toggle); card.visible = !card.visible; render(); }); panel.querySelectorAll('[data-move]').forEach(button => button.onclick = () => { const [index, direction] = button.dataset.move.split(',').map(Number); const target = index + direction; if (target >= 0 && target < dashboardCards.length) [dashboardCards[index], dashboardCards[target]] = [dashboardCards[target], dashboardCards[index]]; render(); }); panel.querySelector('[data-reset]').onclick = () => { dashboardCards = defaultCards.map(c => ({...c})); render(); }; panel.querySelector('[data-done]').onclick = async () => { applyDashboardCards(); await saveDashboardCards(); panel.remove(); }; };
-  panel.onclick = event => { if (event.target === panel) panel.remove(); }; document.body.appendChild(panel); render();
+  const panel = document.createElement('div'); panel.id = 'mol-dashboard-editor'; panel.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center';
+  const close = (commit = true) => { if (!commit) dashboardCards = originalCards.map(card => ({ ...card })); panel.remove(); opener?.focus?.(); };
+  const render = () => { panel.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="dashboard-editor-title" class="mx-auto w-full max-w-md rounded-3xl border border-white/10 bg-[#161a17] p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Seu início</p><h2 id="dashboard-editor-title" class="mt-1 text-xl font-extrabold">Editar painel</h2><p class="mt-2 text-sm text-gray-400">Escolha o que quer ver e use as setas para mudar a ordem.</p><div class="mt-5 space-y-2">${dashboardCards.map((card, index) => `<div class="flex min-h-14 items-center gap-2 rounded-2xl bg-white/5 px-3"><button type="button" data-toggle="${card.id}" aria-label="${card.visible ? 'Ocultar' : 'Mostrar'} ${card.label}" class="h-10 w-10 rounded-xl ${card.visible ? 'bg-neon text-white' : 'bg-white/10 text-gray-400'}"><i data-lucide="${card.visible ? 'eye' : 'eye-off'}" class="mx-auto h-4 w-4"></i></button><span class="flex-1 text-sm font-bold">${card.label}</span><button type="button" data-move="${index},-1" aria-label="Mover ${card.label} para cima" ${index === 0 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="mx-auto h-5 w-5"></i></button><button type="button" data-move="${index},1" aria-label="Mover ${card.label} para baixo" ${index === dashboardCards.length - 1 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="mx-auto h-5 w-5"></i></button></div>`).join('')}</div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-reset class="min-h-12 rounded-2xl bg-white/5 text-sm font-bold text-gray-300">Restaurar</button><button type="button" data-done class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-white">Concluído</button></div></section>`; renderIcons(); panel.querySelectorAll('[data-toggle]').forEach(button => button.onclick = () => { const card = dashboardCards.find(c => c.id === button.dataset.toggle); card.visible = !card.visible; render(); }); panel.querySelectorAll('[data-move]').forEach(button => button.onclick = () => { const [index, direction] = button.dataset.move.split(',').map(Number); const target = index + direction; if (target >= 0 && target < dashboardCards.length) [dashboardCards[index], dashboardCards[target]] = [dashboardCards[target], dashboardCards[index]]; render(); }); panel.querySelector('[data-reset]').onclick = () => { dashboardCards = defaultCards.map(c => ({...c})); render(); }; panel.querySelector('[data-done]').onclick = async event => { event.currentTarget.disabled = true; applyDashboardCards(); await saveDashboardCards(); close(); }; panel.querySelector('[data-toggle]')?.focus(); };
+  panel.onclick = event => { if (event.target === panel) close(false); };
+  panel.onkeydown = event => {
+    if (event.key === 'Escape') return close(false);
+    if (event.key !== 'Tab') return;
+    const focusable = [...panel.querySelectorAll('button:not(:disabled),a[href]')];
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
+  document.body.appendChild(panel); render();
 }
 
 onAuthStateChanged(auth, async user => {
+  clearTimeout(window.__molDashboardFallback);
   if (!user) return window.location.href = './pages/login.html';
   dashboardUser = user;
   // O esqueleto do Início não depende do banco: aparece assim que a sessão existe.
@@ -148,32 +177,39 @@ onAuthStateChanged(auth, async user => {
     sessions: getDocs(query(collection(db, 'sessoes'), where('userId', '==', user.uid))),
     weights: getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid)))
   };
-  const localCards = JSON.parse(localStorage.getItem(`mol-dashboard-${user.uid}`) || 'null');
-  if (localCards) dashboardCards = localCards;
-  try { const profile = await getDoc(doc(db, 'users', user.uid)); if (profile.exists() && Array.isArray(profile.data().dashboardCards)) dashboardCards = profile.data().dashboardCards; } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
-  dashboardCards = [...dashboardCards, ...defaultCards.filter(def => !dashboardCards.some(card => card.id === def.id))];
+  dashboardCards = normalizeCards(safeJSON(localStorage.getItem(`mol-dashboard-${user.uid}`), null));
+  let profileData = {};
+  try { const profile = await getDoc(doc(db, 'users', user.uid)); if (profile.exists()) { profileData = profile.data(); dashboardCards = normalizeCards(profileData.dashboardCards || dashboardCards); } } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
   applyDashboardCards();
-  $('app-body').classList.remove('opacity-0'); $('user-name').textContent = user.displayName?.split(' ')[0] || 'Atleta';
+  const fullName = user.displayName || profileData.name || profileData.nome || '';
+  $('user-name').textContent = fullName.trim().split(/\s+/)[0] || 'Atleta';
   $('week-label').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
-  if (user.photoURL) { $('user-avatar').src = user.photoURL; $('user-avatar').classList.remove('hidden'); $('default-avatar-icon').classList.add('hidden'); }
+  const avatarURL = user.photoURL || profileData.photoURL;
+  if (avatarURL) { const avatar=$('user-avatar'); avatar.onerror=()=>{avatar.classList.add('hidden');$('default-avatar-icon').classList.remove('hidden');}; avatar.src=avatarURL; avatar.classList.remove('hidden'); $('default-avatar-icon').classList.add('hidden'); }
   try {
-    const routineSnapshot = await dashboardData.routines;
-    const routines = routineSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    setToday(routines, user);
+    try {
+      const routineSnapshot = await dashboardData.routines;
+      const routines = routineSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setToday(routines, user);
+    } catch (error) {
+      console.error('Erro ao carregar rotinas:', error);
+      $('today-workout-title').textContent = 'Treinos indisponíveis';
+      $('today-workout-subtitle').textContent = 'Não foi possível atualizar suas rotinas agora.';
+      showToast('Não foi possível carregar suas rotinas agora.');
+    }
     try {
       const sessionSnapshot = await dashboardData.sessions;
       setWeek(sessionSnapshot.docs.map(d => d.data()));
     } catch (error) {
       console.error('Erro ao carregar sessões:', error.code, error.message);
-      setWeek([]);
+      $('weekly-title').textContent = 'Histórico indisponível';
+      $('week-days').innerHTML = '<p class="col-span-7 text-center text-xs text-gray-500">Tente novamente mais tarde.</p>';
       showToast(error.code === 'permission-denied' ? 'Sem permissão para ler sessões. Revise as regras do Firestore.' : 'O histórico não pôde ser carregado agora.');
     }
-    try { const weightSnapshot = await dashboardData.weights; const weights = weightSnapshot.docs.map(d => d.data()).sort((a,b)=>(a.registradoEm?.seconds||0)-(b.registradoEm?.seconds||0)); const last=weights.at(-1); if(last){ $('dashboard-weight').textContent=`${Number(last.pesoKg).toLocaleString('pt-BR')} kg`; $('dashboard-weight-meta').textContent=weights.length>1?`${(Number(last.pesoKg)-Number(weights[0].pesoKg)).toLocaleString('pt-BR',{signDisplay:'always'})} kg desde o início.`:'Primeiro registro corporal.'; } } catch(error) { console.warn('Peso não carregado:',error.message); }
+    try { const weightSnapshot = await dashboardData.weights; const weights = weightSnapshot.docs.map(d => d.data()).filter(item=>Number.isFinite(Number(item.pesoKg))).sort((a,b)=>(a.registradoEm?.seconds||0)-(b.registradoEm?.seconds||0)); const last=weights.at(-1); if(last){ $('dashboard-weight').textContent=`${Number(last.pesoKg).toLocaleString('pt-BR')} kg`; $('dashboard-weight-meta').textContent=weights.length>1?`${(Number(last.pesoKg)-Number(weights[0].pesoKg)).toLocaleString('pt-BR',{signDisplay:'always'})} kg desde o início.`:'Primeiro registro corporal.'; } } catch(error) { console.warn('Peso não carregado:',error.message); $('dashboard-weight').textContent='Peso indisponível'; $('dashboard-weight-meta').textContent='Não foi possível atualizar este dado.'; }
   } catch (error) {
     console.error('Erro ao carregar rotinas:', error.code, error.message);
     showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas agora.');
-  }
+  } finally { document.body.setAttribute('aria-busy','false'); renderIcons(); }
 });
-document.querySelectorAll('[data-coming-soon]').forEach(button => button.addEventListener('click', () => button.dataset.comingSoon === 'Dieta' ? window.location.href = './pages/dieta.html' : showToast(`${button.dataset.comingSoon} estará disponível em breve.`)));
-document.title = 'Mol';
-document.head.insertAdjacentHTML('beforeend', '<link rel="icon" type="image/svg+xml" href="./assets/mol-mark.svg">');
+renderIcons();

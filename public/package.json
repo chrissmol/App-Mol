@@ -20,5 +20,8 @@
     "vite": "latest",
     "vite-plugin-pwa": "latest",
     "vitest": "latest"
+  },
+  "dependencies": {
+    "lucide": "^0.468.0"
   }
 }
