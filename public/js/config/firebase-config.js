@@ -10,7 +10,7 @@ import {
   getAuth,
   GoogleAuthProvider,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
 const firebaseConfig = {
@@ -27,5 +27,8 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta instâncias prontas para uso em outros arquivos
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Guarda uma cÃ³pia local para exibir dados recentes antes da atualizaÃ§Ã£o de rede.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 export const googleProvider = new GoogleAuthProvider();

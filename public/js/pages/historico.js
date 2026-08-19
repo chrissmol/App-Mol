@@ -3,6 +3,9 @@ import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/f
 import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { escapeHTML, showToast } from '../utils/ui.js';
+import { setupAppShell } from '../utils/app-shell.js';
+
+setupAppShell();
 
 document.documentElement.setAttribute('translate', 'no');
 
@@ -23,3 +26,4 @@ onAuthStateChanged(auth, async user => {
   }
 });
 document.title = 'Mol';
+document.head.insertAdjacentHTML('beforeend', '<link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">');

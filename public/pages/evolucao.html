@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="google" content="notranslate">
+  <title>Mol</title>
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface min-h-screen text-white">
+  <main class="mx-auto max-w-md px-5 pt-6 pb-10">
+    <button id="back" class="text-sm font-bold text-gray-400">&larr; Perfil</button>
+    <p class="mt-5 text-xs font-semibold uppercase tracking-wider text-neon">Consistência</p>
+    <h1 class="mt-1 text-2xl font-extrabold">Evolução</h1>
+
+    <section class="glass-card mt-6 rounded-3xl p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Meta da semana</p><h2 id="goal-summary" class="mt-1 text-xl font-extrabold">0 de 3 treinos</h2><p id="goal-message" class="mt-1 text-sm text-gray-500">Defina uma meta para começar.</p></div>
+        <div class="rounded-2xl bg-neon/10 px-3 py-2 text-right"><strong id="week-percent" class="block text-xl text-neon">0%</strong><span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">concluído</span></div>
+      </div>
+      <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div id="goal-progress" class="h-full rounded-full bg-neon transition-all duration-300"></div></div>
+      <div class="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-white/5 p-3"><label class="text-sm font-bold" for="weekly-goal">Treinos por semana</label><div class="flex items-center gap-2"><button id="goal-down" class="flex h-10 w-10 items-center justify-center rounded-xl bg-black/20 text-lg" aria-label="Reduzir meta">−</button><output id="weekly-goal" class="w-5 text-center font-bold">3</output><button id="goal-up" class="flex h-10 w-10 items-center justify-center rounded-xl bg-neon text-lg font-bold text-black" aria-label="Aumentar meta">+</button></div></div>
+    </section>
+
+    <section class="mt-4 grid grid-cols-2 gap-3">
+      <article class="glass-card rounded-3xl p-4"><p class="text-xs text-gray-400">Sequência atual</p><strong id="streak" class="mt-1 block text-2xl text-neon">0 semanas</strong><p class="mt-1 text-xs text-gray-500">metas seguidas</p></article>
+      <article class="glass-card rounded-3xl p-4"><p class="text-xs text-gray-400">Treinos concluídos</p><strong id="workout-total" class="mt-1 block text-2xl">0</strong><p id="series-total" class="mt-1 text-xs text-gray-500">0 séries registradas</p></article>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <div class="flex items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Comparativo corporal</p><h2 class="mt-1 font-bold">Peso e meta</h2></div><span id="body-status" class="rounded-xl bg-white/5 px-2 py-1 text-xs text-gray-400">Sem meta</span></div>
+      <div class="mt-4 grid grid-cols-3 gap-2 text-center"><div class="rounded-2xl bg-white/5 p-3"><span class="block text-[10px] uppercase text-gray-500">In&iacute;cio</span><strong id="body-start" class="mt-1 block text-sm">—</strong></div><div class="rounded-2xl bg-neon/10 p-3"><span class="block text-[10px] uppercase text-neon">Atual</span><strong id="body-current" class="mt-1 block text-sm">—</strong></div><div class="rounded-2xl bg-white/5 p-3"><span class="block text-[10px] uppercase text-gray-500">Meta</span><strong id="body-target" class="mt-1 block text-sm">—</strong></div></div>
+      <p id="body-summary" class="mt-3 text-sm text-gray-500">Registre o peso e uma meta para ver sua trajet&oacute;ria.</p>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Medidas</p><h2 class="mt-1 font-bold">Comparativo em cent&iacute;metros</h2>
+      <p id="measurement-summary" class="mt-2 text-sm text-gray-500">Registre uma primeira medida para acompanhar as mudan&ccedil;as.</p>
+      <div class="mt-4 grid grid-cols-2 gap-3"><label class="text-xs text-gray-400">Cintura<input id="measure-waist" inputmode="decimal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" placeholder="cm"></label><label class="text-xs text-gray-400">Peito<input id="measure-chest" inputmode="decimal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" placeholder="cm"></label><label class="text-xs text-gray-400">Bra&ccedil;o<input id="measure-arm" inputmode="decimal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" placeholder="cm"></label><label class="text-xs text-gray-400">Quadril<input id="measure-hip" inputmode="decimal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" placeholder="cm"></label></div>
+      <button id="save-measures" class="mt-4 min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold">Registrar medidas</button>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Progresso privado</p><h2 class="mt-1 font-bold">Fotos de evolu&ccedil;&atilde;o</h2>
+      <p class="mt-2 text-sm text-gray-500">As fotos ficam comprimidas e salvas somente no seu perfil. M&aacute;ximo de 5 fotos.</p>
+      <input id="progress-photo" class="mt-4 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Selecionar foto de progresso">
+      <button id="save-photo" class="mt-3 min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold">Adicionar foto</button>
+      <div id="progress-photos" class="mt-4 grid grid-cols-3 gap-2"></div>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <div class="flex items-center justify-between"><h2 class="font-bold">Calendário</h2><span id="calendar-title" class="text-sm text-gray-400"></span></div>
+      <p class="mt-1 text-xs text-gray-500">Os dias em verde têm treino concluído.</p>
+      <div class="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-gray-500"><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span><span>D</span></div>
+      <div id="calendar" class="mt-2 grid grid-cols-7 gap-1"></div>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <h2 class="font-bold">Badges</h2>
+      <p class="mt-1 text-xs text-gray-500">Marcos do seu próprio histórico.</p>
+      <div id="badges" class="mt-4 grid grid-cols-2 gap-2"></div>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs text-gray-400">Peso mais recente</p>
+      <strong id="last-weight" class="mt-1 block text-3xl text-neon">— kg</strong>
+      <p id="weight-change" class="mt-2 text-sm text-gray-500">Registre o primeiro peso para acompanhar.</p>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <h2 class="font-bold">Registrar peso</h2>
+      <div class="mt-4 flex gap-2"><input id="weight" inputmode="decimal" placeholder="Ex.: 75,5" class="min-w-0 flex-1 rounded-xl bg-card-dark-2 px-4 text-white"><button id="save" class="min-h-12 rounded-xl bg-neon px-4 font-bold text-black">Salvar</button></div>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5"><h2 class="font-bold">Histórico de peso</h2><div id="history" class="mt-4 space-y-2"></div></section>
+  </main>
+  <script type="module" src="../js/pages/evolucao.js"></script>
+</body>
+</html>

@@ -14,6 +14,58 @@ html, body {
   min-height: 100dvh;
 }
 
+/* Preferências de acessibilidade e tema, aplicadas sem dependências externas. */
+body[data-theme="light"] { background: #f4f7f5; color: #17201b; }
+body[data-theme="light"].app-surface { background: radial-gradient(ellipse 90% 42% at 50% -10%, rgba(30,115,73,.12), transparent 65%), #f4f7f5; color: #17201b; }
+body[data-theme="light"] .glass-card { background: linear-gradient(145deg, #fff, #f8fbf9); border-color: #dce7df; box-shadow: 0 8px 24px rgba(18,45,29,.05); }
+body[data-theme="light"] .bg-card-dark, body[data-theme="light"] .bg-card-dark-2 { background-color: #eef3ef !important; }
+body[data-theme="light"] .bg-white\/5, body[data-theme="light"] .bg-white\/10 { background-color: rgba(23,32,27,.055) !important; }
+body[data-theme="light"] .border-white\/5, body[data-theme="light"] .border-white\/10 { border-color: #dce7df !important; }
+body[data-theme="light"] .text-white, body[data-theme="light"] .text-gray-200, body[data-theme="light"] .text-gray-300 { color: #17201b !important; }
+body[data-theme="light"] .text-gray-400 { color: #52645a !important; }
+body[data-theme="light"] .text-gray-500, body[data-theme="light"] .text-gray-600 { color: #6b7d72 !important; }
+body[data-theme="light"] input, body[data-theme="light"] select, body[data-theme="light"] textarea { color: #17201b !important; background-color: #eef3ef !important; border-color: #d3e0d7 !important; }
+body[data-theme="light"] .mol-bottom-nav { background: rgba(255,255,255,.94) !important; border-color: #dce7df !important; }
+body[data-theme="light"] .mol-brand { color: #17201b; }
+body[data-theme="light"] .text-black { color: #07140c !important; }
+
+/* Blocos adicionados ao Perfil seguem a mesma linguagem dos cards nativos. */
+#mol-accessibility, #mol-backup {
+  background: linear-gradient(145deg, rgba(28,32,29,.94), rgba(15,18,16,.94));
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 1.5rem;
+}
+#mol-accessibility select {
+  display: block;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: .5rem;
+  padding: 0 .95rem;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 1rem;
+  background: #1a1e1b;
+  color: #f8fafc;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  outline: none;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+#mol-accessibility select:focus { border-color: #1e7349; box-shadow: 0 0 0 3px rgba(30,115,73,.16); }
+#mol-accessibility label { color: #9ca3af; font-size: .75rem; font-weight: 700; letter-spacing: .02em; }
+#mol-accessibility input[type="checkbox"] { accent-color: #1e7349; }
+#mol-backup button { min-height: 3rem; border-radius: 1rem; }
+body[data-theme="light"] #mol-accessibility,
+body[data-theme="light"] #mol-backup { background: linear-gradient(145deg,#fff,#f8fbf9); border-color:#dce7df; }
+body[data-theme="light"] #mol-accessibility select { background:#eef3ef; border-color:#d3e0d7; color:#17201b; box-shadow:none; }
+.theme-segments button { background: rgba(255,255,255,.05); color: #9ca3af; transition: background .18s ease, color .18s ease; }
+.theme-segments button.is-active { background: #1e7349; color: #07140c; }
+body[data-theme="light"] .theme-segments button { background:#eef3ef; color:#52645a; }
+body[data-theme="light"] .theme-segments button.is-active { background:#1e7349; color:#fff; }
+body[data-high-contrast="true"] { filter: contrast(1.18); }
+body[data-large-text="true"] { font-size: 112.5%; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+
 /* Mobile first: evita que a barra fixa e o notch cubram conteúdo ou controles. */
 body { padding-bottom: max(7rem, calc(5.5rem + env(safe-area-inset-bottom))); }
 nav.fixed { padding-bottom: env(safe-area-inset-bottom); }
@@ -72,6 +124,41 @@ a:focus-visible {
     #070a08;
 }
 
+/* Casca compartilhada: todas as telas se comportam como parte do mesmo app. */
+.app-surface main {
+  width: 100%;
+  max-width: 32rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.app-surface .glass-card { border-radius: 1.5rem; }
+.app-surface button, .app-surface a { -webkit-tap-highlight-color: transparent; }
+.app-surface button:active, .app-surface .mol-nav-item:active { transform: scale(.98); }
+.mol-bottom-nav { background: rgba(16, 20, 17, .94) !important; border-color: rgba(255,255,255,.1) !important; backdrop-filter: blur(18px); }
+.mol-bottom-nav > div {
+  width: min(100%, 32rem);
+  min-height: 4.75rem;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  align-items: center;
+}
+.mol-nav-item { min-width: 3.5rem; min-height: 3.1rem; display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; transition: color .2s ease, transform .15s ease; }
+.mol-bottom-nav .mol-nav-item.text-neon { color: #1e7349 !important; }
+
+/* Retornos internos usam o mesmo tom neutro e área de toque do restante do app. */
+#back {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: .5rem 0;
+  border: 0;
+  background: transparent;
+  color: #9ca3af !important;
+}
+
+#back:active { color: #2fbf78 !important; }
+
 select {
   color-scheme: dark;
 }
@@ -91,6 +178,23 @@ select option {
   border: 1px solid rgba(255, 255, 255, 0.075);
 }
 
+.mol-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  color: #f8fafc;
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.mol-brand img {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: .6rem;
+}
+
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -99,7 +203,7 @@ select option {
 
 /* Tablets: mantém a leitura em uma largura confortável e aproveita espaço para listas. */
 @media (min-width: 768px) {
-  .max-w-md { max-width: 56rem; }
+  .max-w-md { max-width: 32rem; }
   body { padding-bottom: max(7.5rem, calc(6rem + env(safe-area-inset-bottom))); }
   /* Nunca cria cards estreitos: só abre uma nova coluna com ao menos 22rem livres. */
   #rotinas-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; }
@@ -111,7 +215,7 @@ select option {
 
 /* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */
 @media (min-width: 1024px) {
-  .max-w-md { max-width: 68rem; }
+  .max-w-md { max-width: 32rem; }
   #view-detalhe { max-width: 52rem; }
   #exercicios-list { max-width: 52rem; }
 }
@@ -119,6 +223,9 @@ select option {
 /* Celular horizontal: reduz respiros verticais e preserva controles acima da navegação. */
 @media (orientation: landscape) and (max-height: 600px) {
   body { padding-bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
+  .app-surface main { max-width: 42rem; }
+  .mol-bottom-nav > div { min-height: 4.25rem; max-width: 42rem; }
+  .mol-nav-item { min-height: 2.75rem; }
   .pt-8 { padding-top: 1.25rem; }
   .pb-6, .pb-7 { padding-bottom: 1rem; }
   #rest-timer { bottom: max(4.75rem, calc(4rem + env(safe-area-inset-bottom))); }

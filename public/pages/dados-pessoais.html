@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="google" content="notranslate">
+  <title>Mol</title>
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface min-h-screen text-white">
+  <main class="mx-auto max-w-md px-5 pt-6 pb-10">
+    <button id="back" class="text-sm font-bold text-gray-400">&larr; Perfil</button>
+    <p class="mt-5 text-xs font-semibold uppercase tracking-wider text-neon">Seu perfil</p>
+    <h1 class="mt-1 text-2xl font-extrabold">Dados e metas</h1>
+    <section class="glass-card mt-6 rounded-3xl p-5">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="text-xs text-gray-400">Altura (cm)<input id="height" inputmode="numeric" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off"></label>
+        <label class="text-xs text-gray-400">Meta de peso (kg)<input id="goal-weight" inputmode="decimal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off"></label>
+      </div>
+      <label class="mt-4 block text-xs text-gray-400">Objetivo<select id="goal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white"><option value="">Selecione</option><option>Hipertrofia</option><option>For&ccedil;a</option><option>Emagrecimento</option><option>Sa&uacute;de</option></select></label>
+      <label class="mt-4 block text-xs text-gray-400">Meta semanal de treinos<input id="weekly" inputmode="numeric" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off"></label>
+      <button id="save" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar dados</button>
+    </section>
+  </main>
+  <script type="module" src="../js/pages/dados-pessoais.js"></script>
+</body>
+</html>

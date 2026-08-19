@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="google" content="notranslate">
+  <title>Mol</title>
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface min-h-screen text-white">
+  <main class="mx-auto max-w-md px-5 pt-6 pb-10">
+    <button id="back" class="text-sm font-bold text-gray-400">&larr; Perfil</button>
+    <p class="mt-5 text-xs font-semibold uppercase tracking-wider text-neon">Prefer&ecirc;ncias</p>
+    <h1 class="mt-1 text-2xl font-extrabold">Configura&ccedil;&otilde;es</h1>
+    <section class="glass-card mt-6 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Acessibilidade</p>
+      <h2 class="mt-1 text-lg font-extrabold">Apar&ecirc;ncia</h2>
+      <div id="theme-segments" class="mt-5 grid grid-cols-3 gap-2"></div>
+      <label class="mt-5 flex min-h-11 items-center justify-between text-sm">Contraste elevado<input id="contrast" type="checkbox" class="h-5 w-5"></label>
+      <label class="mt-4 flex min-h-11 items-center justify-between text-sm">Texto ampliado<input id="large-text" type="checkbox" class="h-5 w-5"></label>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Lembretes</p>
+      <h2 class="mt-1 text-lg font-extrabold">Notifica&ccedil;&otilde;es locais</h2>
+      <label class="mt-4 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 text-sm"><span>Ativar lembretes</span><input id="reminders-enabled" type="checkbox" class="h-5 w-5 accent-neon"></label>
+      <div id="reminder-options" class="mt-3 grid grid-cols-2 gap-3"><label class="text-xs text-gray-400">Treino<input id="workout-time" type="time" class="mt-1 min-h-11 w-full rounded-xl bg-card-dark-2 px-3 text-white"></label><label class="text-xs text-gray-400">Refei&ccedil;&atilde;o<input id="meal-time" type="time" class="mt-1 min-h-11 w-full rounded-xl bg-card-dark-2 px-3 text-white"></label></div>
+      <button id="test-reminder" class="mt-4 min-h-11 w-full rounded-xl bg-white/5 text-sm font-bold">Testar notifica&ccedil;&atilde;o</button>
+      <p id="reminder-note" class="mt-3 text-xs leading-relaxed text-gray-500">Os avisos funcionam enquanto o Mol estiver aberto ou em segundo plano. Para alertas com o app totalmente fechado seria necessário um servidor de push.</p>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Aplicativo</p>
+      <h2 class="mt-1 text-lg font-extrabold">Instalar o Mol</h2>
+      <p id="install-note" class="mt-2 text-sm text-gray-500">Instale para abrir em tela cheia e manter o acesso rápido.</p>
+      <button id="install-app" class="mt-4 min-h-12 w-full rounded-2xl bg-neon text-sm font-bold text-black">Instalar aplicativo</button>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Idioma</p>
+      <h2 class="mt-1 text-lg font-extrabold">Idioma e regi&atilde;o</h2>
+      <div id="language-segments" class="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Idioma preferido"></div>
+      <p class="mt-3 text-xs text-gray-500">A prefer&ecirc;ncia ajusta idioma, datas e n&uacute;meros. A interface em ingl&ecirc;s ser&aacute; expandida gradualmente.</p>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5">
+      <p class="text-xs font-semibold uppercase tracking-wider text-neon">Conta</p>
+      <h2 class="mt-1 text-lg font-extrabold">Sess&atilde;o e seguran&ccedil;a</h2>
+      <p id="session-email" class="mt-2 text-sm text-gray-500"></p>
+      <button id="sign-out" class="mt-4 min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold">Sair desta conta</button>
+      <button id="delete-account" class="mt-3 min-h-12 w-full rounded-2xl border border-red-400/40 bg-red-500/10 text-sm font-bold text-red-300">Excluir conta e dados</button>
+      <p class="mt-3 text-xs leading-relaxed text-gray-500">A exclus&atilde;o remove perfil, fotos, treinos, sess&otilde;es, pesos e dietas. Essa a&ccedil;&atilde;o n&atilde;o pode ser desfeita.</p>
+    </section>
+  </main>
+  <script type="module" src="../js/pages/configuracoes.js"></script>
+</body>
+</html>

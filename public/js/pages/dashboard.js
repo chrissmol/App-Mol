@@ -3,6 +3,9 @@ import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/f
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { showToast } from '../utils/ui.js';
+import { setupAppShell } from '../utils/app-shell.js';
+
+setupAppShell();
 
 document.documentElement.setAttribute('translate', 'no');
 document.documentElement.classList.add('notranslate');
@@ -12,6 +15,7 @@ const draftKey = id => `mol-workout-draft-${id}`;
 const dayLabel = ['D','S','T','Q','Q','S','S'];
 const defaultCards = [
   { id: 'today-card', label: 'Treino de hoje', visible: true },
+  { id: 'next-meal-card', label: 'Próxima refeição', visible: true },
   { id: 'weekly-card', label: 'Progresso semanal', visible: true },
   { id: 'last-session-card', label: 'Última sessão', visible: true },
   { id: 'weight-card', label: 'Evolução de peso', visible: true },
@@ -58,6 +62,27 @@ function setToday(routines, user) {
   lucide.createIcons();
 }
 
+function setNextMeal(meals) {
+  const card = $('next-meal-card');
+  if (!card) return;
+  const ordered = [...meals].filter(meal => meal?.hora).sort((a, b) => a.hora.localeCompare(b.hora));
+  const now = new Date().toTimeString().slice(0, 5);
+  const next = ordered.find(meal => meal.hora >= now) || ordered[0];
+  if (!next) { card.classList.add('hidden'); return; }
+  $('next-meal-name').textContent = next.nome || 'Refeição';
+  $('next-meal-meta').textContent = `${next.hora} Â· ${(next.alimentos || next.itens || []).length} alimento(s)`;
+  card.classList.remove('hidden');
+}
+
+async function loadNextMeal(userId) {
+  try {
+    const snapshot = await getDoc(doc(db, 'dietas', userId));
+    setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []);
+  } catch (error) {
+    console.warn('Próxima refeição não carregada:', error.message);
+  }
+}
+
 function setupDashboardCards() {
   const sections = document.querySelectorAll('main > section');
   if (sections[1]) sections[1].id = 'weekly-card';
@@ -68,15 +93,24 @@ function setupDashboardCards() {
     card.innerHTML = '<div class="flex items-center justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Última sessão</p><h2 id="last-session-title" class="mt-1 text-lg font-extrabold">Ainda não há sessões</h2><p id="last-session-meta" class="mt-1 text-sm text-gray-500">Conclua um treino para acompanhar.</p></div><i data-lucide="clock-3" class="h-5 w-5 text-neon"></i></div>';
     document.getElementById('weekly-card').after(card);
   }
+  if (!document.getElementById('next-meal-card')) {
+    const card = document.createElement('section'); card.id = 'next-meal-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
+    card.innerHTML = '<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400"></p></div><a href="./pages/dieta.html" aria-label="Abrir dieta" class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></a></div>';
+    document.getElementById('today-card').after(card);
+  }
   if (!document.getElementById('weight-card')) {
     const card = document.createElement('section'); card.id = 'weight-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
     card.innerHTML = '<div class="flex items-center justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><a href="./pages/perfil.html" class="rounded-xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></a></div>';
     document.getElementById('last-session-card').after(card);
   }
   const header = document.querySelector('header');
+  const headerContent = header.querySelector('div');
+  if (!document.getElementById('dashboard-brand')) {
+    headerContent.insertAdjacentHTML('afterbegin', '<a id="dashboard-brand" class="mol-brand" href="./index.html" aria-label="Ir para o início"><img src="./assets/mol-mark.svg" alt="">Mol</a>');
+  }
   if (!document.getElementById('btn-edit-dashboard')) {
     const button = document.createElement('button'); button.id = 'btn-edit-dashboard'; button.className = 'mt-3 text-xs font-bold text-gray-500 active:text-neon'; button.innerHTML = '<i data-lucide="sliders-horizontal" class="mr-1 inline h-3.5 w-3.5"></i> Editar painel';
-    header.querySelector('div').appendChild(button); button.addEventListener('click', openDashboardEditor);
+    headerContent.appendChild(button); button.addEventListener('click', openDashboardEditor);
   }
 }
 
@@ -101,7 +135,19 @@ function openDashboardEditor() {
 
 onAuthStateChanged(auth, async user => {
   if (!user) return window.location.href = './pages/login.html';
-  dashboardUser = user; setupDashboardCards();
+  dashboardUser = user;
+  // O esqueleto do Início não depende do banco: aparece assim que a sessão existe.
+  $('app-body').classList.remove('opacity-0');
+  $('user-name').textContent = user.displayName?.trim().split(/\s+/)[0] || 'Atleta';
+  setupDashboardCards();
+  // Carrega a agenda alimentar em paralelo ao restante do painel.
+  void loadNextMeal(user.uid);
+  // Leituras independentes comeÃ§am juntas, importante em conexÃµes mÃ³veis.
+  const dashboardData = {
+    routines: getDocs(query(collection(db, 'treinos'), where('userId', '==', user.uid))),
+    sessions: getDocs(query(collection(db, 'sessoes'), where('userId', '==', user.uid))),
+    weights: getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid)))
+  };
   const localCards = JSON.parse(localStorage.getItem(`mol-dashboard-${user.uid}`) || 'null');
   if (localCards) dashboardCards = localCards;
   try { const profile = await getDoc(doc(db, 'users', user.uid)); if (profile.exists() && Array.isArray(profile.data().dashboardCards)) dashboardCards = profile.data().dashboardCards; } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
@@ -111,22 +157,23 @@ onAuthStateChanged(auth, async user => {
   $('week-label').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
   if (user.photoURL) { $('user-avatar').src = user.photoURL; $('user-avatar').classList.remove('hidden'); $('default-avatar-icon').classList.add('hidden'); }
   try {
-    const routineSnapshot = await getDocs(query(collection(db, 'treinos'), where('userId', '==', user.uid)));
+    const routineSnapshot = await dashboardData.routines;
     const routines = routineSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     setToday(routines, user);
     try {
-      const sessionSnapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', user.uid)));
+      const sessionSnapshot = await dashboardData.sessions;
       setWeek(sessionSnapshot.docs.map(d => d.data()));
     } catch (error) {
       console.error('Erro ao carregar sessões:', error.code, error.message);
       setWeek([]);
       showToast(error.code === 'permission-denied' ? 'Sem permissão para ler sessões. Revise as regras do Firestore.' : 'O histórico não pôde ser carregado agora.');
     }
-    try { const weightSnapshot = await getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid))); const weights = weightSnapshot.docs.map(d => d.data()).sort((a,b)=>(a.registradoEm?.seconds||0)-(b.registradoEm?.seconds||0)); const last=weights.at(-1); if(last){ $('dashboard-weight').textContent=`${Number(last.pesoKg).toLocaleString('pt-BR')} kg`; $('dashboard-weight-meta').textContent=weights.length>1?`${(Number(last.pesoKg)-Number(weights[0].pesoKg)).toLocaleString('pt-BR',{signDisplay:'always'})} kg desde o início.`:'Primeiro registro corporal.'; } } catch(error) { console.warn('Peso não carregado:',error.message); }
+    try { const weightSnapshot = await dashboardData.weights; const weights = weightSnapshot.docs.map(d => d.data()).sort((a,b)=>(a.registradoEm?.seconds||0)-(b.registradoEm?.seconds||0)); const last=weights.at(-1); if(last){ $('dashboard-weight').textContent=`${Number(last.pesoKg).toLocaleString('pt-BR')} kg`; $('dashboard-weight-meta').textContent=weights.length>1?`${(Number(last.pesoKg)-Number(weights[0].pesoKg)).toLocaleString('pt-BR',{signDisplay:'always'})} kg desde o início.`:'Primeiro registro corporal.'; } } catch(error) { console.warn('Peso não carregado:',error.message); }
   } catch (error) {
     console.error('Erro ao carregar rotinas:', error.code, error.message);
     showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas agora.');
   }
 });
-document.querySelectorAll('[data-coming-soon]').forEach(button => button.addEventListener('click', () => showToast(`${button.dataset.comingSoon} estará disponível em breve.`)));
+document.querySelectorAll('[data-coming-soon]').forEach(button => button.addEventListener('click', () => button.dataset.comingSoon === 'Dieta' ? window.location.href = './pages/dieta.html' : showToast(`${button.dataset.comingSoon} estará disponível em breve.`)));
 document.title = 'Mol';
+document.head.insertAdjacentHTML('beforeend', '<link rel="icon" type="image/svg+xml" href="./assets/mol-mark.svg">');

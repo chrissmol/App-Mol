@@ -56,5 +56,15 @@ service cloud.firestore {
       allow create: if ownsNew() && validWeight();
       allow update: if ownsExisting() && ownsNew() && validWeight();
     }
+
+    match /dietas/{dietaId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsNew()
+        && request.resource.data.refeicoes is list
+        && request.resource.data.refeicoes.size() <= 12;
+      allow update: if ownsExisting() && ownsNew()
+        && request.resource.data.refeicoes is list
+        && request.resource.data.refeicoes.size() <= 12;
+    }
   }
 }

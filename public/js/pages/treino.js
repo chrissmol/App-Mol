@@ -2,8 +2,10 @@
 document.title = 'Mol';
 import { auth, db } from '../config/firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, addDoc, getDocs, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { showToast, confirmAction, escapeHTML } from '../utils/ui.js';
+import { setupAppShell } from '../utils/app-shell.js';
+setupAppShell();
 
 let usuarioAtual = null;
 let rotinasReais = []; 
@@ -17,6 +19,7 @@ let descansoSegundos = 90;
 let descansoTotal = 90;
 let descansoInterval = null;
 let finalizandoTreino = false;
+let checkinPreTreino = null;
 
 const draftKey = (id) => `mol-workout-draft-${id}`;
 function lerRascunho(id) {
@@ -27,12 +30,27 @@ function salvarRascunho() {
   if (!usuarioAtual || !rotinaAbertaId) return;
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina) return;
-  try { localStorage.setItem(draftKey(usuarioAtual.uid), JSON.stringify({ rotinaId: rotinaAbertaId, exercicios: rotina.exercicios, tempoSegundos, iniciadaEm: sessaoIniciadaEm?.toISOString() })); }
+  try { localStorage.setItem(draftKey(usuarioAtual.uid), JSON.stringify({ rotinaId: rotinaAbertaId, exercicios: rotina.exercicios, tempoSegundos, iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino })); }
   catch (error) { console.warn('Não foi possível salvar o rascunho local.', error); }
 }
 function limparRascunho() { if (usuarioAtual) localStorage.removeItem(draftKey(usuarioAtual.uid)); }
 
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
+// Funciona tanto no Live Server quanto no build do Vite, sem tentar executar o SVG como JavaScript.
+const exerciseFigure = new URL('../../assets/exercise-figure.svg', import.meta.url).href;
+let favoritosExercicios = [];
+let recentesExercicios = [];
+let exerciciosPersonalizados = [];
+const ultimaPerformance = new Map();
+const historicoPerformance = new Map();
+const bibliotecaKey = () => `mol-exercise-library-${usuarioAtual?.uid || 'guest'}`;
+function salvarPreferenciasBiblioteca() { localStorage.setItem(bibliotecaKey(), JSON.stringify({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados })); if (usuarioAtual) setDoc(doc(db, 'users', usuarioAtual.uid), { exerciseLibraryPreferences: { favoritosExercicios, recentesExercicios, exerciciosPersonalizados } }, { merge: true }).catch(error => console.warn('Preferências locais não sincronizadas:', error.message)); }
+function carregarPreferenciasBiblioteca() { try { ({ favoritosExercicios = [], recentesExercicios = [], exerciciosPersonalizados = [] } = JSON.parse(localStorage.getItem(bibliotecaKey()) || '{}')); exerciciosPersonalizados.forEach(ex => { if (!bibliotecaDeExercicios.some(item => item.nome === ex.nome)) bibliotecaDeExercicios.push(ex); }); } catch { favoritosExercicios = []; recentesExercicios = []; exerciciosPersonalizados = []; } }
+async function carregarPreferenciasDaConta() { try { const snapshot = await getDoc(doc(db, 'users', usuarioAtual.uid)); const prefs = snapshot.data()?.exerciseLibraryPreferences; if (!prefs) return; favoritosExercicios = prefs.favoritosExercicios || favoritosExercicios; recentesExercicios = prefs.recentesExercicios || recentesExercicios; exerciciosPersonalizados = prefs.exerciciosPersonalizados || exerciciosPersonalizados; exerciciosPersonalizados.forEach(ex => { if (!bibliotecaDeExercicios.some(item => item.nome === ex.nome)) bibliotecaDeExercicios.push(ex); }); localStorage.setItem(bibliotecaKey(), JSON.stringify({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados })); renderizarBiblioteca(inputBuscaExercicio?.value || ''); } catch (error) { console.warn('Preferências da conta não carregadas:', error.message); } }
+async function carregarUltimasPerformances() { try { const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid))); const sessoes = snapshot.docs.map(item => item.data()).sort((a, b) => (b.concluidoEm?.seconds || 0) - (a.concluidoEm?.seconds || 0)); sessoes.forEach(sessao => (sessao.exercicios || []).forEach(exercicio => { const serie = [...(exercicio.series || [])].reverse().find(item => item.concluida && Number(item.kg) >= 0 && Number(item.reps) > 0); if (!serie) return; const registro = { kg: Number(serie.kg), reps: Number(serie.reps) }; const lista = historicoPerformance.get(exercicio.nome) || []; lista.push(registro); historicoPerformance.set(exercicio.nome, lista); if (!ultimaPerformance.has(exercicio.nome)) ultimaPerformance.set(exercicio.nome, registro); })); renderizarBiblioteca(inputBuscaExercicio?.value || ''); } catch (error) { console.warn('Últimas performances não carregadas:', error.message); } }
+function equipamentoDo(ex) { const nome = ex.nome.toLowerCase(); if (nome.includes('máquina') || nome.includes('cadeira') || nome.includes('smith') || nome.includes('hack')) return 'Máquina'; if (nome.includes('polia') || nome.includes('cabo')) return 'Polia'; if (nome.includes('halter')) return 'Halteres'; if (nome.includes('barra')) return 'Barra'; return 'Peso corporal'; }
+function registrarRecente(nome) { recentesExercicios = [nome, ...recentesExercicios.filter(item => item !== nome)].slice(0, 12); salvarPreferenciasBiblioteca(); }
+window.alternarFavoritoExercicio = nome => { favoritosExercicios = favoritosExercicios.includes(nome) ? favoritosExercicios.filter(item => item !== nome) : [...favoritosExercicios, nome]; salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); };
 
 const viewRotinas = document.getElementById('view-rotinas');
 const viewDetalhe = document.getElementById('view-detalhe');
@@ -66,6 +84,9 @@ onAuthStateChanged(auth, (user) => {
   if (!user) window.location.href = './login.html';
   else {
     usuarioAtual = user;
+    carregarPreferenciasBiblioteca();
+    void carregarPreferenciasDaConta();
+    void carregarUltimasPerformances();
     carregarRotinasDoBanco();
     renderizarBiblioteca();
   }
@@ -191,10 +212,10 @@ function pararDescanso() {
   restTimer.classList.add('hidden');
 }
 
-function iniciarDescanso() {
+function iniciarDescanso(indexExercicio) {
   clearInterval(descansoInterval);
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
-  const exercise = rotina?.exercicios?.find(ex => ex.series?.some(s => s.concluida));
+  const exercise = rotina?.exercicios?.[indexExercicio] || rotina?.exercicios?.find(ex => ex.series?.some(s => s.concluida));
   descansoSegundos = exercise?.descansoSegundos || 90; descansoTotal = descansoSegundos;
   restTimer.classList.remove('hidden'); atualizarDescanso();
   descansoInterval = setInterval(() => {
@@ -329,6 +350,12 @@ window.editarRotina = (id) => {
 
 window.iniciarTreinoDaEdicao = () => {
   if (!rotinaAbertaId) return;
+  const energia = prompt('Check-in rápido — energia de 1 a 5', '3');
+  if (energia === null) return;
+  const sono = prompt('Sono de 1 a 5', '3');
+  const dor = prompt('Dor muscular de 0 a 5', '0');
+  checkinPreTreino = { energia: Math.min(5, Math.max(1, Number(energia) || 3)), sono: Math.min(5, Math.max(1, Number(sono) || 3)), dor: Math.min(5, Math.max(0, Number(dor) || 0)) };
+  if (checkinPreTreino.energia <= 2 || checkinPreTreino.dor >= 4) showToast('Hoje priorize técnica e reduza carga se necessário.');
   iniciarCronometroGlobal();
   abrirRotina(rotinaAbertaId);
 };
@@ -406,9 +433,11 @@ window.escolherExercicio = async (nomeExercicio) => {
   if (!rotina) return;
 
   const catalogo = bibliotecaDeExercicios.find(ex => ex.nome === nomeExercicio);
-  const novoExercicio = { nome: nomeExercicio, grupo: catalogo?.grupo || 'Outros', descansoSegundos: 90, notas: '', series: [{ tipo: 'N', kg: '', reps: '', rir: '', anteriorKg: '', anteriorReps: '', concluida: false }] };
+  const ultimo = ultimaPerformance.get(nomeExercicio);
+  const novoExercicio = { nome: nomeExercicio, grupo: catalogo?.grupo || 'Outros', descansoSegundos: 90, notas: '', series: [{ tipo: 'N', kg: '', reps: '', rir: '', anteriorKg: ultimo?.kg ?? '', anteriorReps: ultimo?.reps ?? '', concluida: false }] };
   if (!rotina.exercicios) rotina.exercicios = [];
   rotina.exercicios.push(novoExercicio);
+  registrarRecente(nomeExercicio);
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
@@ -419,12 +448,57 @@ window.escolherExercicio = async (nomeExercicio) => {
 // ---------------------------------------------
 // RENDERIZAR BIBLIOTECA DE EXERCÍCIOS (COM BUSCA AO DIGITAR)
 // ---------------------------------------------
+let filtroMuscular = '';
+function grupoDetalhado(exercicio) {
+  const nome = exercicio.nome.toLowerCase();
+  if (exercicio.grupo === 'Peito' || exercicio.grupo === 'Costas' || exercicio.grupo === 'Ombros' || exercicio.grupo === 'Abdômen') return exercicio.grupo;
+  if (exercicio.grupo === 'Bíceps' || exercicio.grupo === 'Tríceps' || exercicio.grupo === 'Antebraço') return 'Braços';
+  if (nome.includes('flexora') || nome.includes('stiff') || nome.includes('romeno') || nome.includes('nórdica') || nome.includes('good morning')) return 'Posterior';
+  if (nome.includes('glúteo') || nome.includes('pélvica') || nome.includes('abdutora') || nome.includes('abdução') || nome.includes('hip thrust')) return 'Glúteos';
+  if (exercicio.grupo === 'Pernas') return 'Quadríceps';
+  return exercicio.grupo;
+}
+
+function orientacaoDo(exercicio) {
+  const n = exercicio.nome.toLowerCase();
+  if (n.includes('supino') || n.includes('chest press')) return { execucao: 'Apoie escápulas no banco, mantenha os pés firmes e desça a carga até uma posição confortável no peito. Empurre sem perder a retração dos ombros.', erros: 'Cotovelo excessivamente aberto, quadril saindo do banco, barra quicando no peito e ombros projetados à frente.' };
+  if (n.includes('agachamento') || n.includes('leg press') || n.includes('hack')) return { execucao: 'Mantenha o pé inteiro apoiado, joelhos acompanhando a linha dos pés e tronco firme. Desça somente até onde mantém coluna neutra e controle.', erros: 'Joelhos cedendo para dentro, calcanhar levantando, encurtar amplitude por carga alta e perder a lombar no fundo.' };
+  if (n.includes('extensora')) return { execucao: 'Ajuste o eixo da máquina ao joelho, mantenha quadril no encosto e estenda com controle. Pause brevemente no topo sem chutar a carga.', erros: 'Tirar o quadril do banco, usar impulso, travar o joelho com força e deixar a carga despencar.' };
+  if (n.includes('flexora') || n.includes('stiff') || n.includes('romeno') || n.includes('good morning')) return { execucao: 'Inicie pelo quadril: mantenha a coluna neutra, leve o quadril para trás e sinta alongar o posterior. Suba contraindo glúteos, sem hiperestender a lombar.', erros: 'Arredondar a lombar, dobrar demais o joelho no stiff, transformar o movimento em agachamento e usar balanço.' };
+  if (n.includes('pélvica') || n.includes('hip thrust') || n.includes('glute bridge')) return { execucao: 'Mantenha costelas baixas, queixo levemente recolhido e empurre o chão pelos calcanhares. Termine com quadril neutro e glúteos contraídos.', erros: 'Hiperestender a lombar no topo, abrir os joelhos sem controle, pés muito distantes e descer rápido demais.' };
+  if (n.includes('puxada') || n.includes('pulldown') || n.includes('barra fixa')) return { execucao: 'Comece deprimindo as escápulas e puxe os cotovelos em direção às costelas. Mantenha peito alto sem jogar o tronco para trás.', erros: 'Puxar só com bíceps, elevar ombros, usar balanço do corpo e encurtar a volta da carga.' };
+  if (n.includes('remada')) return { execucao: 'Trave o tronco, inicie o movimento pelas escápulas e leve os cotovelos para trás. Pause perto do fim da puxada e retorne devagar.', erros: 'Balançar o tronco, encolher os ombros, puxar para o pescoço e perder a posição lombar.' };
+  if (n.includes('lateral') || n.includes('ombro') || n.includes('desenvolvimento')) return { execucao: 'Mantenha costelas controladas e suba a carga no plano da escápula. Use amplitude confortável e cadência constante.', erros: 'Roubar com lombar, encolher trapézio, usar impulso e descer sem controle.' };
+  if (n.includes('rosca')) return { execucao: 'Mantenha cotovelos estáveis e punhos neutros. Suba contraindo bíceps e desça em dois a três segundos.', erros: 'Balançar o tronco, levar cotovelos à frente demais, dobrar punhos e encurtar a descida.' };
+  if (n.includes('tríceps') || n.includes('francês') || n.includes('testa')) return { execucao: 'Estabilize ombros e cotovelos; mova somente o antebraço. Estenda até contrair o tríceps sem perder o controle.', erros: 'Abrir cotovelos, usar ombro para empurrar, compensar com lombar e travar articulações com força.' };
+  return { execucao: 'Ajuste o equipamento ao seu corpo, faça repetições lentas e mantenha amplitude que permita controle e postura estável.', erros: 'Aumentar a carga antes de dominar a técnica, usar impulso, encurtar a fase de retorno e ignorar desconforto articular.' };
+}
+
+window.abrirDetalheExercicio = (nome) => {
+  const exercicio = bibliotecaDeExercicios.find(item => item.nome === nome); if (!exercicio) return;
+  const grupo = grupoDetalhado(exercicio); const equipamento = equipamentoDo(exercicio);
+  const orientacao = orientacaoDo(exercicio);
+  const historico = (historicoPerformance.get(nome) || []).slice(0, 6).reverse();
+  const cargas = historico.map(item => item.kg); const maxCarga = Math.max(...cargas, 1);
+  const pontos = cargas.map((carga, index) => `${index * (100 / Math.max(cargas.length - 1, 1))},${40 - (carga / maxCarga) * 34}`).join(' ');
+  const melhor = historico.reduce((max, item) => Math.max(max, item.kg * (1 + item.reps / 30)), 0);
+  const substitutos = bibliotecaDeExercicios.filter(item => item.nome !== nome && grupoDetalhado(item) === grupo).slice(0, 3);
+  document.getElementById('exercise-detail')?.remove();
+  const modal = document.createElement('div'); modal.id = 'exercise-detail'; modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
+  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl bg-[#161a17] p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div class="mt-5 flex gap-4"><img src="${exerciseFigure}" alt="" class="h-20 w-16 rounded-2xl bg-white/5 p-2"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">${grupo}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p></div></div>${historico.length ? `<section class="mt-5 rounded-2xl bg-white/[.03] p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button data-close class="min-h-12 rounded-2xl bg-white/5 font-bold text-gray-300">Fechar</button><button data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
+  modal.onclick = event => { if (event.target === modal) modal.remove(); }; document.body.appendChild(modal);
+  modal.querySelector('[data-close]').onclick = () => modal.remove(); modal.querySelector('[data-add]').onclick = () => { modal.remove(); window.escolherExercicio(nome); };
+};
+
 function renderizarBiblioteca(filtro = '') {
   if (!bibliotecaList) return;
 
   const termo = filtro.toLowerCase().trim();
-  const exerciciosFiltrados = bibliotecaDeExercicios.filter(ex => 
-    ex.nome.toLowerCase().includes(termo) || ex.grupo.toLowerCase().includes(termo)
+  const sinonimos = { peitoral: 'peito', chest: 'peito', dorsal: 'costas', lombar: 'costas', biceps: 'bíceps', triceps: 'tríceps', perna: 'quadríceps' };
+  const termoExpandido = sinonimos[termo] || termo;
+  const exerciciosFiltrados = bibliotecaDeExercicios.filter(ex =>
+    (ex.nome.toLowerCase().includes(termo) || ex.grupo.toLowerCase().includes(termo) || grupoDetalhado(ex).toLowerCase().includes(termoExpandido)) &&
+    (!filtroMuscular || (filtroMuscular === 'Favoritos' ? favoritosExercicios.includes(ex.nome) : filtroMuscular === 'Recentes' ? recentesExercicios.includes(ex.nome) : grupoDetalhado(ex) === filtroMuscular || equipamentoDo(ex) === filtroMuscular))
   );
 
   if (exerciciosFiltrados.length === 0) {
@@ -433,12 +507,16 @@ function renderizarBiblioteca(filtro = '') {
   }
 
   bibliotecaList.innerHTML = exerciciosFiltrados.map(ex => `
-    <div class="flex items-center justify-between bg-card-dark p-4 rounded-xl border border-white/5 active:bg-white/5 transition-colors cursor-pointer mb-2" onclick="escolherExercicio('${ex.nome}')">
-      <div>
+    <div class="flex items-center justify-between bg-card-dark p-3 rounded-xl border border-white/5 active:bg-white/5 transition-colors mb-2">
+      <img src="${exerciseFigure}" alt="" class="mr-3 h-12 w-10 shrink-0 rounded-lg bg-white/5 p-1">
+      <div class="min-w-0 flex-1 text-left">
         <p class="font-bold text-sm text-white">${ex.nome}</p>
-        <p class="text-xs text-gray-500">${ex.grupo}</p>
+        <p class="text-xs text-gray-500">${grupoDetalhado(ex)} · ${ex.grupo}</p>
+        ${ultimaPerformance.has(ex.nome) ? `<p class="mt-1 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="mt-1 text-xs text-gray-600">Sem histórico ainda</p>'}
       </div>
-      <i data-lucide="plus-circle" class="w-5 h-5 text-neon"></i>
+      <button type="button" onclick="alternarFavoritoExercicio('${ex.nome}')" aria-label="Favoritar ${ex.nome}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 active:bg-white/10 ${favoritosExercicios.includes(ex.nome) ? 'text-neon' : 'text-gray-500'}"><i data-lucide="star" class="h-5 w-5 ${favoritosExercicios.includes(ex.nome) ? 'fill-current' : ''}"></i></button>
+      <button type="button" onclick="abrirDetalheExercicio('${ex.nome}')" aria-label="Ver detalhes de ${ex.nome}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-400 active:bg-white/10"><i data-lucide="info" class="h-5 w-5"></i></button>
+      <button type="button" onclick="escolherExercicio('${ex.nome}')" aria-label="Adicionar ${ex.nome}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neon/15 text-neon active:bg-neon active:text-black"><i data-lucide="plus" class="h-5 w-5"></i></button>
     </div>
   `).join('');
   
@@ -452,10 +530,33 @@ if (inputBuscaExercicio) {
   });
 }
 
+document.querySelectorAll('[data-exercise-filter]').forEach(button => button.addEventListener('click', () => {
+  filtroMuscular = button.dataset.exerciseFilter || '';
+  document.querySelectorAll('[data-exercise-filter]').forEach(item => {
+    const ativo = item === button;
+    item.classList.toggle('bg-neon', ativo); item.classList.toggle('text-black', ativo);
+    item.classList.toggle('bg-white/5', !ativo); item.classList.toggle('text-gray-300', !ativo);
+  });
+  renderizarBiblioteca(inputBuscaExercicio?.value || '');
+}));
+
+function prepararAtalhosBiblioteca() {
+  if (document.getElementById('library-shortcuts')) return;
+  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button data-library-filter="Favoritos" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button data-library-filter="Recentes" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button data-library-filter="Máquina" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button data-library-filter="Polia" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
+  document.querySelectorAll('[data-library-filter]').forEach(button => button.onclick = () => { filtroMuscular = button.dataset.libraryFilter; renderizarBiblioteca(inputBuscaExercicio?.value || ''); });
+  document.getElementById('create-custom-exercise').onclick = () => {
+    const nome = prompt('Nome do exercício'); if (!nome?.trim()) return;
+    const grupo = prompt('Grupo muscular', 'Outros')?.trim() || 'Outros';
+    const novo = { nome: nome.trim(), grupo, personalizado: true };
+    exerciciosPersonalizados.push(novo); bibliotecaDeExercicios.push(novo); salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); showToast('Exercício personalizado criado.', 'success');
+  };
+}
+
 // Garantir que a busca limpa ao abrir a tela de adicionar exercício
 if (btnAddExercicio) {
   btnAddExercicio.addEventListener('click', () => {
     esconderTudo();
+    prepararAtalhosBiblioteca();
     if (inputBuscaExercicio) inputBuscaExercicio.value = '';
     renderizarBiblioteca('');
     viewBiblioteca.classList.remove('hidden');
@@ -504,6 +605,8 @@ window.abrirRotina = (id) => {
     }
   }
 
+  const seriesPlanejadas = (rotina.exercicios || []).reduce((total, ex) => total + (ex.series || []).length, 0);
+  const minutosEstimados = Math.max(15, Math.round(seriesPlanejadas * 3.25));
   const painelMetricasHTML = treinoIniciado ? `
     <div class="mb-4 overflow-hidden rounded-2xl border border-white/5 bg-card-dark p-3 text-center"><div class="grid grid-cols-3 gap-2">
       <div>
@@ -519,7 +622,7 @@ window.abrirRotina = (id) => {
         <p class="text-sm font-bold text-white mt-0.5">${seriesFeitas}/${totalSeries}</p>
       </div>
     </div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><p class="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão</p></div>
-  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">Ajuste exercícios, séries e metas sem registrar um treino.</p></div><button onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
+  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
   const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 bg-card-dark p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-card-dark-2 px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div></div>`;
   
   if (!rotina.exercicios || rotina.exercicios.length === 0) {
@@ -672,7 +775,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
     abrirRotina(rotinaAbertaId);
     salvarRascunho();
-    if (serie.concluida) iniciarDescanso();
+    if (serie.concluida) iniciarDescanso(indexEx);
   } catch (error) { console.error(error); }
 };
 
@@ -745,6 +848,7 @@ window.finalizarEConcluirTreino = async () => {
       exercicios: sessaoConcluida,
       volumeTotal: resumoVolume,
       duracaoSegundos: duracaoConcluida,
+      checkinPreTreino,
       iniciadaEm: sessaoIniciadaEm || serverTimestamp(),
       concluidoEm: serverTimestamp()
     });
