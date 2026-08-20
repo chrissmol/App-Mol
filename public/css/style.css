@@ -1,14 +1,14 @@
 /* ==================================================================
    style.css
    ------------------------------------------------------------------
-   Estilos globais do Pulse que o Tailwind (utilitário) não cobre
+   Estilos globais do Mol que o Tailwind (utilitário) não cobre
    bem: fontes, glow, scrollbar, transições. Importado por TODAS
    as páginas via <link rel="stylesheet" href="../css/style.css">
    ================================================================== */
 
 html, body {
   background-color: #070a08;
-  font-family: 'Inter', sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
   min-height: 100dvh;
@@ -23,47 +23,24 @@ body[data-theme="light"] .bg-white\/5, body[data-theme="light"] .bg-white\/10 { 
 body[data-theme="light"] .border-white\/5, body[data-theme="light"] .border-white\/10 { border-color: #dce7df !important; }
 body[data-theme="light"] .text-white, body[data-theme="light"] .text-gray-200, body[data-theme="light"] .text-gray-300 { color: #17201b !important; }
 body[data-theme="light"] .text-gray-400 { color: #52645a !important; }
-body[data-theme="light"] .text-gray-500, body[data-theme="light"] .text-gray-600 { color: #6b7d72 !important; }
+body[data-theme="light"] .text-gray-500, body[data-theme="light"] .text-gray-600 { color: #52645a !important; }
 body[data-theme="light"] input, body[data-theme="light"] select, body[data-theme="light"] textarea { color: #17201b !important; background-color: #eef3ef !important; border-color: #d3e0d7 !important; }
 body[data-theme="light"] .mol-bottom-nav { background: rgba(255,255,255,.94) !important; border-color: #dce7df !important; }
 body[data-theme="light"] .mol-brand { color: #17201b; }
 body[data-theme="light"] .text-black { color: #07140c !important; }
 
-/* Blocos adicionados ao Perfil seguem a mesma linguagem dos cards nativos. */
-#mol-accessibility, #mol-backup {
-  background: linear-gradient(145deg, rgba(28,32,29,.94), rgba(15,18,16,.94));
-  border: 1px solid rgba(255,255,255,.075);
-  border-radius: 1.5rem;
-}
-#mol-accessibility select {
-  display: block;
-  width: 100%;
-  min-height: 3.25rem;
-  margin-top: .5rem;
-  padding: 0 .95rem;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 1rem;
-  background: #1a1e1b;
-  color: #f8fafc;
-  font-size: .875rem;
-  font-weight: 600;
-  line-height: 1.25rem;
-  outline: none;
-  box-shadow: inset 0 1px rgba(255,255,255,.025);
-}
-#mol-accessibility select:focus { border-color: #1e7349; box-shadow: 0 0 0 3px rgba(30,115,73,.16); }
-#mol-accessibility label { color: #9ca3af; font-size: .75rem; font-weight: 700; letter-spacing: .02em; }
-#mol-accessibility input[type="checkbox"] { accent-color: #1e7349; }
-#mol-backup button { min-height: 3rem; border-radius: 1rem; }
-body[data-theme="light"] #mol-accessibility,
-body[data-theme="light"] #mol-backup { background: linear-gradient(145deg,#fff,#f8fbf9); border-color:#dce7df; }
-body[data-theme="light"] #mol-accessibility select { background:#eef3ef; border-color:#d3e0d7; color:#17201b; box-shadow:none; }
+/* O verde da marca atende contraste com branco; preto sobre #1e7349 não atende texto pequeno. */
+body .bg-neon.text-black,
+body .active\:bg-neon:active,
+.peer:checked ~ .peer-checked\:bg-neon { color: #fff !important; }
+.bg-red-500 { background-color: #b91c1c !important; }
+
 .theme-segments button { background: rgba(255,255,255,.05); color: #9ca3af; transition: background .18s ease, color .18s ease; }
-.theme-segments button.is-active { background: #1e7349; color: #07140c; }
+.theme-segments button.is-active { background: #1e7349; color: #fff; }
 body[data-theme="light"] .theme-segments button { background:#eef3ef; color:#52645a; }
 body[data-theme="light"] .theme-segments button.is-active { background:#1e7349; color:#fff; }
 body[data-high-contrast="true"] { filter: contrast(1.18); }
-body[data-large-text="true"] { font-size: 112.5%; }
+html[data-large-text="true"] { font-size: 112.5%; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
 
 /* Mobile first: evita que a barra fixa e o notch cubram conteúdo ou controles. */
@@ -77,9 +54,11 @@ input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* Esconde a barra de rolagem mas mantém o scroll funcional */
-::-webkit-scrollbar { display: none; }
-* { scrollbar-width: none; }
+/* Barra discreta, mas visível para indicar conteúdo rolável no desktop. */
+* { scrollbar-width: thin; scrollbar-color: rgba(47,191,120,.45) transparent; }
+::-webkit-scrollbar { width: .4rem; height: .4rem; }
+::-webkit-scrollbar-thumb { background: rgba(47,191,120,.45); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
 
 /* Texto com leve brilho neon — usado em números/títulos de destaque */
 .text-glow {
@@ -94,6 +73,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 /* Foco visível para acessibilidade (navegação por teclado) */
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
 a:focus-visible {
   outline: 2px solid #2fbf78;
   outline-offset: 2px;
@@ -135,6 +117,11 @@ a:focus-visible {
 .dashboard-surface .text-neon { color: #57d493 !important; }
 .dashboard-surface .bg-neon { background-color: #1e7349 !important; }
 body[data-theme="light"].dashboard-surface .text-neon { color: #17623e !important; }
+.app-surface .text-neon { color: #57d493 !important; }
+.app-surface .text-gray-500, .app-surface .text-gray-600 { color: #8b9a91 !important; }
+body[data-theme="light"].app-surface .text-neon { color: #17623e !important; }
+body[data-theme="light"].app-surface .text-gray-500,
+body[data-theme="light"].app-surface .text-gray-600 { color: #52645a !important; }
 .app-surface main > header:first-child,
 .app-surface main > :first-child:not([hidden]) {
   scroll-margin-top: 1rem;
@@ -163,7 +150,7 @@ body[data-theme="light"].dashboard-surface .text-neon { color: #17623e !importan
 .mol-nav-item svg { width: 1.25rem; height: 1.25rem; stroke-width: 2; }
 .mol-nav-item span { font-size: .625rem; line-height: 1rem; font-weight: 600; }
 .mol-nav-item[aria-current="page"] span { font-weight: 800; }
-.mol-bottom-nav .mol-nav-item.text-neon { color: #1e7349 !important; }
+.mol-bottom-nav .mol-nav-item.text-neon { color: #57d493 !important; }
 .dashboard-surface .mol-bottom-nav .mol-nav-item.text-neon { color: #57d493 !important; }
 body[data-theme="light"].dashboard-surface .mol-bottom-nav .mol-nav-item.text-neon { color: #17623e !important; }
 
@@ -179,6 +166,9 @@ body[data-theme="light"].dashboard-surface .mol-bottom-nav .mol-nav-item.text-ne
 }
 
 #back:active { color: #2fbf78 !important; }
+
+/* Regra global de cabeçalho: retorno interno e marca nunca aparecem juntos. */
+body:has(#back) .mol-brand { display: none !important; }
 
 select {
   color-scheme: dark;

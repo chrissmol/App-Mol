@@ -10,15 +10,16 @@
 
 import {
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   onAuthStateChanged,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from 'firebase/auth';
 import {
   doc,
   setDoc,
   getDoc,
   serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from 'firebase/firestore';
 import { auth, db, googleProvider } from "../config/firebase-config.js";
 
 /**
@@ -30,7 +31,17 @@ import { auth, db, googleProvider } from "../config/firebase-config.js";
  */
 export async function loginWithGoogle() {
   const result = await signInWithPopup(auth, googleProvider);
-  const user = result.user;
+  return result.user;
+}
+
+/** Usa navegação completa quando o navegador bloqueia popups. */
+export function loginWithGoogleRedirect() {
+  return signInWithRedirect(auth, googleProvider);
+}
+
+/** Cria somente os dados ausentes do perfil; uma falha aqui não desfaz o login. */
+export async function ensureUserProfile(user) {
+  if (!user) return null;
 
   const userRef = doc(db, "users", user.uid);
   const userSnap = await getDoc(userRef);
@@ -44,7 +55,9 @@ export async function loginWithGoogle() {
       createdAt: serverTimestamp(),
       // Valores padrão do app — ajustáveis depois na tela de Perfil
       dailyCalorieGoal: 2400,
+      metaCalorias: 2400,
       macroGoals: { protein: 180, carbs: 250, fat: 70 },
+      metaSemanal: 3,
     });
   }
 

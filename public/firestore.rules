@@ -58,11 +58,13 @@ service cloud.firestore {
     }
 
     match /dietas/{dietaId} {
-      allow read, delete: if ownsExisting();
-      allow create: if ownsNew()
+      allow read, delete: if ownsExisting() && dietaId == request.auth.uid;
+      allow create: if ownsNew() && dietaId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'atualizadoEm'])
         && request.resource.data.refeicoes is list
         && request.resource.data.refeicoes.size() <= 12;
-      allow update: if ownsExisting() && ownsNew()
+      allow update: if ownsExisting() && ownsNew() && dietaId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'atualizadoEm'])
         && request.resource.data.refeicoes is list
         && request.resource.data.refeicoes.size() <= 12;
     }

@@ -1,1 +1,51 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Mol — Progresso</title><script src="https://cdn.tailwindcss.com"></script><script src="../js/config/tailwind.config.js"></script><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><script src="https://unpkg.com/lucide@latest"></script><link rel="stylesheet" href="../css/style.css"></head><body class="app-surface min-h-screen pb-28 text-white"><main class="mx-auto max-w-md px-5 pt-8"><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Evolução</p><h1 class="mt-1 text-2xl font-extrabold">Progresso</h1><section class="glass-card mt-6 rounded-3xl p-5"><h2 class="font-bold">Volume semanal por músculo</h2><div id="volume" class="mt-5 space-y-4"></div></section><section class="glass-card mt-4 rounded-3xl p-5"><h2 class="font-bold">Recordes pessoais</h2><div id="prs" class="mt-4 space-y-3"></div></section></main><nav class="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-[#101411]/90 backdrop-blur-xl"><div class="mx-auto flex max-w-md justify-around py-3"><a href="../index.html" class="text-gray-500"><i data-lucide="house" class="h-5 w-5"></i></a><a href="./treino.html" class="text-gray-500"><i data-lucide="dumbbell" class="h-5 w-5"></i></a><a href="./historico.html" class="text-gray-500"><i data-lucide="calendar-days" class="h-5 w-5"></i></a><a href="./progresso.html" class="text-neon"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></a></div></nav><script>lucide.createIcons()</script><script type="module" src="../js/pages/progresso.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070a08">
+  <meta name="google" content="notranslate">
+  <title>Mol</title>
+  <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface min-h-screen text-white">
+  <main class="mx-auto max-w-md px-5 pb-28 pt-6">
+    <header>
+      <a id="back" href="./treino.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para treinos"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Treinos</span></a>
+      <p class="mt-4 text-xs font-semibold uppercase tracking-[.16em] text-neon">Desempenho</p>
+      <h1 class="mt-1 text-2xl font-extrabold">Progresso</h1>
+      <p class="mt-2 text-sm text-gray-500">Entenda a distribuição dos treinos e acompanhe suas melhores marcas.</p>
+    </header>
+
+    <section class="mt-6 grid grid-cols-3 gap-2" aria-label="Resumo do progresso">
+      <article class="glass-card rounded-2xl p-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-neon/10 text-neon"><i data-lucide="layers-3" class="h-4 w-4"></i></span><strong id="weekly-sets" class="mt-3 block text-xl" aria-live="polite">—</strong><p id="summary-period" class="mt-1 text-[10px] uppercase text-gray-500">séries em 7 dias</p></article>
+      <article class="glass-card rounded-2xl p-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-neon/10 text-neon"><i data-lucide="dumbbell" class="h-4 w-4"></i></span><strong id="trained-groups" class="mt-3 block text-xl" aria-live="polite">—</strong><p class="mt-1 text-[10px] uppercase text-gray-500">grupos treinados</p></article>
+      <article class="glass-card rounded-2xl p-3"><span class="flex h-8 w-8 items-center justify-center rounded-xl bg-neon/10 text-neon"><i data-lucide="trophy" class="h-4 w-4"></i></span><strong id="record-count" class="mt-3 block text-xl" aria-live="polite">—</strong><p class="mt-1 text-[10px] uppercase text-gray-500">exercícios monitorados</p></article>
+    </section>
+
+    <div class="mt-4 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Período da distribuição"><button type="button" data-period="7" aria-pressed="true" class="min-h-10 rounded-xl bg-neon px-4 text-xs font-bold text-black">7 dias</button><button type="button" data-period="30" aria-pressed="false" class="min-h-10 rounded-xl bg-white/5 px-4 text-xs font-bold text-gray-400">30 dias</button><button type="button" data-period="90" aria-pressed="false" class="min-h-10 rounded-xl bg-white/5 px-4 text-xs font-bold text-gray-400">90 dias</button></div>
+
+    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="distribution-title">
+      <div class="flex items-start justify-between gap-4"><div><p id="period-label" class="text-xs font-semibold uppercase tracking-wider text-neon">Últimos 7 dias</p><h2 id="distribution-title" class="mt-1 font-bold">Séries por grupo muscular</h2></div><span class="rounded-xl bg-white/5 p-2 text-gray-400"><i data-lucide="chart-no-axes-column-increasing" class="h-5 w-5"></i></span></div>
+      <p class="mt-2 text-xs leading-relaxed text-gray-500">Séries concluídas, sem contar aquecimentos.</p>
+      <div id="volume" class="mt-5 min-h-20 space-y-4" aria-live="polite"><p class="text-sm text-gray-500">Carregando distribuição…</p></div>
+    </section>
+
+    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="records-title">
+      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Melhores marcas</p><h2 id="records-title" class="mt-1 font-bold">Recordes pessoais</h2></div><span class="rounded-xl bg-white/5 p-2 text-gray-400"><i data-lucide="medal" class="h-5 w-5"></i></span></div>
+      <p class="mt-2 text-xs leading-relaxed text-gray-500">Melhor estimativa de cada exercício, com até 15 repetições. Exercícios diferentes não são comparados entre si.</p>
+      <div id="prs" class="mt-5 min-h-20 space-y-3" aria-live="polite"><p class="text-sm text-gray-500">Carregando recordes…</p></div>
+    </section>
+
+    <section class="mt-4 grid grid-cols-2 gap-3">
+      <a href="./historico.html" class="glass-card rounded-2xl p-4"><i data-lucide="calendar-days" class="h-5 w-5 text-neon"></i><h2 class="mt-3 text-sm font-bold">Ver histórico</h2><p class="mt-1 text-xs text-gray-500">Revise cada sessão.</p></a>
+      <a href="./evolucao.html" class="glass-card rounded-2xl p-4"><i data-lucide="ruler" class="h-5 w-5 text-neon"></i><h2 class="mt-3 text-sm font-bold">Evolução corporal</h2><p class="mt-1 text-xs text-gray-500">Peso, medidas e metas.</p></a>
+    </section>
+  </main>
+  <nav class="fixed bottom-0 left-0 right-0 border-t border-white/10"></nav>
+  <script type="module" src="../js/pages/progresso.js"></script>
+</body>
+</html>

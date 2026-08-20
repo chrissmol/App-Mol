@@ -27,10 +27,11 @@ No Console Firebase, confirme em **Firestore Database → Rules** que a data de 
 ## 3. Publicar o site
 
 ```powershell
+npm run check
 firebase deploy --only hosting
 ```
 
-O Hosting é gratuito para este projeto dentro das cotas do plano Spark. O arquivo `firebase.json` já está preparado para publicar a pasta atual.
+O Hosting é gratuito para este projeto dentro das cotas do plano Spark. O arquivo `firebase.json` publica somente o build validado em `dist/`; a configuração equivalente na raiz aponta para `public/dist/`.
 
 ## 4. Login Google em desenvolvimento e produção
 

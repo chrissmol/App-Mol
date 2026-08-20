@@ -1,146 +1,271 @@
 import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { Timestamp, addDoc, collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { enhanceSelects, setButtonLoading, showToast } from '../utils/ui.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { Timestamp, collection, doc, getDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
+import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
+import { setupAppShell } from '../utils/app-shell.js';
+import { syncAccessibilityForUser } from '../utils/accessibility.js';
+import { BACKUP_COLLECTIONS, BACKUP_FILE_LIMIT, normalizeBackup, parsePersonalData } from '../modules/personal-data.js';
+import { normalizeDietMeals } from '../modules/nutrition.js';
+import { removeSessionItems } from '../utils/storage.js';
 
-enhanceSelects();
+setupAppShell();
 
+const $ = id => document.getElementById(id);
 let currentUser;
-const $ = (id) => document.getElementById(id);
-const collectionsToBackup = ['treinos', 'sessoes', 'pesos', 'dietas'];
-const numericValue = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
+let currentProfile = {};
+let preparedBackup = null;
 
-function addPreferences() {
-  if ($('restore-file')) return;
-  const host = $('save').closest('section');
-  host.insertAdjacentHTML('afterend', `
-    <section class="glass-card mt-4 rounded-3xl p-5">
-      <h2 class="font-bold">Unidades</h2>
-      <p class="mt-1 text-sm text-gray-500">Escolha como prefere ver peso e altura.</p>
-      <div class="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Unidades de medida">
-        <button data-unit="kg" class="unit min-h-11 rounded-xl text-sm font-bold">kg / cm</button>
-        <button data-unit="lb" class="unit min-h-11 rounded-xl text-sm font-bold">lb / ft</button>
-      </div>
-    </section>
-    <section class="glass-card mt-4 rounded-3xl p-5">
-      <h2 class="font-bold">Privacidade e backup</h2>
-      <p class="mt-1 text-sm text-gray-500">Os seus dados pertencem à sua conta. Nenhum perfil ou estatística fica público por padrão.</p>
-      <label class="mt-4 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 text-sm">
-        <span>Manter perfil privado</span>
-        <input id="profile-private" type="checkbox" class="h-5 w-5 accent-neon">
-      </label>
-      <label class="mt-2 flex min-h-12 items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 text-sm">
-        <span>Compartilhar estatísticas</span>
-        <input id="share-stats" type="checkbox" class="h-5 w-5 accent-neon">
-      </label>
-      <input id="restore-file" class="mt-4 block w-full text-sm" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup">
-      <p class="mt-2 text-xs text-gray-500">A restauração adiciona os registros à conta atual; ela não apaga o que você já tem.</p>
-      <div class="mt-3 grid grid-cols-2 gap-2">
-        <button id="export" class="min-h-12 rounded-xl bg-white/5 text-sm font-bold">Exportar</button>
-        <button id="restore" class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Restaurar</button>
-      </div>
-    </section>`);
+function setPageState(state, message = '') {
+  $('page-status').classList.toggle('hidden', state === 'ready');
+  $('personal-content').classList.toggle('hidden', state !== 'ready');
+  if (state !== 'ready') $('page-status').innerHTML = '';
+  if (state === 'loading') $('page-status').textContent = message || 'Carregando seus dados…';
+  if (state === 'error') {
+    const text = document.createElement('span');
+    text.textContent = message || 'Não foi possível carregar seus dados.';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'mt-3 block min-h-10 w-full rounded-xl bg-white/5 text-sm font-bold text-white';
+    retry.textContent = 'Tentar novamente';
+    retry.onclick = loadProfile;
+    $('page-status').append(text, retry);
+  }
 }
 
-function updateUnitButtons(unit) {
-  document.querySelectorAll('.unit').forEach((button) => {
-    const selected = button.dataset.unit === unit;
-    button.classList.toggle('bg-neon', selected);
-    button.classList.toggle('text-black', selected);
-    button.classList.toggle('bg-white/5', !selected);
-    button.classList.toggle('text-gray-300', !selected);
-    button.setAttribute('aria-pressed', String(selected));
-  });
+function fillProfile(profile) {
+  $('height').value = Number(profile.alturaCm) > 0 ? profile.alturaCm : '';
+  $('goal-weight').value = Number(profile.metaPesoKg) > 0 ? profile.metaPesoKg : '';
+  $('goal').value = ['Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'].includes(profile.objetivo) ? profile.objetivo : '';
+  $('weekly').value = Number(profile.metaSemanal) >= 1 && Number(profile.metaSemanal) <= 7 ? profile.metaSemanal : '';
 }
 
-async function exportBackup(profile) {
-  const records = await Promise.all(collectionsToBackup.map(async (name) => {
-    const snapshot = await getDocs(query(collection(db, name), where('userId', '==', currentUser.uid)));
-    return [name, snapshot.docs.map((item) => item.data())];
-  }));
-  const backup = { versao: 1, criadoEm: new Date().toISOString(), perfil, dados: Object.fromEntries(records) };
-  const file = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(file);
-  link.download = `mol-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-function validateBackup(backup) {
-  if (backup?.versao !== 1 || !backup.dados || typeof backup.dados !== 'object') throw new Error('Arquivo inválido');
-  const total = collectionsToBackup.reduce((count, name) => {
-    if (!Array.isArray(backup.dados[name] || [])) throw new Error('Estrutura inválida');
-    return count + (backup.dados[name] || []).length;
-  }, 0);
-  if (total > 1000) throw new Error('Backup muito grande');
+async function loadProfile() {
+  if (!currentUser) return;
+  setPageState('loading');
+  try {
+    const snapshot = await getDoc(doc(db, 'users', currentUser.uid));
+    currentProfile = snapshot.data() || {};
+    fillProfile(currentProfile);
+    setPageState('ready');
+  } catch (error) {
+    console.error('Dados pessoais não carregados:', error);
+    setPageState('error', 'Não foi possível carregar seu perfil agora.');
+  }
 }
 
 function restoreValue(value) {
   if (Array.isArray(value)) return value.map(restoreValue);
   if (!value || typeof value !== 'object') return value;
-  if (Object.keys(value).every((key) => key === 'seconds' || key === 'nanoseconds' || key === 'type') && Number.isFinite(Number(value.seconds)) && Number.isFinite(Number(value.nanoseconds))) {
+  const keys = Object.keys(value);
+  if (keys.every(key => key === 'seconds' || key === 'nanoseconds' || key === 'type') && Number.isFinite(Number(value.seconds)) && Number.isFinite(Number(value.nanoseconds))) {
     return new Timestamp(Number(value.seconds), Number(value.nanoseconds));
   }
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, restoreValue(item)]));
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== '__proto__' && key !== 'constructor' && key !== 'prototype').map(([key, item]) => [key, restoreValue(item)]));
 }
 
-async function restoreBackup() {
-  const file = $('restore-file').files[0];
-  if (!file) throw new Error('Escolha um arquivo');
-  const backup = JSON.parse(await file.text());
-  validateBackup(backup);
-  if (!confirm('A restauração adiciona os dados do backup à conta atual e não remove dados existentes. Continuar?')) return false;
-  for (const name of collectionsToBackup) {
-    for (const item of backup.dados[name] || []) {
-      if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('Registro inválido');
-      const record = { ...restoreValue(item), userId: currentUser.uid };
-      await addDoc(collection(db, name), record);
+async function exportBackup() {
+  const profileSnapshot = await getDoc(doc(db, 'users', currentUser.uid));
+  const records = await Promise.all(BACKUP_COLLECTIONS.map(async name => {
+    if (name === 'dietas') {
+      const snapshot = await getDoc(doc(db, name, currentUser.uid));
+      return [name, snapshot.exists() ? [{ id: snapshot.id, data: snapshot.data() }] : []];
     }
-  }
-  if (backup.perfil && typeof backup.perfil === 'object' && !Array.isArray(backup.perfil)) {
-    await setDoc(doc(db, 'users', currentUser.uid), restoreValue(backup.perfil), { merge: true });
-  }
-  return true;
+    const snapshot = await getDocs(query(collection(db, name), where('userId', '==', currentUser.uid)));
+    return [name, snapshot.docs.map(item => ({ id: item.id, data: item.data() }))];
+  }));
+  return {
+    versao: 2,
+    criadoEm: new Date().toISOString(),
+    origem: 'Mol',
+    perfil: profileSnapshot.data() || {},
+    dados: Object.fromEntries(records)
+  };
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { location.href = './login.html'; return; }
-  currentUser = user;
-  const profile = (await getDoc(doc(db, 'users', user.uid))).data() || {};
-  $('height').value = profile.alturaCm || '';
-  $('goal-weight').value = profile.metaPesoKg || '';
-  $('goal').value = profile.objetivo || '';
-  $('weekly').value = profile.metaSemanal || '';
-  addPreferences();
-  updateUnitButtons(profile.unidades || 'kg');
-  $('profile-private').checked = profile.privacidade?.perfilPrivado !== false;
-  $('share-stats').checked = profile.privacidade?.compartilharEstatisticas === true;
-  document.querySelectorAll('.unit').forEach((button) => {
-    button.onclick = async () => {
-      await setDoc(doc(db, 'users', user.uid), { unidades: button.dataset.unit }, { merge: true });
-      updateUnitButtons(button.dataset.unit);
-    };
+function downloadBackup(backup) {
+  const file = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(file);
+  link.download = `mol-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function uniqueMeals(current, incoming) {
+  const result = [...current];
+  const seen = new Set(current.map(item => JSON.stringify(item)));
+  incoming.forEach(item => {
+    const key = JSON.stringify(item);
+    if (!seen.has(key) && result.length < 12) { result.push(item); seen.add(key); }
   });
-  $('profile-private').onchange = (event) => setDoc(doc(db, 'users', user.uid), { privacidade: { ...profile.privacidade, perfilPrivado: event.target.checked } }, { merge: true });
-  $('share-stats').onchange = (event) => setDoc(doc(db, 'users', user.uid), { privacidade: { ...profile.privacidade, compartilharEstatisticas: event.target.checked } }, { merge: true });
-  $('export').onclick = () => exportBackup(profile).catch(() => alert('Não foi possível exportar seus dados agora.'));
-  $('restore').onclick = () => restoreBackup().then((restored) => { if (restored) alert('Backup restaurado com sucesso.'); }).catch((error) => alert(error.message || 'Não foi possível restaurar este backup.'));
-});
+  return result;
+}
+
+async function portableDocumentId(collectionName, entry, index) {
+  const source = `${currentUser.uid}|${collectionName}|${entry.id || index}|${JSON.stringify(entry.data)}`;
+  if (crypto.subtle) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+    return `restored_${[...new Uint8Array(digest)].slice(0, 16).map(byte => byte.toString(16).padStart(2, '0')).join('')}`;
+  }
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
+  return `restored_${(hash >>> 0).toString(16)}`;
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+async function restoreReferences(collectionName, entries) {
+  return Promise.all(entries.map(async (entry, index) => {
+    const sameAccount = entry.data.userId === currentUser.uid;
+    const id = entry.id && sameAccount ? entry.id : await portableDocumentId(collectionName, entry, index);
+    return { entry, sameAccount, reference: doc(db, collectionName, id) };
+  }));
+}
+
+async function prepareRestoreWrites(backup) {
+  const batch = writeBatch(db);
+  let added = 0;
+  let skipped = 0;
+  const routineIds = new Map();
+  const profile = restoreValue(backup.profile);
+  if (Object.keys(profile).length) batch.set(doc(db, 'users', currentUser.uid), profile, { merge: true });
+
+  const routines = await restoreReferences('treinos', backup.entries.treinos);
+  routines.forEach(({ entry, reference }) => { if (entry.id) routineIds.set(entry.id, reference.id); });
+  const routineSnapshots = await mapWithConcurrency(routines, 20, ({ reference }) => getDoc(reference));
+  routines.forEach(({ entry, reference }, index) => {
+    if (routineSnapshots[index].exists()) { skipped += 1; return; }
+    batch.set(reference, { ...restoreValue(entry.data), userId: currentUser.uid });
+    added += 1;
+  });
+
+  const restoredSessions = await restoreReferences('sessoes', backup.entries.sessoes);
+  const sessionSnapshots = await mapWithConcurrency(restoredSessions, 20, ({ reference }) => getDoc(reference));
+  restoredSessions.forEach(({ entry, reference, sameAccount }, index) => {
+    if (sessionSnapshots[index].exists()) { skipped += 1; return; }
+    const data = { ...restoreValue(entry.data), userId: currentUser.uid };
+    data.rotinaId = routineIds.get(entry.data.rotinaId) || (sameAccount ? entry.data.rotinaId || null : null);
+    batch.set(reference, data);
+    added += 1;
+  });
+
+  const restoredWeights = await restoreReferences('pesos', backup.entries.pesos);
+  const weightSnapshots = await mapWithConcurrency(restoredWeights, 20, ({ reference }) => getDoc(reference));
+  restoredWeights.forEach(({ entry, reference }, index) => {
+    if (weightSnapshots[index].exists()) { skipped += 1; return; }
+    batch.set(reference, { ...restoreValue(entry.data), userId: currentUser.uid });
+    added += 1;
+  });
+
+  const dietReference = doc(db, 'dietas', currentUser.uid);
+  const currentDiet = (await getDoc(dietReference)).data() || {};
+  const incomingMeals = normalizeDietMeals(backup.entries.dietas.flatMap(entry => restoreValue(entry.data).refeicoes || []));
+  if (incomingMeals.length) {
+    const currentMeals = normalizeDietMeals(currentDiet.refeicoes);
+    const meals = uniqueMeals(currentMeals, incomingMeals);
+    batch.set(dietReference, { userId: currentUser.uid, refeicoes: meals, atualizadoEm: new Date().toISOString() });
+    added += Math.max(0, meals.length - currentMeals.length);
+  }
+  return { batch, added, skipped };
+}
 
 $('save').onclick = async () => {
-  if (!currentUser) return showToast('Aguarde o carregamento da sua conta.');
-  const button = $('save');
-  const original = button.innerHTML;
-  setButtonLoading(button, true, original);
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
+  let data;
   try {
-    await setDoc(doc(db, 'users', currentUser.uid), { alturaCm: numericValue($('height').value), metaPesoKg: numericValue($('goal-weight').value), objetivo: $('goal').value, metaSemanal: numericValue($('weekly').value) }, { merge: true });
+    data = parsePersonalData({ height: $('height').value, goalWeight: $('goal-weight').value, goal: $('goal').value, weekly: $('weekly').value });
+  } catch (error) { return showToast(error.message); }
+  const button = $('save');
+  setButtonLoading(button, true);
+  try {
+    await writeBatch(db).set(doc(db, 'users', currentUser.uid), data, { merge: true }).commit();
+    currentProfile = { ...currentProfile, ...data };
+    removeSessionItems(`mol-profile-cache-${currentUser.uid}`);
     showToast('Dados salvos.', 'success');
-    setTimeout(() => { location.href = './perfil.html'; }, 350);
   } catch (error) {
-    console.error(error);
+    console.error('Dados pessoais não salvos:', error);
     showToast('Não foi possível salvar seus dados.');
-    setButtonLoading(button, false, original);
+  } finally { setButtonLoading(button, false); }
+};
+
+$('export').onclick = async () => {
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
+  const button = $('export');
+  setButtonLoading(button, true);
+  try {
+    downloadBackup(await exportBackup());
+    showToast('Backup exportado.', 'success');
+  } catch (error) {
+    console.error('Backup não exportado:', error);
+    showToast('Não foi possível exportar seus dados.');
+  } finally { setButtonLoading(button, false); window.lucide?.createIcons(); }
+};
+
+$('restore-file').onchange = async () => {
+  preparedBackup = null;
+  $('restore').disabled = true;
+  $('restore').classList.add('opacity-50');
+  const file = $('restore-file').files[0];
+  if (!file) { $('restore-summary').textContent = 'Selecione um arquivo JSON gerado pelo Mol.'; return; }
+  if (file.size > BACKUP_FILE_LIMIT) { $('restore-summary').textContent = 'O arquivo excede o limite de 5 MB.'; return; }
+  try {
+    preparedBackup = normalizeBackup(JSON.parse(await file.text()));
+    $('restore-summary').textContent = `Backup v${preparedBackup.version} válido, com ${preparedBackup.total} registros. Pronto para restaurar.`;
+    $('restore').disabled = false;
+    $('restore').classList.remove('opacity-50');
+  } catch (error) {
+    $('restore-summary').textContent = error.message || 'Arquivo de backup inválido.';
   }
 };
-$('back').onclick = () => { window.location.href = './perfil.html'; };
+
+$('restore').onclick = async () => {
+  if (!preparedBackup || !currentUser) return;
+  const confirmed = await confirmAction({ title: 'Restaurar este backup?', message: `O arquivo contém ${preparedBackup.total} registros. Dados com o mesmo ID serão ignorados; novos registros serão adicionados e refeições diferentes serão mescladas.`, confirmText: 'Restaurar' });
+  if (!confirmed) return;
+  const button = $('restore');
+  setButtonLoading(button, true);
+  try {
+    const operation = await prepareRestoreWrites(preparedBackup);
+    await operation.batch.commit();
+    removeSessionItems(
+      `mol-profile-cache-${currentUser.uid}`,
+      `mol-progress-cache-${currentUser.uid}`,
+      `mol-history-cache-${currentUser.uid}`
+    );
+    await syncAccessibilityForUser(currentUser).catch(error => console.warn('Acessibilidade será sincronizada novamente:', error.message));
+    await loadProfile();
+    $('restore-file').value = '';
+    preparedBackup = null;
+    $('restore-summary').textContent = `Restauração concluída: ${operation.added} itens adicionados${operation.skipped ? ` e ${operation.skipped} duplicados ignorados` : ''}.`;
+    showToast('Backup restaurado com sucesso.', 'success');
+  } catch (error) {
+    console.error('Backup não restaurado:', error);
+    showToast('Nenhum dado foi alterado. Não foi possível restaurar o backup.');
+  } finally {
+    setButtonLoading(button, false);
+    button.disabled = !preparedBackup;
+    button.classList.toggle('opacity-50', !preparedBackup);
+    window.lucide?.createIcons();
+  }
+};
+
+onAuthStateChanged(auth, user => {
+  if (!user) { location.href = './login.html'; return; }
+  currentUser = user;
+  loadProfile();
+});
+
+window.lucide?.createIcons();

@@ -1,1 +1,46 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Mol — Histórico</title><script src="https://cdn.tailwindcss.com"></script><script src="../js/config/tailwind.config.js"></script><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><script src="https://unpkg.com/lucide@latest"></script><link rel="stylesheet" href="../css/style.css"></head><body class="app-surface min-h-screen pb-28 text-white"><main class="mx-auto max-w-md px-5 pt-8"><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Consistência</p><h1 class="mt-1 text-2xl font-extrabold">Histórico</h1><section id="calendar" class="glass-card mt-6 rounded-3xl p-5"></section><h2 class="mt-8 text-sm font-semibold uppercase tracking-wider text-gray-400">Sessões concluídas</h2><div id="sessions" class="mt-4 space-y-3"></div></main><nav class="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-[#101411]/90 backdrop-blur-xl"><div class="mx-auto flex max-w-md justify-around py-3"><a href="../index.html" class="text-gray-500"><i data-lucide="house" class="h-5 w-5"></i></a><a href="./treino.html" class="text-gray-500"><i data-lucide="dumbbell" class="h-5 w-5"></i></a><a href="./historico.html" class="text-neon"><i data-lucide="calendar-days" class="h-5 w-5"></i></a><a href="./progresso.html" class="text-gray-500"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></a></div></nav><script>lucide.createIcons()</script><script type="module" src="../js/pages/historico.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070a08">
+  <meta name="google" content="notranslate">
+  <title>Mol</title>
+  <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface min-h-screen text-white">
+  <main class="mx-auto max-w-md px-5 pb-28 pt-6">
+    <header>
+      <a id="back" href="./treino.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para treinos"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Treinos</span></a>
+      <p class="mt-4 text-xs font-semibold uppercase tracking-[.16em] text-neon">Consistência</p>
+      <h1 class="mt-1 text-2xl font-extrabold">Histórico</h1>
+      <p class="mt-2 text-sm text-gray-500">Relembre sua frequência e os resultados de cada treino.</p>
+    </header>
+    <section class="mt-6 grid grid-cols-2 gap-3" aria-label="Resumo do histórico">
+      <article class="glass-card rounded-3xl p-4"><p class="text-xs text-gray-400">Treinos concluídos</p><strong id="total-workouts" class="mt-1 block text-2xl text-neon" aria-live="polite">—</strong><p id="total-workouts-label" class="mt-1 text-xs text-gray-500">carregando histórico</p></article>
+      <article class="glass-card rounded-3xl p-4"><p class="text-xs text-gray-400">Volume acumulado</p><strong id="total-volume" class="mt-1 block text-2xl" aria-live="polite">—</strong><p id="total-volume-label" class="mt-1 text-xs text-gray-500">quilogramas movimentados</p></article>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="calendar-title">
+      <div class="flex items-center justify-between gap-3">
+        <button id="previous-month" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-300" type="button" aria-label="Ver mês anterior"><i data-lucide="chevron-left" class="h-5 w-5"></i></button>
+        <div class="min-w-0 text-center"><h2 id="calendar-title" class="truncate font-bold">Calendário</h2><p id="month-summary" class="mt-1 text-xs text-gray-500" aria-live="polite">Carregando treinos…</p></div>
+        <button id="next-month" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-300" type="button" aria-label="Ver próximo mês"><i data-lucide="chevron-right" class="h-5 w-5"></i></button>
+      </div>
+      <div class="mt-5 grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-gray-500" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+      <div id="calendar" class="mt-2 grid min-h-32 grid-cols-7 gap-1" role="group" aria-label="Dias do mês"></div>
+      <button id="clear-date-filter" type="button" class="mt-4 hidden min-h-10 w-full rounded-xl bg-white/5 text-xs font-bold text-gray-300">Mostrar todo o histórico</button>
+    </section>
+    <section class="mt-7" aria-labelledby="sessions-title">
+      <div class="flex items-end justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Atividade</p><h2 id="sessions-title" class="mt-1 text-lg font-extrabold">Sessões concluídas</h2></div><span id="session-count" class="text-xs text-gray-500"></span></div>
+      <label class="mt-4 flex min-h-12 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4"><i data-lucide="search" class="h-4 w-4 shrink-0 text-gray-500"></i><span class="sr-only">Buscar no histórico</span><input id="history-search" type="search" autocomplete="off" placeholder="Buscar rotina ou exercício" class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-gray-500"></label>
+      <div id="sessions" class="mt-4 space-y-3" aria-live="polite"><div class="glass-card rounded-2xl p-4 text-sm text-gray-500">Carregando sessões…</div></div>
+      <button id="load-more-sessions" type="button" class="mt-4 hidden min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold text-gray-300">Mostrar mais sessões</button>
+    </section>
+  </main>
+  <nav class="fixed bottom-0 left-0 right-0 border-t border-white/10"></nav>
+  <script type="module" src="../js/pages/historico.js"></script>
+</body>
+</html>

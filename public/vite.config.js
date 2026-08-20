@@ -3,14 +3,15 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  publicDir: 'pwa',
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['assets/mol-mark.svg'],
+      includeManifestIcons: false,
       manifest: {
         name: 'Mol',
         short_name: 'Mol',
-        description: 'Treino, evoluÃ§Ã£o e dieta no seu ritmo.',
+        description: 'Treino, evolução e dieta no seu ritmo.',
         theme_color: '#070a08',
         background_color: '#070a08',
         display: 'standalone',
@@ -22,19 +23,26 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        importScripts: ['/notification-sw.js'],
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,woff2}'],
-        runtimeCaching: [{
-          urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/i,
-          handler: 'StaleWhileRevalidate',
-          options: { cacheName: 'google-fonts-stylesheets' }
-        }]
+        runtimeCaching: []
       }
     })
   ],
   build: {
     outDir: 'dist',
+    chunkSizeWarningLimit: 550,
     rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const moduleId = id.replaceAll('\\', '/');
+          if (moduleId.includes('/firebase/firestore/') || moduleId.includes('/@firebase/firestore/') || moduleId.includes('/@firebase/webchannel-wrapper/')) return 'firebase-firestore';
+          if (moduleId.includes('/firebase/auth/') || moduleId.includes('/@firebase/auth/')) return 'firebase-auth';
+          if (moduleId.includes('/@firebase/') || moduleId.includes('/node_modules/firebase/')) return 'firebase-core';
+          if (moduleId.includes('/node_modules/lucide/')) return 'icons';
+        }
+      },
       input: {
         home: resolve(import.meta.dirname, 'index.html'),
         login: resolve(import.meta.dirname, 'pages/login.html'),

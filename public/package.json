@@ -5,23 +5,35 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "npm run build:css && vite build",
-    "build:css": "tailwindcss -i ./css/tailwind.input.css -o ./css/tailwind.css --minify",
+    "build": "npm run build:vendor && npm run build:css && vite build",
+    "build:vendor": "node scripts/build-vendor.mjs",
+    "build:css": "cross-env BROWSERSLIST_IGNORE_OLD_DATA=true tailwindcss -i ./css/tailwind.input.css -o ./css/tailwind.css --minify",
     "preview": "vite preview --host 0.0.0.0",
+    "lint": "eslint js pwa tests rules-tests *.config.js",
     "test": "vitest run",
+    "test:rules": "vitest run --config vitest.rules.config.js",
+    "check:rules": "firebase emulators:exec --project demo-mol --config firebase.json --only firestore \"npm run test:rules\"",
+    "test:html": "html-validate index.html pages/*.html",
+    "check": "npm run lint && npm test && npm run test:html && npm run build",
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@vitejs/plugin-legacy": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
+    "@firebase/rules-unit-testing": "5.0.2",
+    "autoprefixer": "10.5.4",
+    "axe-core": "4.13.0",
+    "cross-env": "10.1.0",
+    "eslint": "10.8.1",
+    "globals": "17.11.0",
+    "html-validate": "11.8.0",
+    "jsdom": "30.0.1",
+    "postcss": "8.5.26",
     "tailwindcss": "3.4.17",
-    "typescript": "latest",
-    "vite": "latest",
-    "vite-plugin-pwa": "latest",
-    "vitest": "latest"
+    "vite": "8.2.1",
+    "vite-plugin-pwa": "1.3.0",
+    "vitest": "4.1.11"
   },
   "dependencies": {
-    "lucide": "^0.468.0"
+    "firebase": "12.18.0",
+    "lucide": "1.33.0"
   }
 }

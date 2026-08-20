@@ -3,25 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="google" content="notranslate">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070a08">
 <title>Mol</title>
+<script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
 <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
 
 <!-- CSS compilado localmente no build -->
 <link rel="stylesheet" href="../css/tailwind.css">
 
-<!-- Fonte Inter -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-<!-- Ícones Lucide -->
-<script src="https://unpkg.com/lucide@latest"></script>
-
 <!-- Estilos globais compartilhados -->
 <link rel="stylesheet" href="../css/style.css">
 </head>
 
-<body class="bg-base-black text-white min-h-screen select-none">
+<body class="bg-base-black text-white min-h-screen">
 
   <!-- Glow radial de fundo, dá profundidade sem sair do preto absoluto -->
   <div class="fixed inset-0 bg-radial-glow pointer-events-none"></div>
@@ -46,10 +41,11 @@
     <div class="w-full space-y-4 pb-2">
 
       <!-- Mensagem de erro (escondida por padrão, controlada via JS) -->
-      <p id="loginError" class="hidden text-danger text-xs font-medium text-center"></p>
+      <p id="loginError" role="alert" aria-live="assertive" class="hidden text-danger text-xs font-medium text-center"></p>
 
       <!-- Botão principal: Entrar com Google -->
       <button
+        type="button"
         id="googleLoginBtn"
         class="w-full bg-white text-black font-bold text-sm rounded-2xl py-4 flex items-center justify-center gap-3 transition-fluid active:scale-[0.98] hover:shadow-glow-sm"
       >
@@ -66,16 +62,16 @@
       <!-- Divisor -->
       <div class="flex items-center gap-3 py-1">
         <span class="flex-1 h-px bg-white/10"></span>
-        <span class="text-[11px] text-gray-600 font-medium">SEGURO E GRATUITO</span>
+        <span class="text-[11px] text-gray-400 font-medium">SEGURO E GRATUITO</span>
         <span class="flex-1 h-px bg-white/10"></span>
       </div>
 
       <!-- Termos atualizados para Mol -->
-      <p class="text-[11px] text-gray-600 text-center leading-relaxed px-4">
+      <p class="text-[11px] text-gray-400 text-center leading-relaxed px-4">
         Ao continuar, você concorda com os
-        <button type="button" data-legal="terms" class="text-[#1E7349] underline underline-offset-2">Termos de Uso</button>
+        <button type="button" data-legal="terms" class="text-[#57d493] underline underline-offset-2">Termos de Uso</button>
         e a
-        <button type="button" data-legal="privacy" class="text-[#1E7349] underline underline-offset-2">Política de Privacidade</button>
+        <button type="button" data-legal="privacy" class="text-[#57d493] underline underline-offset-2">Política de Privacidade</button>
         do Mol.
       </p>
     </div>

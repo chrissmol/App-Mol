@@ -1,42 +1,40 @@
 import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
+import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
+import { dateFrom, monthCalendar, workoutStats } from '../modules/evolution-analytics.js';
+import { removeSessionItems } from '../utils/storage.js';
 
 setupAppShell();
 
+const $ = id => document.getElementById(id);
+const PHOTO_LIMIT = 5;
+const PHOTO_BYTES_LIMIT = 650 * 1024;
 let currentUser;
 let currentGoal = 3;
 let latestProfile = {};
-const $ = (id) => document.getElementById(id);
-const dateFrom = (value) => value?.toDate?.() || (value?.seconds ? new Date(value.seconds * 1000) : null);
-const dayKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-const weekStart = (value) => {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  return date;
-};
-const addDays = (date, days) => { const copy = new Date(date); copy.setDate(copy.getDate() + days); return copy; };
+let sessions = [];
+let weights = [];
+let activeDays = new Set();
+let now = new Date();
+let visibleMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-function workoutStats(sessions) {
-  const dates = sessions.map((item) => dateFrom(item.concluidoEm)).filter(Boolean);
-  const activeDays = new Set(dates.map(dayKey));
-  const weeks = new Map();
-  dates.forEach((date) => {
-    const key = dayKey(weekStart(date));
-    weeks.set(key, (weeks.get(key) || 0) + 1);
-  });
-  const now = new Date();
-  const currentWeek = weekStart(now);
-  let streak = 0;
-  for (let start = currentWeek; ; start = addDays(start, -7)) {
-    if ((weeks.get(dayKey(start)) || 0) < currentGoal) break;
-    streak += 1;
+function setPageState(state, message = '') {
+  $('page-status').classList.toggle('hidden', state === 'ready');
+  $('evolution-content').classList.toggle('hidden', state !== 'ready');
+  if (state !== 'ready') $('page-status').innerHTML = '';
+  if (state === 'loading') $('page-status').textContent = message || 'Carregando sua evolução…';
+  if (state === 'error') {
+    const text = document.createElement('span');
+    text.textContent = message || 'Não foi possível carregar sua evolução.';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'mt-3 block min-h-10 w-full rounded-xl bg-white/5 text-sm font-bold text-white';
+    retry.textContent = 'Tentar novamente';
+    retry.onclick = load;
+    $('page-status').append(text, retry);
   }
-  const series = sessions.reduce((total, session) => total + (session.exercicios || []).reduce((sum, exercise) => sum + (exercise.series || []).filter((set) => set.concluida !== false).length, 0), 0);
-  const volume = sessions.reduce((total, session) => total + Number(session.volumeTotal || 0), 0);
-  return { activeDays, weeks, streak, series, volume, weekly: weeks.get(dayKey(currentWeek)) || 0 };
 }
 
 function renderGoal(stats) {
@@ -49,24 +47,22 @@ function renderGoal(stats) {
   $('goal-message').textContent = done >= currentGoal ? 'Meta da semana concluída. Mantenha o ritmo.' : `Faltam ${currentGoal - done} treino${currentGoal - done === 1 ? '' : 's'} nesta semana.`;
   $('streak').textContent = `${stats.streak} semana${stats.streak === 1 ? '' : 's'}`;
   $('workout-total').textContent = stats.sessions;
-  $('series-total').textContent = `${stats.series} séries registradas`;
+  $('series-total').textContent = `${stats.series} ${stats.series === 1 ? 'série concluída' : 'séries concluídas'}`;
+  $('goal-down').disabled = currentGoal <= 1;
+  $('goal-up').disabled = currentGoal >= 7;
+  $('goal-down').classList.toggle('opacity-30', currentGoal <= 1);
+  $('goal-up').classList.toggle('opacity-30', currentGoal >= 7);
 }
 
-function renderCalendar(activeDays) {
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  const first = new Date(year, month, 1);
-  const count = new Date(year, month + 1, 0).getDate();
-  $('calendar-title').textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(now);
-  const cells = Array.from({ length: first.getDay() }, () => '<span></span>');
-  for (let day = 1; day <= count; day += 1) {
-    const date = new Date(year, month, day);
-    const trained = activeDays.has(dayKey(date));
-    const today = dayKey(date) === dayKey(now);
-    cells.push(`<span class="flex aspect-square items-center justify-center rounded-lg text-xs ${trained ? 'bg-neon font-extrabold text-black' : 'bg-white/5 text-gray-400'} ${today && !trained ? 'ring-1 ring-neon' : ''}" aria-label="${day}${trained ? ', treino concluído' : ''}">${day}</span>`);
-  }
-  $('calendar').innerHTML = cells.join('');
+function renderCalendar() {
+  const calendar = monthCalendar(visibleMonth, activeDays, now);
+  $('calendar-title').textContent = visibleMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const isCurrent = visibleMonth.getFullYear() === now.getFullYear() && visibleMonth.getMonth() === now.getMonth();
+  $('next-month').disabled = isCurrent;
+  $('next-month').classList.toggle('opacity-30', isCurrent);
+  const blanks = Array.from({ length: calendar.leadingBlanks }, () => '<span aria-hidden="true"></span>');
+  const days = calendar.days.map(item => `<span class="flex aspect-square items-center justify-center rounded-lg text-xs ${item.trained ? 'bg-neon font-extrabold text-black' : 'bg-white/5 text-gray-400'} ${item.today && !item.trained ? 'ring-1 ring-neon' : ''}" aria-label="${item.day}${item.trained ? ', treino concluído' : ''}${item.today ? ', hoje' : ''}">${item.day}</span>`);
+  $('calendar').innerHTML = [...blanks, ...days].join('');
 }
 
 function renderBadges(stats) {
@@ -81,31 +77,44 @@ function renderBadges(stats) {
   $('badges').innerHTML = badges.map(([title, detail, earned]) => `<article class="rounded-2xl border p-3 ${earned ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="text-lg">${earned ? '✓' : '○'}</span><strong class="mt-1 block text-sm">${title}</strong><p class="mt-1 text-xs text-gray-500">${detail}</p></article>`).join('');
 }
 
-function renderWeight(items) {
-  items.sort((a, b) => (dateFrom(a.registradoEm)?.getTime() || 0) - (dateFrom(b.registradoEm)?.getTime() || 0));
-  const last = items.at(-1);
-  $('last-weight').textContent = last ? `${last.pesoKg} kg` : '— kg';
-  $('weight-change').textContent = items.length > 1 ? `${(last.pesoKg - items[0].pesoKg).toLocaleString('pt-BR', { signDisplay: 'always' })} kg desde o primeiro registro.` : 'Registre o primeiro peso para acompanhar.';
-  $('history').innerHTML = items.length ? items.slice().reverse().map((item) => `<div class="flex justify-between rounded-xl bg-white/5 p-3"><span>${item.pesoKg} kg</span><span class="text-sm text-gray-500">${dateFrom(item.registradoEm)?.toLocaleDateString('pt-BR') || 'agora'}</span></div>`).join('') : '<p class="text-sm text-gray-500">Sem registros.</p>';
+function sortedWeights() {
+  return [...weights].filter(item => {
+    const date = dateFrom(item.registradoEm);
+    const value = Number(item.pesoKg);
+    return Number.isFinite(value) && value >= 20 && value <= 400 && date && date <= now;
+  }).sort((a, b) => dateFrom(a.registradoEm) - dateFrom(b.registradoEm));
 }
 
-function renderBodyComparison(weights, profile) {
-  const ordered = [...weights].sort((a, b) => (dateFrom(a.registradoEm)?.getTime() || 0) - (dateFrom(b.registradoEm)?.getTime() || 0));
-  const start = ordered[0]?.pesoKg;
-  const current = ordered.at(-1)?.pesoKg;
-  const target = Number(profile.metaPesoKg);
-  $('body-start').textContent = Number.isFinite(start) ? `${start} kg` : '—';
-  $('body-current').textContent = Number.isFinite(current) ? `${current} kg` : '—';
-  $('body-target').textContent = Number.isFinite(target) && target > 0 ? `${target} kg` : '—';
+function renderWeight() {
+  const ordered = sortedWeights();
+  const last = ordered.at(-1);
+  $('last-weight').textContent = last ? `${Number(last.pesoKg).toLocaleString('pt-BR')} kg` : '— kg';
+  $('weight-change').textContent = ordered.length > 1 ? `${(Number(last.pesoKg) - Number(ordered[0].pesoKg)).toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} kg desde o primeiro registro.` : 'Registre o primeiro peso para acompanhar.';
+  if (!ordered.length) {
+    $('history').innerHTML = '<p class="text-sm text-gray-500">Sem registros.</p>';
+    return;
+  }
+  $('history').innerHTML = ordered.reverse().map(item => `<article class="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3"><div><strong class="text-sm">${Number(item.pesoKg).toLocaleString('pt-BR')} kg</strong><p class="mt-1 text-xs text-gray-500">${dateFrom(item.registradoEm)?.toLocaleDateString('pt-BR') || 'agora'}</p></div><div class="flex gap-1"><button type="button" data-edit-weight="${escapeHTML(item.id)}" class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5" aria-label="Editar peso"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weight="${escapeHTML(item.id)}" class="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 text-red-300" aria-label="Excluir peso"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('');
+  window.lucide?.createIcons();
+}
+
+function renderBodyComparison() {
+  const ordered = sortedWeights();
+  const start = Number(ordered[0]?.pesoKg);
+  const current = Number(ordered.at(-1)?.pesoKg);
+  const target = Number(latestProfile.metaPesoKg);
+  $('body-start').textContent = Number.isFinite(start) ? `${start.toLocaleString('pt-BR')} kg` : '—';
+  $('body-current').textContent = Number.isFinite(current) ? `${current.toLocaleString('pt-BR')} kg` : '—';
+  $('body-target').textContent = Number.isFinite(target) && target > 0 ? `${target.toLocaleString('pt-BR')} kg` : '—';
   if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) {
     $('body-status').textContent = 'Sem meta';
-    $('body-summary').textContent = 'Registre o peso e uma meta para ver sua trajetória.';
+    $('body-summary').textContent = 'Registre o peso e uma meta no perfil para ver sua trajetória.';
     return;
   }
   const difference = target - current;
   const reached = Math.abs(difference) < 0.1;
   $('body-status').textContent = reached ? 'Meta atingida' : `${Math.abs(difference).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`;
-  const height = Number(profile.alturaCm);
+  const height = Number(latestProfile.alturaCm);
   const bmi = height > 0 ? current / ((height / 100) ** 2) : null;
   $('body-summary').textContent = reached ? 'Você atingiu a meta de peso registrada.' : `${difference > 0 ? 'Faltam' : 'Você está'} ${Math.abs(difference).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg ${difference > 0 ? 'para chegar à meta.' : 'além da meta.'}${bmi ? ` IMC atual: ${bmi.toFixed(1)}.` : ''}`;
 }
@@ -115,29 +124,89 @@ function measureValue(value) {
   return Number.isFinite(parsed) && parsed >= 20 && parsed <= 250 ? parsed : null;
 }
 
-function renderMeasurements(profile) {
-  const history = Array.isArray(profile.medidasHistorico) ? profile.medidasHistorico.filter((item) => item && typeof item === 'object') : [];
-  const last = history.at(-1) || {};
-  const first = history[0] || {};
-  const fields = [['waist', 'measure-waist', 'Cintura'], ['chest', 'measure-chest', 'Peito'], ['arm', 'measure-arm', 'Braço'], ['hip', 'measure-hip', 'Quadril']];
-  fields.forEach(([key, input]) => { $(input).value = last[key] ?? ''; });
-  if (!history.length) return;
-  const changes = fields.map(([key, , label]) => {
-    if (!Number.isFinite(Number(first[key])) || !Number.isFinite(Number(last[key]))) return null;
-    const delta = Number(last[key]) - Number(first[key]);
-    return `${label}: ${delta.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} cm`;
-  }).filter(Boolean);
-  $('measurement-summary').textContent = changes.length ? `Desde a primeira medição — ${changes.join(' · ')}.` : 'Atualize as medidas que deseja comparar.';
+function measurementHistory() {
+  const keys = ['waist', 'chest', 'arm', 'hip'];
+  return (Array.isArray(latestProfile.medidasHistorico) ? latestProfile.medidasHistorico : []).filter(item => {
+    const date = dateFrom(item?.registradoEm);
+    return item && typeof item === 'object' && date && date <= now && keys.some(key => measureValue(item[key]) !== null);
+  }).sort((a, b) => dateFrom(a.registradoEm) - dateFrom(b.registradoEm));
 }
 
-function renderProgressPhotos(profile) {
-  const photos = Array.isArray(profile.fotosProgresso) ? profile.fotosProgresso : [];
-  $('progress-photos').innerHTML = photos.length ? photos.map((photo) => `<article class="relative overflow-hidden rounded-xl bg-white/5"><img class="aspect-square w-full object-cover" src="${photo.dataUrl}" alt="Foto de progresso de ${new Date(photo.criadoEm).toLocaleDateString('pt-BR')}"><button data-delete-photo="${photo.id}" class="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sm" aria-label="Remover foto">×</button></article>`).join('') : '<p class="col-span-3 text-sm text-gray-500">Nenhuma foto registrada.</p>';
+function lastMeasure(history, key) {
+  for (const item of [...history].reverse()) {
+    const value = measureValue(item[key]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function renderMeasurements() {
+  const history = measurementHistory();
+  const fields = [['waist', 'measure-waist', 'Cintura'], ['chest', 'measure-chest', 'Peito'], ['arm', 'measure-arm', 'Braço'], ['hip', 'measure-hip', 'Quadril']];
+  fields.forEach(([key, input]) => { $(input).value = lastMeasure(history, key) ?? ''; });
+  const changes = fields.map(([key, , label]) => {
+    const first = history.map(item => measureValue(item[key])).find(value => value !== null);
+    const last = lastMeasure(history, key);
+    if (first === undefined || last === null) return null;
+    const delta = Number(last) - Number(first);
+    return `${label}: ${delta.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} cm`;
+  }).filter(Boolean);
+  $('measurement-summary').textContent = changes.length ? `Desde a primeira medição — ${changes.join(' · ')}.` : 'Registre uma primeira medida para acompanhar as mudanças.';
+  const recent = history.slice(-5).reverse();
+  $('measure-history').innerHTML = recent.length ? `<p class="text-xs font-bold text-gray-400">Últimos registros</p>${recent.map(record => {
+    const values = fields.map(([key, , label]) => { const value = measureValue(record[key]); return value !== null ? `${label} ${value.toLocaleString('pt-BR')} cm` : null; }).filter(Boolean);
+    const date = dateFrom(record.registradoEm)?.toLocaleDateString('pt-BR') || 'Data não informada';
+    return `<div class="rounded-xl bg-white/5 p-3"><p class="text-xs font-semibold">${date}</p><p class="mt-1 text-xs text-gray-500">${values.join(' · ')}</p></div>`;
+  }).join('')}` : '';
+}
+
+function validPhotos() {
+  return (Array.isArray(latestProfile.fotosProgresso) ? latestProfile.fotosProgresso : []).slice(0, PHOTO_LIMIT).filter(photo => photo && typeof photo.id === 'string' && photo.id.length <= 100 && typeof photo.dataUrl === 'string' && photo.dataUrl.length <= 140 * 1024 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(photo.dataUrl));
+}
+
+function photoBytes(photos) {
+  return new Blob(photos.map(photo => photo.dataUrl)).size;
+}
+
+function renderProgressPhotos() {
+  const photos = validPhotos();
+  const used = photoBytes(photos);
+  $('photo-storage').textContent = `${photos.length} de ${PHOTO_LIMIT} fotos · aproximadamente ${Math.round(used / 1024)} KB usados`;
+  $('progress-photos').innerHTML = '';
+  if (!photos.length) {
+    $('progress-photos').innerHTML = '<p class="col-span-3 text-sm text-gray-500">Nenhuma foto registrada.</p>';
+    return;
+  }
+  photos.forEach(photo => {
+    const article = document.createElement('article');
+    article.className = 'relative overflow-hidden rounded-xl bg-white/5';
+    const image = document.createElement('img');
+    image.className = 'aspect-square w-full object-cover';
+    image.src = photo.dataUrl;
+    image.alt = `Foto de progresso de ${dateFrom(photo.criadoEm)?.toLocaleDateString('pt-BR') || 'data não informada'}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.deletePhoto = photo.id;
+    button.className = 'absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm';
+    button.setAttribute('aria-label', 'Remover foto');
+    button.textContent = '×';
+    article.append(image, button);
+    $('progress-photos').appendChild(article);
+  });
 }
 
 async function compressPhoto(file) {
-  if (!file || !file.type.startsWith('image/')) throw new Error('Escolha uma imagem em JPG, PNG ou WebP.');
-  const source = typeof createImageBitmap === 'function' ? await createImageBitmap(file) : await new Promise((resolve, reject) => {
+  if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Escolha uma imagem em JPG, PNG ou WebP.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('A imagem original deve ter no máximo 15 MB.');
+  let source = null;
+  if (typeof createImageBitmap === 'function') {
+    try { source = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+    catch {
+      try { source = await createImageBitmap(file); }
+      catch { source = null; }
+    }
+  }
+  if (!source) source = await new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () => resolve({ width: image.width, height: image.height, draw: (context, width, height) => context.drawImage(image, 0, 0, width, height), close: () => URL.revokeObjectURL(url) });
@@ -146,19 +215,20 @@ async function compressPhoto(file) {
   });
   const scale = Math.min(1, 720 / Math.max(source.width, source.height));
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(source.width * scale);
-  canvas.height = Math.round(source.height * scale);
+  canvas.width = Math.max(1, Math.round(source.width * scale));
+  canvas.height = Math.max(1, Math.round(source.height * scale));
   const context = canvas.getContext('2d');
+  if (!context) throw new Error('Não foi possível processar a foto neste navegador.');
   if (source.draw) source.draw(context, canvas.width, canvas.height);
   else context.drawImage(source, 0, 0, canvas.width, canvas.height);
   source.close?.();
-  let quality = 0.8;
-  let image = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-  while (image && image.size > 120 * 1024 && quality > 0.35) {
-    quality -= 0.1;
-    image = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+  let quality = 0.78;
+  let image = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+  while (image && image.size > 90 * 1024 && quality > 0.32) {
+    quality -= 0.08;
+    image = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
   }
-  if (!image || image.size > 120 * 1024) throw new Error('A foto ficou grande demais. Escolha uma imagem mais simples.');
+  if (!image || image.size > 90 * 1024) throw new Error('A foto ficou grande demais. Escolha uma imagem mais simples.');
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
@@ -167,86 +237,178 @@ async function compressPhoto(file) {
   });
 }
 
-async function load() {
-  const [profileSnapshot, weightSnapshot, sessionSnapshot] = await Promise.all([
-    getDoc(doc(db, 'users', currentUser.uid)),
-    getDocs(query(collection(db, 'pesos'), where('userId', '==', currentUser.uid))),
-    getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)))
-  ]);
-  const profile = profileSnapshot.data() || {};
-  latestProfile = profile;
-  currentGoal = Math.max(1, Math.min(7, Number(profile.metaSemanal) || 3));
-  const sessions = sessionSnapshot.docs.map((item) => item.data());
-  const stats = workoutStats(sessions);
-  stats.sessions = sessions.length;
+function renderAll() {
+  now = new Date();
+  const stats = workoutStats(sessions, currentGoal, now);
+  activeDays = stats.activeDays;
   renderGoal(stats);
-  renderCalendar(stats.activeDays);
+  renderCalendar();
   renderBadges(stats);
-  const weights = weightSnapshot.docs.map((item) => item.data());
-  renderWeight(weights);
-  renderBodyComparison(weights, profile);
-  renderMeasurements(profile);
-  renderProgressPhotos(profile);
+  renderWeight();
+  renderBodyComparison();
+  renderMeasurements();
+  renderProgressPhotos();
+}
+
+async function load() {
+  if (!currentUser) return;
+  setPageState('loading');
+  try {
+    const [profileSnapshot, weightSnapshot, sessionSnapshot] = await Promise.all([
+      getDoc(doc(db, 'users', currentUser.uid)),
+      getDocs(query(collection(db, 'pesos'), where('userId', '==', currentUser.uid))),
+      getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)))
+    ]);
+    latestProfile = profileSnapshot.data() || {};
+    currentGoal = Math.max(1, Math.min(7, Number(latestProfile.metaSemanal) || 3));
+    sessions = sessionSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+    weights = weightSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+    renderAll();
+    setPageState('ready');
+  } catch (error) {
+    console.error('Não foi possível carregar evolução:', error);
+    setPageState('error', 'Não foi possível carregar seus dados agora.');
+  }
 }
 
 async function saveGoal(change) {
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
+  const previous = currentGoal;
   currentGoal = Math.max(1, Math.min(7, currentGoal + change));
-  await setDoc(doc(db, 'users', currentUser.uid), { metaSemanal: currentGoal }, { merge: true });
-  await load();
+  if (currentGoal === previous) return;
+  renderGoal(workoutStats(sessions, currentGoal));
+  $('goal-down').disabled = $('goal-up').disabled = true;
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { metaSemanal: currentGoal }, { merge: true });
+    latestProfile.metaSemanal = currentGoal;
+    removeSessionItems(`mol-profile-cache-${currentUser.uid}`);
+    showToast('Meta semanal atualizada.', 'success');
+  } catch (error) {
+    currentGoal = previous;
+    showToast('Não foi possível atualizar a meta.');
+  } finally { renderGoal(workoutStats(sessions, currentGoal)); }
 }
 
-onAuthStateChanged(auth, async (user) => {
+function requestWeight(title, initial = '') {
+  return new Promise(resolve => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
+    modal.setAttribute('aria-labelledby', 'weight-dialog-title');
+    modal.setAttribute('aria-describedby', 'weight-dialog-description');
+    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl border border-white/10 bg-[#161a17] p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe um valor entre 20 e 400 kg.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl bg-black/20 px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl bg-white/5 py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
+    document.body.appendChild(modal);
+    const input = modal.querySelector('[data-value]');
+    input.value = initial;
+    let closeDialog;
+    const close = value => { closeDialog(); resolve(value); };
+    closeDialog = activateDialog(modal, { initialFocus: input, onCancel: () => close(null) });
+    modal.querySelector('[data-cancel]').onclick = () => close(null);
+    modal.querySelector('[data-confirm]').onclick = () => close(input.value);
+    input.onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); close(input.value); } };
+    modal.onclick = event => { if (event.target === modal) close(null); };
+  });
+}
+
+onAuthStateChanged(auth, user => {
   if (!user) { location.href = './login.html'; return; }
   currentUser = user;
-  try { await load(); } catch (error) { console.warn('Não foi possível carregar evolução:', error.message); }
+  load();
 });
 
 $('goal-down').onclick = () => saveGoal(-1);
 $('goal-up').onclick = () => saveGoal(1);
+$('previous-month').onclick = () => { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1); renderCalendar(); };
+$('next-month').onclick = () => { if (!$('next-month').disabled) { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1); renderCalendar(); } };
+
 $('save').onclick = async () => {
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
   const value = Number(String($('weight').value).replace(',', '.'));
-  if (!Number.isFinite(value) || value < 20 || value > 400) return;
-  $('save').disabled = true;
+  if (!Number.isFinite(value) || value < 20 || value > 400) return showToast('Informe um peso entre 20 e 400 kg.');
+  const button = $('save');
+  setButtonLoading(button, true);
   try {
     await addDoc(collection(db, 'pesos'), { userId: currentUser.uid, pesoKg: value, registradoEm: serverTimestamp() });
     $('weight').value = '';
     await load();
-  } finally { $('save').disabled = false; }
+    showToast('Peso registrado.', 'success');
+  } catch (error) {
+    showToast('Não foi possível registrar o peso.');
+  } finally { setButtonLoading(button, false); }
 };
+
+$('history').onclick = async event => {
+  const editId = event.target.closest('[data-edit-weight]')?.dataset.editWeight;
+  const deleteId = event.target.closest('[data-delete-weight]')?.dataset.deleteWeight;
+  if (editId) {
+    const item = weights.find(weight => weight.id === editId);
+    const response = await requestWeight('Editar peso', item?.pesoKg ?? '');
+    if (response === null) return;
+    const value = Number(String(response).replace(',', '.'));
+    if (!Number.isFinite(value) || value < 20 || value > 400) return showToast('Informe um peso entre 20 e 400 kg.');
+    try { await updateDoc(doc(db, 'pesos', editId), { pesoKg: value }); await load(); showToast('Peso atualizado.', 'success'); }
+    catch { showToast('Não foi possível atualizar o peso.'); }
+  }
+  if (deleteId) {
+    const confirmed = await confirmAction({ title: 'Excluir este peso?', message: 'O registro será removido do histórico e dos comparativos.', confirmText: 'Excluir', danger: true });
+    if (!confirmed) return;
+    try { await deleteDoc(doc(db, 'pesos', deleteId)); await load(); showToast('Peso removido.', 'success'); }
+    catch { showToast('Não foi possível remover o peso.'); }
+  }
+};
+
 $('save-measures').onclick = async () => {
-  const history = Array.isArray(latestProfile.medidasHistorico) ? latestProfile.medidasHistorico : [];
-  const record = { ...(history.at(-1) || {}), registradoEm: new Date().toISOString() };
-  [['waist', 'measure-waist'], ['chest', 'measure-chest'], ['arm', 'measure-arm'], ['hip', 'measure-hip']].forEach(([key, input]) => {
-    const value = measureValue($(input).value);
-    if (value !== null) record[key] = value;
-  });
-  if (Object.keys(record).length === 1) return;
-  $('save-measures').disabled = true;
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
+  const inputs = [['waist', 'measure-waist'], ['chest', 'measure-chest'], ['arm', 'measure-arm'], ['hip', 'measure-hip']];
+  const entered = inputs.filter(([, id]) => $(id).value.trim() !== '');
+  if (!entered.length) return showToast('Preencha pelo menos uma medida.');
+  const record = { registradoEm: new Date().toISOString() };
+  for (const [key, id] of entered) {
+    const value = measureValue($(id).value);
+    if (value === null) return showToast('As medidas devem estar entre 20 e 250 cm.');
+    record[key] = value;
+  }
+  const history = measurementHistory();
+  const button = $('save-measures');
+  setButtonLoading(button, true);
   try {
     await setDoc(doc(db, 'users', currentUser.uid), { medidasHistorico: [...history, record].slice(-50) }, { merge: true });
     await load();
-  } finally { $('save-measures').disabled = false; }
+    showToast('Medidas registradas.', 'success');
+  } catch { showToast('Não foi possível registrar as medidas.'); }
+  finally { setButtonLoading(button, false); }
 };
+
 $('save-photo').onclick = async () => {
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
   const file = $('progress-photo').files[0];
-  if (!file) return;
-  $('save-photo').disabled = true;
+  if (!file) return showToast('Escolha uma foto primeiro.');
+  const photos = validPhotos();
+  if (photos.length >= PHOTO_LIMIT) return showToast('Remova uma foto antes de adicionar outra.');
+  const button = $('save-photo');
+  setButtonLoading(button, true);
   try {
     const dataUrl = await compressPhoto(file);
-    const photos = Array.isArray(latestProfile.fotosProgresso) ? latestProfile.fotosProgresso : [];
-    if (photos.length >= 5) throw new Error('Remova uma foto antes de adicionar outra.');
-    const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
-    await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: [...photos, { id, dataUrl, criadoEm: new Date().toISOString() }] }, { merge: true });
+    const next = [...photos, { id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, dataUrl, criadoEm: new Date().toISOString() }];
+    if (photoBytes(next) > PHOTO_BYTES_LIMIT) throw new Error('O espaço reservado para fotos está cheio. Remova uma foto antes de continuar.');
+    await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: next }, { merge: true });
     $('progress-photo').value = '';
     await load();
-  } catch (error) { alert(error.message || 'Não foi possível salvar a foto.'); }
-  finally { $('save-photo').disabled = false; }
+    showToast('Foto adicionada.', 'success');
+  } catch (error) { showToast(error.message || 'Não foi possível salvar a foto.'); }
+  finally { setButtonLoading(button, false); }
 };
-$('progress-photos').onclick = async (event) => {
+
+$('progress-photos').onclick = async event => {
   const id = event.target.closest('[data-delete-photo]')?.dataset.deletePhoto;
-  if (!id || !confirm('Remover esta foto de progresso?')) return;
-  const photos = (latestProfile.fotosProgresso || []).filter((photo) => photo.id !== id);
-  await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: photos }, { merge: true });
-  await load();
+  if (!id) return;
+  const confirmed = await confirmAction({ title: 'Remover esta foto?', message: 'A foto será excluída permanentemente do seu perfil.', confirmText: 'Remover', danger: true });
+  if (!confirmed) return;
+  const photos = validPhotos().filter(photo => photo.id !== id);
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: photos }, { merge: true });
+    await load();
+    showToast('Foto removida.', 'success');
+  } catch { showToast('Não foi possível remover a foto.'); }
 };
-$('back').onclick = () => document.referrer && new URL(document.referrer).origin === location.origin ? history.back() : location.href = './perfil.html';
+
+window.lucide?.createIcons();

@@ -1,20 +1,27 @@
 import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { sessionMetrics } from '../modules/workout-analytics.js';
-import { dateOf, monday, safeJSON, sessionsInWeek, weeklyStreak } from '../modules/dashboard-analytics.js';
+import { dateOf, estimatedWorkoutMinutes, monday, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../modules/dashboard-analytics.js';
+import { foodNutrients, nextMeal, normalizeDietMeals } from '../modules/nutrition.js';
+import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
+import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
+if (getSessionItem('mol-login-success') === 'true') {
+  removeSessionItems('mol-login-success');
+  showToast('Login realizado com sucesso!', 'success');
+}
 
 document.documentElement.setAttribute('translate', 'no');
 document.documentElement.classList.add('notranslate');
 
 const $ = id => document.getElementById(id);
 const draftKey = id => `mol-workout-draft-${id}`;
-const dayLabel = ['D','S','T','Q','Q','S','S'];
+const dayLabel = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const defaultCards = [
   { id: 'today-card', label: 'Treino de hoje', visible: true },
   { id: 'next-meal-card', label: 'Próxima refeição', visible: true },
@@ -25,6 +32,9 @@ const defaultCards = [
 ];
 let dashboardCards = [...defaultCards];
 let dashboardUser = null;
+let profileData = {};
+let mealRefreshTimer = null;
+const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), timeout))]);
 
 function normalizeCards(value) {
   if (!Array.isArray(value)) return defaultCards.map(card => ({ ...card }));
@@ -39,37 +49,46 @@ function normalizeCards(value) {
   return [...valid, ...defaultCards.filter(card => !seen.has(card.id)).map(card => ({ ...card }))];
 }
 
-function setWeek(sessions) {
+function setWeek(sessions, goal = 1) {
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);
-  $('week-days').innerHTML = days.map(d => { const done = sessions.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center"><span class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()]}</span><span class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'bg-white/5 text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
+  $('week-days').innerHTML = days.map(d => { const done = thisWeek.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center" aria-label="${dayLabel[d.getDay()]}, ${d.toLocaleDateString('pt-BR')}${done ? ', treino concluído' : ''}"><span aria-hidden="true" class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()].slice(0, 1)}</span><span aria-hidden="true" class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'bg-white/5 text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
   $('weekly-title').textContent = `${thisWeek.length} treino${thisWeek.length === 1 ? '' : 's'} concluído${thisWeek.length === 1 ? '' : 's'}`;
   $('weekly-sessions').textContent = thisWeek.length;
   $('weekly-volume').textContent = Math.round(volume).toLocaleString('pt-BR');
-  $('weekly-streak').textContent = weeklyStreak(sessions);
-  const last = [...sessions].sort((a,b) => (dateOf(b)?.getTime() || 0) - (dateOf(a)?.getTime() || 0))[0];
-  $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg.` : 'Conclua o primeiro treino para acompanhar sua evolução.';
+  $('weekly-streak').textContent = weeklyStreak(sessions, new Date(), goal);
+  const orderedSessions = [...sessions].filter(session => dateOf(session) && dateOf(session) <= new Date()).sort((a,b) => dateOf(b) - dateOf(a));
+  const [last, previous] = orderedSessions;
+  const lastVolume = last ? sessionMetrics(last).volume : 0;
+  const previousVolume = previous ? sessionMetrics(previous).volume : 0;
+  const trend = previousVolume ? ((lastVolume - previousVolume) / previousVolume) * 100 : null;
+  $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${Math.round(lastVolume).toLocaleString('pt-BR')} kg${trend === null ? '.' : ` · ${trend.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })}% versus a sessão anterior.`}` : 'Conclua o primeiro treino para acompanhar sua evolução.';
   if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg · ${sessionMetrics(last).sets} séries`; }
 }
 
 function setToday(routines, user) {
-  const draft = safeJSON(localStorage.getItem(draftKey(user.uid)), null);
+  const storedDraft = safeJSON(getLocalItem(draftKey(user.uid)), null);
+  const draft = validWorkoutDraft(storedDraft, routines);
+  if (storedDraft && !draft) removeLocalItems(draftKey(user.uid));
   const card = $('today-workout-cta');
-  if (draft && routines.some(r => r.id === draft.rotinaId)) {
+  if (draft) {
     const routine = routines.find(r => r.id === draft.rotinaId); const series = (draft.exercicios || []).flatMap(ex => ex.series || []); const done = series.filter(s => s.concluida).length;
-    $('today-eyebrow').textContent = 'Treino em andamento'; $('today-workout-title').textContent = `Retomar ${routine.nome}`; $('today-workout-subtitle').textContent = `${done}/${series.length} séries · ${Math.floor((draft.tempoSegundos || 0) / 60)} min decorridos`;
+    const elapsed = Math.max(Number(draft.tempoSegundos) || 0, draft.iniciadaEm ? Math.floor((Date.now() - new Date(draft.iniciadaEm).getTime()) / 1000) : 0);
+    $('today-eyebrow').textContent = 'Treino em andamento'; $('today-workout-title').textContent = `Retomar ${routine.nome}`; $('today-workout-subtitle').textContent = `${done}/${series.length} séries · ${Math.floor(elapsed / 60)} min decorridos`;
+    card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}&retomar=1`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Retomar treino</span>';
   } else if (routines.length) {
-    const scheduled = routines.find(r => (r.diasSemana || []).includes(new Date().getDay()));
-    const routine = scheduled || routines[0]; const series = (routine.exercicios || []).reduce((sum, ex) => sum + (ex.series?.length || 0), 0);
+    const scheduled = routines.find(r => (r.diasSemana || []).map(Number).includes(new Date().getDay()));
+    const routine = selectRoutine(routines); const series = (routine.exercicios || []).reduce((sum, ex) => sum + (ex.series?.length || 0), 0);
     $('today-eyebrow').textContent = scheduled ? 'Planejado para hoje' : 'Seu próximo treino';
     $('today-workout-title').textContent = scheduled ? `Hoje é dia de ${routine.nome}` : routine.nome;
-    $('today-workout-subtitle').textContent = `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${Math.max(20, series * 3)} min`;
+    $('today-workout-subtitle').textContent = `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${estimatedWorkoutMinutes(routine)} min`;
+    card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Iniciar treino</span>';
   } else {
     $('today-eyebrow').textContent = 'Comece por aqui'; $('today-workout-title').textContent = 'Crie sua primeira rotina'; $('today-workout-subtitle').textContent = 'Monte uma ficha ou use um modelo pronto para treinar hoje.';
-    card.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i><span>Criar rotina</span>';
+    card.href = './pages/treino.html?acao=nova'; card.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i><span>Criar rotina</span>';
   }
   renderIcons();
 }
@@ -77,33 +96,45 @@ function setToday(routines, user) {
 function setNextMeal(meals) {
   const card = $('next-meal-card');
   if (!card) return;
-  const ordered = [...meals].filter(meal => meal?.hora).sort((a, b) => a.hora.localeCompare(b.hora));
   const now = new Date().toTimeString().slice(0, 5);
-  const next = ordered.find(meal => meal.hora >= now) || ordered[0];
-  if (!next) { card.classList.add('hidden'); return; }
-  $('next-meal-name').textContent = next.nome || 'Refeição';
-  const tomorrow = !ordered.some(meal => meal.hora >= now);
-  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${next.hora} · ${(next.alimentos || next.itens || []).length} alimento(s)`;
+  const normalized = normalizeDietMeals(meals);
+  const { meal, tomorrow } = nextMeal(normalized, now);
+  if (!meal) { card.dataset.available = 'false'; card.classList.add('hidden'); return; }
+  card.dataset.available = 'true';
+  $('next-meal-name').textContent = meal.nome || 'Refeição';
+  const nutrients = (meal.alimentos || []).reduce((sum, food) => sum + foodNutrients(food).kcal, 0);
+  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${meal.alimentos.length} alimento(s) · ${Math.round(nutrients)} kcal`;
   card.classList.remove('hidden');
 }
 
 async function loadNextMeal(userId) {
   try {
-    const snapshot = await getDoc(doc(db, 'dietas', userId));
+    const snapshot = await withTimeout(getDoc(doc(db, 'dietas', userId)), 'A dieta');
     setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []);
+    clearInterval(mealRefreshTimer);
+    mealRefreshTimer = setInterval(() => setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []), 60000);
   } catch (error) {
     console.warn('Próxima refeição não carregada:', error.message);
+    const card = $('next-meal-card');
+    card.dataset.available = 'true'; card.classList.remove('hidden');
+    $('next-meal-name').textContent = 'Dieta indisponível';
+    $('next-meal-meta').textContent = 'Toque para abrir a dieta e tentar novamente.';
   }
 }
 
 function setupDashboardCards() {
-  const sections = document.querySelectorAll('main > section');
-  if (sections[1]) sections[1].id = 'weekly-card';
-  if (sections[2]) sections[2].id = 'insights-card';
+  const sections = [...document.querySelectorAll('main > section')];
+  const weekly = sections.find(section => section.querySelector('#weekly-title'));
+  const insights = sections.find(section => section.querySelector('#performance-summary'));
+  if (weekly) weekly.id = 'weekly-card';
+  if (insights) insights.id = 'insights-card';
   if (!document.getElementById('last-session-card')) {
     const card = document.createElement('section');
     card.id = 'last-session-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
     card.innerHTML = '<div class="flex items-center justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Última sessão</p><h2 id="last-session-title" class="mt-1 text-lg font-extrabold">Ainda não há sessões</h2><p id="last-session-meta" class="mt-1 text-sm text-gray-500">Conclua um treino para acompanhar.</p></div><i data-lucide="clock-3" class="h-5 w-5 text-neon"></i></div>';
+    card.tabIndex = 0; card.setAttribute('role', 'link'); card.setAttribute('aria-label', 'Abrir histórico de treinos');
+    card.onclick = () => { window.location.href = './pages/historico.html'; };
+    card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); } };
     document.getElementById('weekly-card').after(card);
   }
   if (!document.getElementById('next-meal-card')) {
@@ -114,6 +145,8 @@ function setupDashboardCards() {
   if (!document.getElementById('weight-card')) {
     const card = document.createElement('section'); card.id = 'weight-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
     card.innerHTML = '<a href="./pages/perfil.html" class="flex items-center justify-between" aria-label="Abrir evolução corporal no perfil"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold" aria-live="polite">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></span></a>';
+    const weightLink = card.querySelector('a'); weightLink.href = './pages/evolucao.html'; weightLink.setAttribute('aria-label', 'Abrir evolução corporal');
+    card.querySelector('#dashboard-weight-meta').textContent = 'Registre seu peso em Evolução.';
     document.getElementById('last-session-card').after(card);
   }
   const header = document.querySelector('header');
@@ -130,15 +163,17 @@ function setupDashboardCards() {
 }
 
 function applyDashboardCards() {
-  dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) element.classList.toggle('hidden', !card.visible); });
+  dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) element.classList.toggle('hidden', !card.visible || (card.id === 'next-meal-card' && element.dataset.available === 'false')); });
   const main = document.querySelector('main'); dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) main.appendChild(element); });
 }
 
 async function saveDashboardCards() {
   if (!dashboardUser) return;
-  localStorage.setItem(`mol-dashboard-${dashboardUser.uid}`, JSON.stringify(dashboardCards));
-  try { await setDoc(doc(db, 'users', dashboardUser.uid), { dashboardCards }, { merge: true }); }
-  catch (error) { console.warn('Preferências salvas apenas neste dispositivo:', error.message); }
+  if (!dashboardCards.some(card => card.visible)) { dashboardCards[0].visible = true; applyDashboardCards(); showToast('O card Treino de hoje foi mantido para o painel não ficar vazio.'); }
+  const updatedAt = new Date().toISOString();
+  setLocalItem(`mol-dashboard-${dashboardUser.uid}`, JSON.stringify({ cards: dashboardCards, updatedAt }));
+  try { await withTimeout(setDoc(doc(db, 'users', dashboardUser.uid), { dashboardCards, dashboardCardsUpdatedAt: updatedAt }, { merge: true }), 'A sincronização'); return true; }
+  catch (error) { console.warn('Preferências salvas apenas neste dispositivo:', error.message); showToast('Painel salvo neste dispositivo, mas não foi possível sincronizar com sua conta.'); return false; }
 }
 
 function openDashboardEditor() {
@@ -162,7 +197,6 @@ function openDashboardEditor() {
 }
 
 onAuthStateChanged(auth, async user => {
-  clearTimeout(window.__molDashboardFallback);
   if (!user) return window.location.href = './pages/login.html';
   dashboardUser = user;
   // O esqueleto do Início não depende do banco: aparece assim que a sessão existe.
@@ -171,25 +205,34 @@ onAuthStateChanged(auth, async user => {
   setupDashboardCards();
   // Carrega a agenda alimentar em paralelo ao restante do painel.
   void loadNextMeal(user.uid);
-  // Leituras independentes comeÃ§am juntas, importante em conexÃµes mÃ³veis.
+  // Leituras independentes começam juntas, importante em conexões móveis.
   const dashboardData = {
-    routines: getDocs(query(collection(db, 'treinos'), where('userId', '==', user.uid))),
-    sessions: getDocs(query(collection(db, 'sessoes'), where('userId', '==', user.uid))),
-    weights: getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid)))
+    routines: withTimeout(getDocs(query(collection(db, 'treinos'), where('userId', '==', user.uid))), 'As rotinas'),
+    sessions: withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', user.uid))), 'O histórico'),
+    weights: withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid))), 'Os pesos')
   };
-  dashboardCards = normalizeCards(safeJSON(localStorage.getItem(`mol-dashboard-${user.uid}`), null));
-  let profileData = {};
-  try { const profile = await getDoc(doc(db, 'users', user.uid)); if (profile.exists()) { profileData = profile.data(); dashboardCards = normalizeCards(profileData.dashboardCards || dashboardCards); } } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
+  const localRaw = safeJSON(getLocalItem(`mol-dashboard-${user.uid}`), null);
+  const localPrefs = Array.isArray(localRaw) ? { cards: localRaw, updatedAt: '' } : (localRaw || {});
+  dashboardCards = normalizeCards(localPrefs.cards);
+  try {
+    const profile = await withTimeout(getDoc(doc(db, 'users', user.uid)), 'O perfil');
+    if (profile.exists()) {
+      profileData = profile.data();
+      const remoteDate = dateOf(profileData.dashboardCardsUpdatedAt)?.getTime() || 0;
+      const localDate = dateOf(localPrefs.updatedAt)?.getTime() || 0;
+      if (profileData.dashboardCards && remoteDate >= localDate) dashboardCards = normalizeCards(profileData.dashboardCards);
+    }
+  } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); showToast('O perfil demorou para responder; usando dados deste dispositivo.'); }
   applyDashboardCards();
-  const fullName = user.displayName || profileData.name || profileData.nome || '';
-  $('user-name').textContent = fullName.trim().split(/\s+/)[0] || 'Atleta';
+  const fullName = String(user.displayName || profileData.name || profileData.nome || '');
+  $('user-name').textContent = fullName.trim().split(/\s+/)[0].slice(0, 40) || 'Atleta';
   $('week-label').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
   const avatarURL = user.photoURL || profileData.photoURL;
   if (avatarURL) { const avatar=$('user-avatar'); avatar.onerror=()=>{avatar.classList.add('hidden');$('default-avatar-icon').classList.remove('hidden');}; avatar.src=avatarURL; avatar.classList.remove('hidden'); $('default-avatar-icon').classList.add('hidden'); }
-  try {
+  const loadRoutines = async () => {
     try {
       const routineSnapshot = await dashboardData.routines;
-      const routines = routineSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const routines = routineSnapshot.docs.map(item => ({ id: item.id, ...normalizeRoutineRecord(item.data()) }));
       setToday(routines, user);
     } catch (error) {
       console.error('Erro ao carregar rotinas:', error);
@@ -197,19 +240,30 @@ onAuthStateChanged(auth, async user => {
       $('today-workout-subtitle').textContent = 'Não foi possível atualizar suas rotinas agora.';
       showToast('Não foi possível carregar suas rotinas agora.');
     }
+  };
+  const loadSessions = async () => {
     try {
       const sessionSnapshot = await dashboardData.sessions;
-      setWeek(sessionSnapshot.docs.map(d => d.data()));
+      setWeek(sessionSnapshot.docs.map(d => d.data()), profileData.metaSemanal || 1);
     } catch (error) {
       console.error('Erro ao carregar sessões:', error.code, error.message);
       $('weekly-title').textContent = 'Histórico indisponível';
       $('week-days').innerHTML = '<p class="col-span-7 text-center text-xs text-gray-500">Tente novamente mais tarde.</p>';
       showToast(error.code === 'permission-denied' ? 'Sem permissão para ler sessões. Revise as regras do Firestore.' : 'O histórico não pôde ser carregado agora.');
     }
-    try { const weightSnapshot = await dashboardData.weights; const weights = weightSnapshot.docs.map(d => d.data()).filter(item=>Number.isFinite(Number(item.pesoKg))).sort((a,b)=>(a.registradoEm?.seconds||0)-(b.registradoEm?.seconds||0)); const last=weights.at(-1); if(last){ $('dashboard-weight').textContent=`${Number(last.pesoKg).toLocaleString('pt-BR')} kg`; $('dashboard-weight-meta').textContent=weights.length>1?`${(Number(last.pesoKg)-Number(weights[0].pesoKg)).toLocaleString('pt-BR',{signDisplay:'always'})} kg desde o início.`:'Primeiro registro corporal.'; } } catch(error) { console.warn('Peso não carregado:',error.message); $('dashboard-weight').textContent='Peso indisponível'; $('dashboard-weight-meta').textContent='Não foi possível atualizar este dado.'; }
-  } catch (error) {
-    console.error('Erro ao carregar rotinas:', error.code, error.message);
-    showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas agora.');
-  } finally { document.body.setAttribute('aria-busy','false'); renderIcons(); }
+  };
+  const loadWeights = async () => {
+    try {
+      const weightSnapshot = await dashboardData.weights;
+      const { last, change } = recentWeightTrend(weightSnapshot.docs.map(d => d.data()));
+      if (last) {
+        $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
+        $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
+      }
+    } catch(error) { console.warn('Peso não carregado:',error.message); $('dashboard-weight').textContent='Peso indisponível'; $('dashboard-weight-meta').textContent='Toque para abrir Evolução e tentar novamente.'; }
+  };
+  await Promise.allSettled([loadRoutines(), loadSessions(), loadWeights()]);
+  clearTimeout(window.__molDashboardFallback);
+  document.body.setAttribute('aria-busy','false'); renderIcons();
 });
 renderIcons();

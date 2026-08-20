@@ -17,7 +17,7 @@ export default {
         danger: '#ff3b5c',
         success: '#00e08a'
       },
-      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
       boxShadow: {
         'glow-sm': '0 0 12px 0 rgba(30, 115, 73, 0.40)',
         'glow-md': '0 0 24px 2px rgba(30, 115, 73, 0.40)',

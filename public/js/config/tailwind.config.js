@@ -5,6 +5,7 @@
  * Tema: Preto/Cinza com destaque em Verde (#1E7349) e texto branco.
  * ------------------------------------------------------------------
  */
+const tailwind = globalThis.tailwind ??= {};
 tailwind.config = {
   theme: {
     extend: {
@@ -18,7 +19,7 @@ tailwind.config = {
         'success':    '#00e08a',   // Confirmações
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'glow-sm': '0 0 12px 0 rgba(30, 115, 73, 0.40)',
@@ -26,14 +27,14 @@ tailwind.config = {
         'glow-lg': '0 0 40px 4px rgba(30, 115, 73, 0.30)',
       },
       keyframes: {
-        'pulse-glow': {
+        'mol-glow': {
           '0%, 100%': { boxShadow: '0 0 20px 2px rgba(30, 115, 73, 0.40)' },
           '50%':      { boxShadow: '0 0 34px 6px rgba(30, 115, 73, 0.60)' },
         },
       },
       animation: {
-        'pulse-glow': 'pulse-glow 2.6s ease-in-out infinite',
+        'mol-glow': 'mol-glow 2.6s ease-in-out infinite',
       },
     }
   }
-}
+};

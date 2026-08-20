@@ -4,17 +4,16 @@
   <meta charset="UTF-8">
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Mol — Treinos</title>
+  <title>Mol</title>
+  <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
   <meta name="theme-color" content="#070a08">
   <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg?v=2">
   <link rel="stylesheet" href="../css/tailwind.css" data-mol-tailwind>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" src="../assets/lucide.min.js"></script>
   <link rel="stylesheet" href="../css/style.css">
   <style>
     html, body { font-family: 'Inter', sans-serif; color: white; }
     ::-webkit-scrollbar { display: none; }
-    
+
     /* Remove as setinhas dos inputs de número */
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
@@ -22,17 +21,39 @@
       margin: 0;
     }
     input[type="number"] { -moz-appearance: textfield; }
+    .workout-page button, .workout-page a, .workout-page input, .workout-page summary { touch-action: manipulation; }
+    .workout-page button:focus-visible, .workout-page a:focus-visible, .workout-page input:focus-visible, .workout-page summary:focus-visible { outline: 2px solid #57d493; outline-offset: 2px; }
+    .workout-exercise-card { overflow-x: auto; overscroll-behavior-inline: contain; }
+    .workout-set-grid { min-width: 322px; }
+    .workout-set-header { min-width: 360px; }
+    @media (max-width: 370px) {
+      .workout-page > div { padding-inline: 0.875rem; }
+      .workout-set-grid { min-width: 340px; }
+      #detalhe-titulo { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
+    @media (min-width: 768px) {
+      .workout-page > div, .workout-page nav > div { max-width: 48rem; }
+      .workout-exercise-card { overflow-x: visible; }
+      .workout-set-grid, .workout-set-header { min-width: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .workout-page *, .workout-page *::before, .workout-page *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body class="app-surface workout-page pb-28 text-white" id="app-body" aria-busy="true">
 
   <div class="max-w-md mx-auto px-5">
-    
-    <div id="view-rotinas" class="block pt-8">
-      <div class="sticky top-0 z-40 -mx-5 mb-4 flex items-center justify-between border-b border-white/10 bg-[#070a08]/95 px-5 py-3 backdrop-blur-xl">
-        <div><a class="mol-brand" href="../index.html" aria-label="Ir para o início"><img src="../assets/mol-mark.svg" alt="">Mol</a><p class="mt-3 text-xs font-semibold uppercase tracking-[.16em] text-neon">Biblioteca pessoal</p><h1 class="mt-1 text-2xl font-extrabold tracking-tight">Treinos</h1><div class="mt-2 flex gap-3 text-xs font-bold"><a href="./historico.html" class="text-gray-400 hover:text-neon">Histórico</a><a href="./progresso.html" class="text-gray-400 hover:text-neon">Progresso</a></div></div>
-      </div>
-      <div class="mb-6">
+
+    <div id="view-rotinas" class="block pt-6">
+      <header>
+        <a class="mol-brand" href="../index.html" aria-label="Ir para o início"><img src="../assets/mol-mark.svg" alt="">Mol</a>
+        <p class="mt-4 text-xs font-semibold uppercase tracking-[.16em] text-neon">Biblioteca pessoal</p>
+        <h1 class="mt-1 text-2xl font-extrabold">Treinos</h1>
+        <p class="mt-2 text-sm text-gray-500">Organize suas rotinas e registre cada sessão.</p>
+        <div class="mt-3 flex gap-3 text-xs font-bold"><a href="./historico.html" class="text-gray-400 hover:text-neon">Histórico</a><a href="./progresso.html" class="text-gray-400 hover:text-neon">Progresso</a></div>
+      </header>
+      <div class="mb-6 mt-6">
         <!-- Botão Principal: Verde Sólido -->
         <button type="button" id="btn-nova-rotina" class="w-full bg-[#1E7349] hover:bg-[#278a59] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
           <i data-lucide="file-plus-2" class="w-4 h-4"></i> Nova Rotina
@@ -53,16 +74,16 @@
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
         <h1 id="detalhe-titulo" class="text-xl font-bold tracking-tight">Nome do Treino</h1>
-        
+
         <!-- Botão Concluir -->
         <button type="button" id="btn-concluir-treino" class="min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-[#1E7349]/50 text-[#1E7349] active:scale-95">
           Concluir
         </button>
       </div>
-      
+
       <div id="exercicios-list" class="space-y-6"></div>
-      
-      <button id="btn-add-exercicio" class="w-full mt-6 bg-card-dark border border-[#1E7349]/50 text-[#1E7349] hover:bg-[#1E7349] hover:text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+
+      <button type="button" id="btn-add-exercicio" class="w-full mt-6 bg-card-dark border border-[#1E7349]/50 text-[#1E7349] hover:bg-[#1E7349] hover:text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
         <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Exercício
       </button>
     </div>
@@ -76,7 +97,7 @@
         <button type="button" id="btn-salvar-nova" class="min-h-11 px-2 text-[#57d493] font-bold text-sm">Salvar</button>
       </div>
       <label for="input-nome-rotina" class="sr-only">Nome da rotina</label><input type="text" id="input-nome-rotina" maxlength="60" autocomplete="off" placeholder="Nome do treino (ex.: Upper A)" class="w-full bg-transparent border-b border-white/20 text-2xl font-bold py-2 outline-none focus:border-[#1E7349] mb-6 placeholder-gray-700 transition-colors">
-      <div class="rounded-2xl border border-white/10 bg-card-dark p-4"><p class="text-sm font-bold">Dias da semana <span class="font-normal text-gray-500">(opcional)</span></p><p class="mt-1 text-xs text-gray-500">Use apenas se quiser que esta rotina apareça como treino sugerido do dia.</p><div class="mt-4 grid grid-cols-7 gap-1" id="routine-days"><label><input class="peer sr-only" type="checkbox" value="1"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">S</span></label><label><input class="peer sr-only" type="checkbox" value="2"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">T</span></label><label><input class="peer sr-only" type="checkbox" value="3"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Q</span></label><label><input class="peer sr-only" type="checkbox" value="4"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Q</span></label><label><input class="peer sr-only" type="checkbox" value="5"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">S</span></label><label><input class="peer sr-only" type="checkbox" value="6"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">S</span></label><label><input class="peer sr-only" type="checkbox" value="0"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">D</span></label></div></div>
+      <div class="rounded-2xl border border-white/10 bg-card-dark p-4"><p class="text-sm font-bold">Dias da semana <span class="font-normal text-gray-500">(opcional)</span></p><p class="mt-1 text-xs text-gray-500">Use apenas se quiser que esta rotina apareça como treino sugerido do dia.</p><div class="mt-4 grid grid-cols-7 gap-1" id="routine-days"><label><input class="peer sr-only" type="checkbox" value="1" aria-label="Segunda-feira"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">S</span></label><label><input class="peer sr-only" type="checkbox" value="2" aria-label="Terça-feira"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">T</span></label><label><input class="peer sr-only" type="checkbox" value="3" aria-label="Quarta-feira"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Q</span></label><label><input class="peer sr-only" type="checkbox" value="4" aria-label="Quinta-feira"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Q</span></label><label><input class="peer sr-only" type="checkbox" value="5" aria-label="Sexta-feira"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">S</span></label><label><input class="peer sr-only" type="checkbox" value="6" aria-label="Sábado"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">S</span></label><label><input class="peer sr-only" type="checkbox" value="0" aria-label="Domingo"><span class="flex h-10 items-center justify-center rounded-xl bg-white/5 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">D</span></label></div></div>
     </div>
 
     <div id="view-explorar" class="hidden pt-8">
@@ -84,11 +105,11 @@
         <button type="button" id="btn-voltar-explorar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-[#1E7349] p-2 -ml-2 mr-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
-        <h1 class="text-xl font-bold tracking-tight">Explorar Treinos</h1>
+        <h1 class="text-xl font-bold tracking-tight">Modelos de treino</h1>
       </div>
       <div class="text-center text-gray-500 mt-16">
         <i data-lucide="compass" class="w-16 h-16 mx-auto mb-4 opacity-30"></i>
-        <p class="font-medium">Em breve!</p>
+        <p class="font-medium">Preparando modelos…</p>
       </div>
     </div>
 
@@ -100,21 +121,21 @@
         <h1 class="text-xl font-bold tracking-tight">Exercícios</h1>
         <div class="w-10"></div>
       </div>
-      
+
       <div class="bg-card-dark flex items-center px-4 py-3 rounded-xl mb-6 border border-white/10 focus-within:border-[#1E7349] transition-colors">
         <i data-lucide="search" class="w-5 h-5 text-gray-500 mr-3"></i>
         <label for="input-busca-exercicio" class="sr-only">Buscar exercício</label><input type="search" id="input-busca-exercicio" autocomplete="off" placeholder="Buscar exercício…" class="bg-transparent w-full text-sm outline-none">
       </div>
 
-      <div id="exercise-filters" class="-mt-2 mb-5 flex gap-2 overflow-x-auto pb-2"><button data-exercise-filter="" class="exercise-filter rounded-full bg-neon px-4 py-2 text-xs font-bold text-black">Todos</button><button data-exercise-filter="Peito" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Peito</button><button data-exercise-filter="Costas" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Costas</button><button data-exercise-filter="Quadríceps" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Quadríceps</button><button data-exercise-filter="Posterior" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Posterior</button><button data-exercise-filter="Glúteos" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Glúteos</button><button data-exercise-filter="Ombros" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Ombros</button><button data-exercise-filter="Braços" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Braços</button><button data-exercise-filter="Abdômen" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Abdômen</button></div>
+      <div id="exercise-filters" class="-mt-2 mb-5 flex gap-2 overflow-x-auto pb-2"><button type="button" data-exercise-filter="" class="exercise-filter rounded-full bg-neon px-4 py-2 text-xs font-bold text-black">Todos</button><button type="button" data-exercise-filter="Peito" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Peito</button><button type="button" data-exercise-filter="Costas" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Costas</button><button type="button" data-exercise-filter="Quadríceps" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Quadríceps</button><button type="button" data-exercise-filter="Posterior" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Posterior</button><button type="button" data-exercise-filter="Glúteos" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Glúteos</button><button type="button" data-exercise-filter="Ombros" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Ombros</button><button type="button" data-exercise-filter="Braços" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Braços</button><button type="button" data-exercise-filter="Abdômen" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Abdômen</button></div>
       <div id="biblioteca-list" class="space-y-2"></div>
     </div>
 
   </div>
 
-  <div id="rest-timer" role="timer" aria-live="polite" aria-label="Cronômetro de descanso" class="fixed bottom-24 left-1/2 z-[60] hidden w-[calc(100%-2.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-neon/30 bg-[#151b17]/95 p-4 shadow-2xl backdrop-blur-xl">
-    <div class="flex items-center justify-between"><div class="flex items-center gap-2 text-sm font-bold"><i data-lucide="timer-reset" class="h-4 w-4 text-neon"></i> Descanso</div><button id="btn-skip-rest" class="text-xs font-bold text-gray-400">Pular</button></div>
-    <div class="mt-3 flex items-end justify-between"><span id="rest-time" class="text-3xl font-extrabold tabular-nums text-white">01:30</span><button id="btn-add-rest" class="rounded-lg bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">+30 s</button></div>
+  <div id="rest-timer" role="timer" aria-label="Cronômetro de descanso" class="fixed bottom-24 left-1/2 z-[60] hidden w-[calc(100%-2.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-neon/30 bg-[#151b17]/95 p-4 shadow-2xl backdrop-blur-xl">
+    <div class="flex items-center justify-between"><div class="flex items-center gap-2 text-sm font-bold"><i data-lucide="timer-reset" class="h-4 w-4 text-neon"></i> Descanso</div><button type="button" id="btn-skip-rest" class="text-xs font-bold text-gray-400">Pular</button></div>
+    <div class="mt-3 flex items-end justify-between"><span id="rest-time" class="text-3xl font-extrabold tabular-nums text-white">01:30</span><button type="button" id="btn-add-rest" class="rounded-lg bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">+30 s</button></div>
     <div class="mt-3 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
   </div>
 
@@ -122,32 +143,32 @@
       <div id="modal-tipo-serie-content" class="bg-card-dark rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300" tabindex="-1">
         <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
         <h3 id="modal-tipo-serie-title" class="text-center font-bold mb-6 text-lg tracking-tight">Selecionar tipo de série</h3>
-        
+
         <div class="space-y-2">
           <button type="button" data-series-type="W" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-orange-400 font-extrabold w-10 text-lg">W</span> 
+            <span class="text-orange-400 font-extrabold w-10 text-lg">W</span>
             <span class="font-medium text-white text-base">Série de Aquecimento</span>
           </button>
-          
+
           <button type="button" data-series-type="N" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-white font-extrabold w-10 text-lg">1</span> 
+            <span class="text-white font-extrabold w-10 text-lg">1</span>
             <span class="font-medium text-white text-base">Série Normal</span>
           </button>
-          
+
           <button type="button" data-series-type="F" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-red-400 font-extrabold w-10 text-lg">F</span> 
+            <span class="text-red-400 font-extrabold w-10 text-lg">F</span>
             <span class="font-medium text-white text-base">Série Falhada</span>
           </button>
-          
+
           <button type="button" data-series-type="D" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-blue-400 font-extrabold w-10 text-lg">D</span> 
+            <span class="text-blue-400 font-extrabold w-10 text-lg">D</span>
             <span class="font-medium text-white text-base">Série Drop</span>
           </button>
-          
+
           <div class="h-px bg-white/10 my-2"></div>
-          
+
           <button type="button" data-remove-series class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors text-red-500">
-            <i data-lucide="x" class="w-5 h-5 mr-5"></i> 
+            <i data-lucide="x" class="w-5 h-5 mr-5"></i>
             <span class="font-medium text-base">Remover Série</span>
           </button>
         </div>
@@ -161,18 +182,18 @@
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
         <span class="text-[10px] font-medium">Início</span>
       </a>
-      
+
       <!-- Treino ativo nesta página (Fica verde) -->
       <a href="./treino.html" aria-current="page" class="flex flex-col items-center gap-1 text-[#1E7349] transition-fluid">
         <i data-lucide="dumbbell" class="w-5 h-5"></i>
         <span class="text-[10px] font-semibold">Treino</span>
       </a>
-      
+
       <a href="./dieta.html" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
         <i data-lucide="apple" class="w-5 h-5"></i>
         <span class="text-[10px] font-medium">Dieta</span>
       </a>
-      
+
       <a href="./perfil.html" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
   <i data-lucide="user" class="w-5 h-5"></i>
   <span class="text-[10px] font-medium">Perfil</span>

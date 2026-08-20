@@ -1,136 +1,199 @@
 import { setupAppShell } from '../utils/app-shell.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { auth, db, googleProvider } from '../config/firebase-config.js';
-import { EmailAuthProvider, deleteUser, onAuthStateChanged, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { collection, deleteDoc, doc, getDocs, query, where, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { EmailAuthProvider, deleteUser, onAuthStateChanged, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
+import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
+import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
+import { removeLocalItemsWithPrefix } from '../utils/storage.js';
 
 setupAppShell();
 
-const saved = JSON.parse(localStorage.getItem('mol-accessibility') || '{}');
-const choices = [['system', 'Sistema'], ['', 'Escuro'], ['light', 'Claro']];
-const group = document.getElementById('theme-segments');
-const remindersEnabled = document.getElementById('reminders-enabled');
-const reminderOptions = document.getElementById('reminder-options');
-const workoutTime = document.getElementById('workout-time');
-const mealTime = document.getElementById('meal-time');
-const reminderNote = document.getElementById('reminder-note');
-const installButton = document.getElementById('install-app');
-const installNote = document.getElementById('install-note');
-const languageGroup = document.getElementById('language-segments');
+const $ = id => document.getElementById(id);
 
-const apply = () => {
-  const prefs = { theme: saved.theme ?? 'system', contrast: !!saved.contrast, largeText: !!saved.largeText };
-  localStorage.setItem('mol-accessibility', JSON.stringify(prefs));
-  document.body.dataset.theme = prefs.theme === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? '' : 'light') : prefs.theme;
-  document.body.dataset.highContrast = prefs.contrast;
-  document.body.dataset.largeText = prefs.largeText ? 'true' : '';
-  group.querySelectorAll('button').forEach((button) => button.classList.toggle('is-active', button.dataset.theme === prefs.theme));
-};
+let appearance = getAccessibilityPreferences();
+const themeChoices = [
+  ['system', 'monitor', 'Sistema'],
+  ['dark', 'moon', 'Escuro'],
+  ['light', 'sun', 'Claro']
+];
 
-choices.forEach(([value, label]) => {
-  const button = document.createElement('button');
-  button.dataset.theme = value;
-  button.className = 'min-h-11 rounded-xl text-xs font-bold';
-  button.textContent = label;
-  button.onclick = () => { saved.theme = value; apply(); };
-  group.appendChild(button);
-});
-
-const contrast = document.getElementById('contrast');
-const large = document.getElementById('large-text');
-contrast.checked = !!saved.contrast;
-large.checked = !!saved.largeText;
-contrast.onchange = () => { saved.contrast = contrast.checked; apply(); };
-large.onchange = () => { saved.largeText = large.checked; apply(); };
-
-function renderReminders() {
-  const prefs = getReminderPreferences();
-  remindersEnabled.checked = prefs.enabled;
-  workoutTime.value = prefs.workoutTime;
-  mealTime.value = prefs.mealTime;
-  reminderOptions.classList.toggle('opacity-50', !prefs.enabled);
-  reminderOptions.querySelectorAll('input').forEach((input) => { input.disabled = !prefs.enabled; });
-  if (!('Notification' in window)) reminderNote.textContent = 'Este navegador não oferece notificações locais.';
-  else if (Notification.permission === 'denied') reminderNote.textContent = 'As notificações foram bloqueadas no navegador. Libere a permissão nas configurações do site.';
+function applyAppearance() {
+  appearance = applyAccessibilityPreferences(appearance);
+  $('theme-segments').querySelectorAll('button').forEach(button => {
+    const selected = button.dataset.theme === appearance.theme;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  $('contrast').checked = appearance.contrast;
+  $('large-text').checked = appearance.largeText;
 }
 
-remindersEnabled.onchange = async () => {
-  if (remindersEnabled.checked) {
-    try { await requestReminderPermission(); }
-    catch (error) { remindersEnabled.checked = false; alert(error.message); }
+async function persistAppearance() {
+  applyAppearance();
+  try {
+    appearance = await saveAccessibilityPreferences(appearance);
+  } catch (error) {
+    console.warn('Preferências salvas apenas neste dispositivo:', error.message);
+    showToast('A preferência foi aplicada, mas não pôde ser sincronizada com sua conta.');
   }
-  saveReminderPreferences({ enabled: remindersEnabled.checked });
-  renderReminders();
+}
+
+themeChoices.forEach(([value, icon, label]) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.theme = value;
+  button.className = 'flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-bold';
+  button.innerHTML = `<i data-lucide="${icon}" class="h-4 w-4"></i><span>${label}</span>`;
+  button.onclick = () => { appearance.theme = value; persistAppearance(); };
+  $('theme-segments').appendChild(button);
+});
+
+$('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };
+$('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
+
+const defaultReminderNote = 'Os lembretes funcionam enquanto o Mol estiver aberto. O navegador pode pausar avisos em segundo plano.';
+
+function renderReminders(message = '') {
+  const prefs = getReminderPreferences();
+  $('reminders-enabled').checked = prefs.enabled;
+  $('workout-time').value = prefs.workoutTime;
+  $('meal-time').value = prefs.mealTime;
+  $('reminder-options').classList.toggle('opacity-50', !prefs.enabled);
+  $('reminder-options').querySelectorAll('input').forEach(input => { input.disabled = !prefs.enabled; });
+  $('test-reminder').disabled = !prefs.enabled;
+  $('test-reminder').classList.toggle('opacity-50', !prefs.enabled);
+  if (message) $('reminder-note').textContent = message;
+  else if (!('Notification' in window)) $('reminder-note').textContent = 'Este navegador não oferece notificações locais.';
+  else if (Notification.permission === 'denied') $('reminder-note').textContent = 'As notificações estão bloqueadas. Libere a permissão nas configurações deste site.';
+  else if (prefs.enabled && Notification.permission === 'granted') $('reminder-note').textContent = 'Lembretes ativos. Mantenha o Mol aberto para receber os avisos.';
+  else $('reminder-note').textContent = defaultReminderNote;
+}
+
+$('reminders-enabled').onchange = async () => {
+  const enabled = $('reminders-enabled').checked;
+  if (enabled) {
+    try {
+      await requestReminderPermission();
+    } catch (error) {
+      saveReminderPreferences({ enabled: false });
+      renderReminders(error.message || 'Não foi possível ativar as notificações.');
+      showToast(error.message || 'Não foi possível ativar as notificações.');
+      return;
+    }
+  }
+  if (!saveReminderPreferences({ enabled })) {
+    renderReminders('O navegador não permitiu salvar os lembretes neste dispositivo.');
+    showToast('Não foi possível salvar a preferência de lembretes.');
+    return;
+  }
+  renderReminders(enabled ? 'Lembretes ativados.' : 'Lembretes desativados.');
 };
-[workoutTime, mealTime].forEach((input) => input.onchange = () => saveReminderPreferences({ [input === workoutTime ? 'workoutTime' : 'mealTime']: input.value }));
-document.getElementById('test-reminder').onclick = async () => {
-  try { await sendTestReminder(); reminderNote.textContent = 'Notificação de teste enviada.'; }
-  catch (error) { alert(error.message); }
+
+['workout-time', 'meal-time'].forEach(id => {
+  $(id).onchange = () => {
+    if (!$(id).value) return renderReminders('Escolha um horário válido.');
+    if (!saveReminderPreferences({ [id === 'workout-time' ? 'workoutTime' : 'mealTime']: $(id).value })) {
+      renderReminders('O navegador não permitiu salvar os horários.');
+      showToast('Não foi possível salvar o horário.');
+      return;
+    }
+    renderReminders('Horários atualizados.');
+  };
+});
+
+$('test-reminder').onclick = async () => {
+  if (!getReminderPreferences().enabled) return;
+  const button = $('test-reminder');
+  setButtonLoading(button, true);
+  try {
+    await sendTestReminder();
+    renderReminders('Notificação de teste enviada.');
+    showToast('Notificação enviada.', 'success');
+  } catch (error) {
+    renderReminders(error.message || 'Não foi possível enviar a notificação.');
+    showToast(error.message || 'Não foi possível enviar a notificação.');
+  } finally {
+    setButtonLoading(button, false);
+    window.lucide?.createIcons();
+  }
 };
 
 function renderInstall() {
-  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-    installButton.hidden = true;
-    installNote.textContent = 'O Mol já está instalado neste dispositivo.';
+  const installed = matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (installed) {
+    $('install-app').hidden = true;
+    $('install-note').textContent = 'O Mol já está instalado neste dispositivo.';
   } else if (window.__molInstallPrompt) {
-    installButton.hidden = false;
-    installNote.textContent = 'Instale para abrir em tela cheia e manter o acesso rápido.';
+    $('install-app').hidden = false;
+    $('install-note').textContent = 'Instale o Mol para abrir em tela cheia e acessar mais rapidamente.';
   } else {
-    installButton.hidden = true;
-    installNote.textContent = 'No iPhone, use Compartilhar > Adicionar à Tela de Início. Em outros navegadores, o botão aparece quando a instalação estiver disponível.';
+    $('install-app').hidden = true;
+    $('install-note').textContent = /iphone|ipad|ipod/i.test(navigator.userAgent)
+      ? 'No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.'
+      : 'A instalação aparecerá aqui quando estiver disponível neste navegador.';
   }
 }
 
-installButton.onclick = async () => {
-  const prompt = window.__molInstallPrompt;
-  if (!prompt) return;
-  prompt.prompt();
-  await prompt.userChoice;
+$('install-app').onclick = async () => {
+  const promptEvent = window.__molInstallPrompt;
+  if (!promptEvent) return;
+  await promptEvent.prompt();
+  const choice = await promptEvent.userChoice;
   window.__molInstallPrompt = null;
   renderInstall();
+  if (choice.outcome === 'accepted') showToast('Instalação iniciada.', 'success');
 };
 window.addEventListener('mol-install-available', renderInstall);
-
-const language = localStorage.getItem('mol-language') || 'pt-BR';
-document.documentElement.lang = language;
-[['pt-BR', 'Português'], ['en-US', 'English']].forEach(([locale, label]) => {
-  const button = document.createElement('button');
-  button.className = 'min-h-11 rounded-xl bg-white/5 text-sm font-bold';
-  button.textContent = label;
-  button.setAttribute('aria-pressed', String(locale === language));
-  if (locale === language) button.classList.add('bg-neon', 'text-black');
-  button.onclick = () => {
-    localStorage.setItem('mol-language', locale);
-    document.documentElement.lang = locale;
-    languageGroup.querySelectorAll('button').forEach((item) => {
-      const selected = item.textContent === label;
-      item.setAttribute('aria-pressed', String(selected));
-      item.classList.toggle('bg-neon', selected);
-      item.classList.toggle('text-black', selected);
-    });
-  };
-  languageGroup.appendChild(button);
-});
+window.addEventListener('appinstalled', renderInstall);
 
 async function deleteUserData(user) {
-  for (const name of ['treinos', 'sessoes', 'pesos', 'dietas']) {
-    const snapshot = await getDocs(query(collection(db, name), where('userId', '==', user.uid)));
+  const names = ['treinos', 'sessoes', 'pesos'];
+  const dietReference = doc(db, 'dietas', user.uid);
+  // Todas as leituras terminam antes da primeira exclusão, evitando apagar só parte dos dados por falha de consulta.
+  const [snapshots, diet] = await Promise.all([
+    Promise.all(names.map(name => getDocs(query(collection(db, name), where('userId', '==', user.uid))))),
+    getDoc(dietReference)
+  ]);
+  for (const snapshot of snapshots) {
     for (let index = 0; index < snapshot.docs.length; index += 450) {
       const batch = writeBatch(db);
-      snapshot.docs.slice(index, index + 450).forEach((item) => batch.delete(item.ref));
+      snapshot.docs.slice(index, index + 450).forEach(item => batch.delete(item.ref));
       await batch.commit();
     }
   }
-  await deleteDoc(doc(db, 'users', user.uid));
+  const finalBatch = writeBatch(db);
+  if (diet.exists()) finalBatch.delete(dietReference);
+  finalBatch.delete(doc(db, 'users', user.uid));
+  await finalBatch.commit();
+}
+
+function requestPassword() {
+  return new Promise(resolve => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
+    modal.setAttribute('aria-labelledby', 'password-dialog-title');
+    modal.setAttribute('aria-describedby', 'password-dialog-description');
+    modal.innerHTML = '<section class="w-full max-w-sm rounded-3xl border border-white/10 bg-[#161a17] p-6 shadow-2xl"><h2 id="password-dialog-title" class="text-lg font-bold">Confirme sua senha</h2><p id="password-dialog-description" class="mt-2 text-sm text-gray-400">Precisamos confirmar sua identidade antes da exclusão.</p><label class="mt-5 block text-xs font-bold text-gray-400">Senha<input data-password type="password" autocomplete="current-password" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-white"></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl bg-white/5 py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-red-500 py-3 text-sm font-bold text-white">Continuar</button></div></section>';
+    document.body.appendChild(modal);
+    const input = modal.querySelector('[data-password]');
+    let closeDialog;
+    const close = value => { closeDialog(); resolve(value); };
+    closeDialog = activateDialog(modal, { initialFocus: input, onCancel: () => close('') });
+    modal.querySelector('[data-cancel]').onclick = () => close('');
+    modal.querySelector('[data-confirm]').onclick = () => close(input.value);
+    input.onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); close(input.value); } };
+    modal.onclick = event => { if (event.target === modal) close(''); };
+  });
 }
 
 async function reauthenticate(user) {
-  if (user.providerData.some((provider) => provider.providerId === 'google.com')) {
+  if (user.providerData.some(provider => provider.providerId === 'google.com')) {
     await reauthenticateWithPopup(user, googleProvider);
     return;
   }
-  if (user.providerData.some((provider) => provider.providerId === 'password')) {
-    const password = prompt('Confirme sua senha para excluir a conta.');
+  if (user.providerData.some(provider => provider.providerId === 'password')) {
+    const password = await requestPassword();
     if (!password) throw new Error('Exclusão cancelada.');
     await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
     return;
@@ -138,27 +201,62 @@ async function reauthenticate(user) {
   throw new Error('Entre novamente antes de excluir sua conta.');
 }
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) { location.href = './login.html'; return; }
-  document.getElementById('session-email').textContent = user.email || 'Conta conectada';
-  document.getElementById('sign-out').onclick = async () => { await signOut(auth); location.href = './login.html'; };
-  document.getElementById('delete-account').onclick = async () => {
-    if (prompt('Esta ação é permanente. Digite EXCLUIR para continuar.') !== 'EXCLUIR') return;
-    const button = document.getElementById('delete-account');
-    button.disabled = true;
+function authErrorMessage(error, fallback) {
+  if (error?.code === 'auth/wrong-password' || error?.code === 'auth/invalid-credential') return 'Senha incorreta.';
+  if (error?.code === 'auth/popup-closed-by-user') return 'Confirmação cancelada.';
+  if (error?.code === 'auth/popup-blocked') return 'O navegador bloqueou a confirmação. Libere pop-ups para o Mol e tente novamente.';
+  if (error?.code === 'auth/requires-recent-login') return 'Entre novamente e tente de novo.';
+  return error?.message || fallback;
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    location.href = './login.html';
+    return;
+  }
+  try {
+    appearance = await syncAccessibilityForUser(user);
+    applyAppearance();
+  } catch (error) {
+    console.warn('Preferências da conta não carregadas:', error.message);
+  }
+  $('session-email').textContent = user.email || user.displayName || 'Conta conectada';
+
+  $('sign-out').onclick = async () => {
+    const confirmed = await confirmAction({ title: 'Sair desta conta?', message: 'Você precisará entrar novamente para acessar seus dados.', confirmText: 'Sair' });
+    if (!confirmed) return;
+    const button = $('sign-out');
+    setButtonLoading(button, true);
+    try {
+      await signOut(auth);
+      location.href = './login.html';
+    } catch (error) {
+      setButtonLoading(button, false);
+      window.lucide?.createIcons();
+      showToast(authErrorMessage(error, 'Não foi possível sair da conta.'));
+    }
+  };
+
+  $('delete-account').onclick = async () => {
+    const confirmed = await confirmAction({ title: 'Excluir conta permanentemente?', message: 'Perfil, fotos, treinos, sessões, pesos e dieta serão apagados. Essa ação não pode ser desfeita.', confirmText: 'Excluir tudo', danger: true });
+    if (!confirmed) return;
+    const button = $('delete-account');
+    setButtonLoading(button, true);
     try {
       await reauthenticate(user);
       await deleteUserData(user);
       await deleteUser(user);
-      Object.keys(localStorage).filter((key) => key.startsWith('mol-')).forEach((key) => localStorage.removeItem(key));
+      removeLocalItemsWithPrefix('mol-');
       location.href = './login.html';
     } catch (error) {
-      button.disabled = false;
-      alert(error.code === 'auth/requires-recent-login' ? 'Entre novamente e tente de novo.' : (error.message || 'Não foi possível excluir a conta.'));
+      setButtonLoading(button, false);
+      window.lucide?.createIcons();
+      if (error?.message !== 'Exclusão cancelada.') showToast(authErrorMessage(error, 'Não foi possível excluir a conta.'));
     }
   };
 });
-document.getElementById('back').onclick = () => document.referrer && new URL(document.referrer).origin === location.origin ? history.back() : location.href = './perfil.html';
-apply();
+
+applyAppearance();
 renderReminders();
 renderInstall();
+window.lucide?.createIcons();

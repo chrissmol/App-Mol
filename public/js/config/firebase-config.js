@@ -5,12 +5,12 @@
  */
 
 // Importa os SDKs do Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from 'firebase/auth';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
 const firebaseConfig = {
@@ -27,7 +27,7 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta instâncias prontas para uso em outros arquivos
 export const auth = getAuth(app);
-// Guarda uma cÃ³pia local para exibir dados recentes antes da atualizaÃ§Ã£o de rede.
+// Guarda uma cópia local para exibir dados recentes antes da atualização de rede.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
 });

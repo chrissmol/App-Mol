@@ -1,28 +1,51 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070a08">
   <meta name="google" content="notranslate">
-  <title>Mol — Dados pessoais</title>
-  <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg?v=2">
+  <title>Mol</title>
+  <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
   <link rel="stylesheet" href="../css/tailwind.css">
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body class="app-surface min-h-screen text-white">
-  <main class="mx-auto max-w-md px-5 pt-6 pb-10">
-    <button id="back" class="text-sm font-bold text-gray-400">&larr; Perfil</button>
-    <p class="mt-5 text-xs font-semibold uppercase tracking-wider text-neon">Seu perfil</p>
-    <h1 class="mt-1 text-2xl font-extrabold">Dados e metas</h1>
-    <section class="glass-card mt-6 rounded-3xl p-5">
-      <div class="grid grid-cols-2 gap-3">
-        <label class="text-xs text-gray-400">Altura (cm)<input id="height" inputmode="numeric" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off"></label>
-        <label class="text-xs text-gray-400">Meta de peso (kg)<input id="goal-weight" inputmode="decimal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off"></label>
-      </div>
-      <label class="mt-4 block text-xs text-gray-400">Objetivo<select id="goal" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white"><option value="">Selecione</option><option>Hipertrofia</option><option>For&ccedil;a</option><option>Emagrecimento</option><option>Sa&uacute;de</option></select></label>
-      <label class="mt-4 block text-xs text-gray-400">Meta semanal de treinos<input id="weekly" inputmode="numeric" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off"></label>
-      <button id="save" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar dados</button>
-    </section>
+  <main class="mx-auto max-w-md px-5 pb-10 pt-6">
+    <a id="back" href="./perfil.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para o perfil"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Perfil</span></a>
+    <header class="mt-4"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Seu perfil</p><h1 class="mt-1 text-2xl font-extrabold">Dados e metas</h1><p class="mt-2 text-sm text-gray-500">Mantenha suas referências pessoais e objetivos atualizados.</p></header>
+    <p id="page-status" class="glass-card mt-6 rounded-2xl p-4 text-sm text-gray-500" role="status">Carregando seus dados…</p>
+
+    <div id="personal-content" class="hidden">
+      <section class="glass-card mt-6 rounded-3xl p-5" aria-labelledby="goals-title">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="target" class="h-5 w-5"></i></span><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Referências</p><h2 id="goals-title" class="mt-1 text-lg font-extrabold">Corpo e objetivos</h2></div></div>
+        <div class="mt-5 grid grid-cols-2 gap-3"><label class="text-xs font-bold text-gray-400">Altura (cm)<input id="height" type="number" min="100" max="250" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off" placeholder="Ex.: 175"></label><label class="text-xs font-bold text-gray-400">Meta de peso (kg)<input id="goal-weight" type="number" min="20" max="400" step="0.1" inputmode="decimal" class="mt-2 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off" placeholder="Ex.: 75,5"></label></div>
+        <label class="mt-4 block text-xs font-bold text-gray-400">Objetivo<select id="goal" class="mt-2 w-full rounded-xl bg-card-dark-2 p-3 text-white"><option value="">Selecione</option><option>Hipertrofia</option><option>Força</option><option>Emagrecimento</option><option>Saúde</option></select></label>
+        <label class="mt-4 block text-xs font-bold text-gray-400">Meta semanal de treinos<input id="weekly" type="number" min="1" max="7" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl bg-card-dark-2 p-3 text-white" autocomplete="off" placeholder="De 1 a 7"></label>
+        <button id="save" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar dados</button>
+      </section>
+
+      <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="units-title">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="ruler" class="h-5 w-5"></i></span><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Unidades</p><h2 id="units-title" class="mt-1 text-lg font-extrabold">Sistema métrico</h2></div></div>
+        <div class="mt-4 flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3"><span><strong class="block text-sm">Quilogramas e centímetros</strong><small class="mt-1 block text-xs text-gray-500">Padrão atual do Mol</small></span><i data-lucide="check-circle-2" class="h-5 w-5 text-neon"></i></div>
+        <p class="mt-3 text-xs leading-relaxed text-gray-500">O Mol usa o sistema métrico em treinos, gráficos e históricos para manter todos os registros consistentes.</p>
+      </section>
+
+      <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="privacy-title">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="lock-keyhole" class="h-5 w-5"></i></span><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Privacidade</p><h2 id="privacy-title" class="mt-1 text-lg font-extrabold">Dados privados</h2></div></div>
+        <p class="mt-4 text-sm leading-relaxed text-gray-400">O Mol não possui perfil público nem compartilhamento de estatísticas. Seus registros são acessíveis somente pela sua conta autenticada.</p>
+      </section>
+
+      <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="backup-title">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="archive" class="h-5 w-5"></i></span><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Seus dados</p><h2 id="backup-title" class="mt-1 text-lg font-extrabold">Backup pessoal</h2></div></div>
+        <p class="mt-4 text-sm leading-relaxed text-gray-500">Exporte perfil, treinos, sessões, pesos e dieta. A restauração preserva IDs, evita duplicações e não apaga dados existentes.</p>
+        <button id="export" type="button" class="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white/5 text-sm font-bold"><i data-lucide="download" class="h-4 w-4"></i><span>Exportar backup</span></button>
+        <label class="mt-5 block text-xs font-bold text-gray-400">Arquivo de backup<input id="restore-file" class="mt-2 block w-full rounded-xl bg-white/5 p-3 text-sm" type="file" accept="application/json,.json"></label>
+        <p id="restore-summary" class="mt-3 text-xs leading-relaxed text-gray-500" role="status">Selecione um arquivo JSON gerado pelo Mol.</p>
+        <button id="restore" type="button" class="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-neon text-sm font-bold text-black opacity-50" disabled><i data-lucide="upload" class="h-4 w-4"></i><span>Restaurar backup</span></button>
+      </section>
+    </div>
   </main>
   <script type="module" src="../js/pages/dados-pessoais.js"></script>
 </body>

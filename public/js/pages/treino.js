@@ -1,10 +1,12 @@
 // js/pages/treino.js
-document.title = 'Mol — Treinos';
+document.title = 'Mol';
 import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { showToast, confirmAction, escapeHTML } from '../utils/ui.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { activateDialog, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
+import { cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
+import { getLocalItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
 setupAppShell();
 const renderIcons = (root = document) => window.lucide?.createIcons({ root });
 
@@ -21,20 +23,24 @@ let descansoTotal = 90;
 let descansoInterval = null;
 let finalizandoTreino = false;
 let checkinPreTreino = null;
+let descansoTerminaEm = null;
+let ultimoRascunhoSalvoEm = 0;
+const requestedWorkout = new URLSearchParams(window.location.search);
 
 const draftKey = (id) => `mol-workout-draft-${id}`;
 function lerRascunho(id) {
-  try { return JSON.parse(localStorage.getItem(draftKey(id)) || 'null'); }
-  catch { localStorage.removeItem(draftKey(id)); return null; }
+  try { return JSON.parse(getLocalItem(draftKey(id)) || 'null'); }
+  catch { removeLocalItems(draftKey(id)); return null; }
 }
-function salvarRascunho() {
+function salvarRascunho({ force = false } = {}) {
   if (!usuarioAtual || !rotinaAbertaId) return;
+  if (!force && Date.now() - ultimoRascunhoSalvoEm < 5000) return;
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina) return;
-  try { localStorage.setItem(draftKey(usuarioAtual.uid), JSON.stringify({ rotinaId: rotinaAbertaId, exercicios: rotina.exercicios, tempoSegundos, iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino })); }
-  catch (error) { console.warn('Não foi possível salvar o rascunho local.', error); }
+  if (setLocalItem(draftKey(usuarioAtual.uid), JSON.stringify({ versao: 2, rotinaId: rotinaAbertaId, exercicios: rotina.exercicios, tempoSegundos, atualizadoEm: new Date().toISOString(), iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino }))) ultimoRascunhoSalvoEm = Date.now();
 }
-function limparRascunho() { if (usuarioAtual) localStorage.removeItem(draftKey(usuarioAtual.uid)); }
+function limparRascunho() { if (usuarioAtual) removeLocalItems(draftKey(usuarioAtual.uid)); }
+function exerciciosParaPersistir(rotina) { return treinoIniciado ? cleanRoutineExercises(rotina.exercicios) : rotina.exercicios; }
 
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
 // Funciona tanto no Live Server quanto no build do Vite, sem tentar executar o SVG como JavaScript.
@@ -42,12 +48,47 @@ const exerciseFigure = new URL('../../assets/exercise-figure.svg', import.meta.u
 let favoritosExercicios = [];
 let recentesExercicios = [];
 let exerciciosPersonalizados = [];
+const MAX_CUSTOM_EXERCISES = 100;
 const ultimaPerformance = new Map();
 const historicoPerformance = new Map();
 const bibliotecaKey = () => `mol-exercise-library-${usuarioAtual?.uid || 'guest'}`;
-function salvarPreferenciasBiblioteca() { localStorage.setItem(bibliotecaKey(), JSON.stringify({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados })); if (usuarioAtual) setDoc(doc(db, 'users', usuarioAtual.uid), { exerciseLibraryPreferences: { favoritosExercicios, recentesExercicios, exerciciosPersonalizados } }, { merge: true }).catch(error => console.warn('Preferências locais não sincronizadas:', error.message)); }
-function carregarPreferenciasBiblioteca() { try { ({ favoritosExercicios = [], recentesExercicios = [], exerciciosPersonalizados = [] } = JSON.parse(localStorage.getItem(bibliotecaKey()) || '{}')); exerciciosPersonalizados.forEach(ex => { if (!bibliotecaDeExercicios.some(item => item.nome === ex.nome)) bibliotecaDeExercicios.push(ex); }); } catch { favoritosExercicios = []; recentesExercicios = []; exerciciosPersonalizados = []; } }
-async function carregarPreferenciasDaConta() { try { const snapshot = await getDoc(doc(db, 'users', usuarioAtual.uid)); const prefs = snapshot.data()?.exerciseLibraryPreferences; if (!prefs) return; favoritosExercicios = prefs.favoritosExercicios || favoritosExercicios; recentesExercicios = prefs.recentesExercicios || recentesExercicios; exerciciosPersonalizados = prefs.exerciciosPersonalizados || exerciciosPersonalizados; exerciciosPersonalizados.forEach(ex => { if (!bibliotecaDeExercicios.some(item => item.nome === ex.nome)) bibliotecaDeExercicios.push(ex); }); localStorage.setItem(bibliotecaKey(), JSON.stringify({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados })); renderizarBiblioteca(inputBuscaExercicio?.value || ''); } catch (error) { console.warn('Preferências da conta não carregadas:', error.message); } }
+function normalizedLibraryPreferences(value = {}) {
+  const textList = (list, limit) => [...new Set((Array.isArray(list) ? list : []).filter(item => typeof item === 'string').map(item => item.trim()).filter(Boolean))].slice(0, limit);
+  const names = new Set();
+  const custom = (Array.isArray(value.exerciciosPersonalizados) ? value.exerciciosPersonalizados : []).flatMap(item => {
+    const nome = typeof item?.nome === 'string' ? item.nome.trim().slice(0, 80) : '';
+    const grupo = typeof item?.grupo === 'string' ? item.grupo.trim().slice(0, 40) : '';
+    const key = nome.toLocaleLowerCase('pt-BR');
+    if (!nome || names.has(key)) return [];
+    names.add(key);
+    return [{ nome, grupo: grupo || 'Outros', personalizado: true }];
+  }).slice(0, MAX_CUSTOM_EXERCISES);
+  return { favoritosExercicios: textList(value.favoritosExercicios, 250), recentesExercicios: textList(value.recentesExercicios, 12), exerciciosPersonalizados: custom };
+}
+function applyLibraryPreferences(value) {
+  ({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados } = normalizedLibraryPreferences(value));
+  exerciciosPersonalizados.forEach(ex => { if (!bibliotecaDeExercicios.some(item => item.nome.toLocaleLowerCase('pt-BR') === ex.nome.toLocaleLowerCase('pt-BR'))) bibliotecaDeExercicios.push(ex); });
+}
+function salvarPreferenciasBiblioteca() {
+  const preferences = normalizedLibraryPreferences({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados });
+  ({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados } = preferences);
+  setLocalItem(bibliotecaKey(), JSON.stringify(preferences));
+  if (usuarioAtual) setDoc(doc(db, 'users', usuarioAtual.uid), { exerciseLibraryPreferences: preferences }, { merge: true }).catch(error => console.warn('Preferências locais não sincronizadas:', error.message));
+}
+function carregarPreferenciasBiblioteca() {
+  try { applyLibraryPreferences(JSON.parse(getLocalItem(bibliotecaKey()) || '{}')); }
+  catch { applyLibraryPreferences(); }
+}
+async function carregarPreferenciasDaConta() {
+  try {
+    const snapshot = await getDoc(doc(db, 'users', usuarioAtual.uid));
+    const prefs = snapshot.data()?.exerciseLibraryPreferences;
+    if (!prefs) return;
+    applyLibraryPreferences(prefs);
+    setLocalItem(bibliotecaKey(), JSON.stringify({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados }));
+    renderizarBiblioteca(inputBuscaExercicio?.value || '');
+  } catch (error) { console.warn('Preferências da conta não carregadas:', error.message); }
+}
 async function carregarUltimasPerformances() { try { const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid))); const sessoes = snapshot.docs.map(item => item.data()).sort((a, b) => (b.concluidoEm?.seconds || 0) - (a.concluidoEm?.seconds || 0)); sessoes.forEach(sessao => (sessao.exercicios || []).forEach(exercicio => { const serie = [...(exercicio.series || [])].reverse().find(item => item.concluida && Number(item.kg) >= 0 && Number(item.reps) > 0); if (!serie) return; const registro = { kg: Number(serie.kg), reps: Number(serie.reps) }; const lista = historicoPerformance.get(exercicio.nome) || []; lista.push(registro); historicoPerformance.set(exercicio.nome, lista); if (!ultimaPerformance.has(exercicio.nome)) ultimaPerformance.set(exercicio.nome, registro); })); renderizarBiblioteca(inputBuscaExercicio?.value || ''); } catch (error) { console.warn('Últimas performances não carregadas:', error.message); } }
 function equipamentoDo(ex) { const nome = ex.nome.toLowerCase(); if (nome.includes('máquina') || nome.includes('cadeira') || nome.includes('smith') || nome.includes('hack')) return 'Máquina'; if (nome.includes('polia') || nome.includes('cabo')) return 'Polia'; if (nome.includes('halter')) return 'Halteres'; if (nome.includes('barra')) return 'Barra'; return 'Peso corporal'; }
 function registrarRecente(nome) { recentesExercicios = [nome, ...recentesExercicios.filter(item => item !== nome)].slice(0, 12); salvarPreferenciasBiblioteca(); }
@@ -75,7 +116,6 @@ const btnVoltarBiblioteca = document.getElementById('btn-voltar-biblioteca');
 const btnSalvarNova = document.getElementById('btn-salvar-nova');
 const btnAddExercicio = document.getElementById('btn-add-exercicio');
 const inputBuscaExercicio = document.getElementById('input-busca-exercicio');
-const buscaRotinas = document.getElementById('busca-rotinas');
 const inputBuscaRotina = document.getElementById('input-busca-rotina');
 const restTimer = document.getElementById('rest-timer');
 const restTime = document.getElementById('rest-time');
@@ -102,21 +142,29 @@ async function carregarRotinasDoBanco() {
     const q = query(collection(db, "treinos"), where("userId", "==", usuarioAtual.uid));
     const querySnapshot = await getDocs(q);
     rotinasReais = [];
-    querySnapshot.forEach((doc) => { rotinasReais.push({ id: doc.id, ...doc.data() }); });
+    querySnapshot.forEach(item => { rotinasReais.push({ id: item.id, ...normalizeRoutineRecord(item.data()) }); });
     renderRotinas();
-    const draft = lerRascunho(usuarioAtual.uid);
-    if (draft && rotinasReais.some(r => r.id === draft.rotinaId)) {
+    let draft = lerRascunho(usuarioAtual.uid);
+    if (draft && !isRecoverableWorkoutDraft(draft, rotinasReais.map(routine => routine.id))) { limparRascunho(); draft = null; }
+    if (draft) {
+      const recuperar = await confirmAction({ title: 'Retomar treino?', message: 'Encontramos um treino que ficou em andamento neste dispositivo.', confirmText: 'Retomar', cancelText: 'Descartar' });
+      if (!recuperar) { limparRascunho(); return; }
       const routine = rotinasReais.find(r => r.id === draft.rotinaId);
-      routine.exercicios = draft.exercicios;
-      tempoSegundos = draft.tempoSegundos || 0;
-      sessaoIniciadaEm = draft.iniciadaEm ? new Date(draft.iniciadaEm) : new Date();
+      routine.exercicios = normalizeRoutineExercises(cloneValue(draft.exercicios));
+      sessaoIniciadaEm = new Date(draft.iniciadaEm);
+      tempoSegundos = elapsedSeconds(sessaoIniciadaEm);
+      checkinPreTreino = draft.checkinPreTreino || null;
       treinoIniciado = true;
-      if (!timerInterval) timerInterval = setInterval(() => { tempoSegundos++; atualizarDisplayTempo(); salvarRascunho(); }, 1000);
-      showToast(`Treino em andamento recuperado: ${routine.nome}`, 'success'); abrirRotina(routine.id);
+      if (!timerInterval) timerInterval = setInterval(atualizarCronometro, 1000);
+      showToast(`Treino em andamento recuperado: ${routine.nome}`, 'success'); abrirRotina(routine.id); return;
     }
+    const requestedRoutineId = requestedWorkout.get('rotina');
+    if (requestedWorkout.get('acao') === 'nova') btnNovaRotina.click();
+    else if (requestedRoutineId && rotinasReais.some(routine => routine.id === requestedRoutineId)) await iniciarRotinaComCheckin(requestedRoutineId);
   } catch (error) {
     console.error("Erro ao buscar:", error);
-    rotinasList.innerHTML = '<p class="text-center text-sm text-red-400 my-10">Não foi possível carregar suas rotinas.</p>';
+    rotinasList.innerHTML = '<div class="my-10 text-center"><p class="text-sm text-red-400">Não foi possível carregar suas rotinas.</p><button id="retry-routines" type="button" class="mt-4 min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-white">Tentar novamente</button></div>';
+    document.getElementById('retry-routines')?.addEventListener('click', carregarRotinasDoBanco);
     showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas.');
   }
 }
@@ -134,7 +182,10 @@ btnExplorar?.addEventListener('click', () => {
   esconderTudo();
   viewExplorar.classList.remove('hidden');
   viewExplorar.querySelector('.text-center')?.remove();
-  if (!document.getElementById('templates-list')) viewExplorar.insertAdjacentHTML('beforeend', `<div id="templates-list" class="space-y-3"><p class="text-sm text-gray-400">Comece com uma estrutura editável.</p>${[['Upper / Lower','4 dias · foco em força e hipertrofia'],['Push Pull Legs','6 dias · divisão clássica'],['Full Body','3 dias · ótimo para iniciantes']].map(([name,description])=>`<button onclick="criarTemplate('${name}')" class="w-full rounded-2xl border border-white/10 bg-card-dark p-4 text-left active:scale-[.98]"><span class="block font-bold">${name}</span><span class="mt-1 block text-xs text-gray-500">${description}</span></button>`).join('')}</div>`);
+  if (!document.getElementById('templates-list')) {
+    viewExplorar.insertAdjacentHTML('beforeend', `<div id="templates-list" class="space-y-3"><p class="text-sm text-gray-400">Comece com uma estrutura editável.</p>${[['Upper / Lower','4 dias · foco em força e hipertrofia'],['Push Pull Legs','6 dias · divisão clássica'],['Full Body','3 dias · ótimo para iniciantes']].map(([name,description])=>`<button type="button" data-template-name="${escapeHTML(name)}" class="w-full rounded-2xl border border-white/10 bg-card-dark p-4 text-left active:scale-[.98]"><span class="block font-bold">${escapeHTML(name)}</span><span class="mt-1 block text-xs text-gray-500">${escapeHTML(description)}</span></button>`).join('')}</div>`);
+    viewExplorar.querySelectorAll('[data-template-name]').forEach(button => button.addEventListener('click', () => void window.criarTemplate(button.dataset.templateName)));
+  }
   renderIcons();
 });
 
@@ -143,30 +194,20 @@ inputBuscaRotina?.addEventListener('input', renderRotinas);
 if (btnVoltar) {
   btnVoltar.addEventListener('click', async () => { 
     if (treinoIniciado && rotinaAbertaId) {
-      const confirmar = await confirmAction({ title: 'Encerrar treino?', message: 'As séries não concluídas desta sessão serão descartadas.', confirmText: 'Encerrar', danger: true });
+      const confirmar = await confirmAction({ title: 'Encerrar treino?', message: 'Todos os dados preenchidos nesta sessão serão descartados.', confirmText: 'Encerrar', danger: true });
       if (!confirmar) return; // Se cancelar, não faz nada
 
       // Reseta os rascunhos da sessão atual no banco para não acumular lixo
       const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
       if (rotina && rotina.exercicios) {
-        rotina.exercicios.forEach(ex => {
-          if (ex.series) {
-            ex.series.forEach(serie => {
-              serie.concluida = false;
-              serie.kg = '';
-              serie.reps = '';
-              // Nota: preservamos 'anteriorKg' e 'anteriorReps' para não perder o histórico passado!
-            });
-          }
-        });
-
+        const exerciciosLimpos = cleanRoutineExercises(rotina.exercicios);
         try {
-          // Salva o estado limpo no Firebase para descartar o rascunho incompleto
-          await updateDoc(doc(db, "treinos", rotinaAbertaId), { 
-            exercicios: rotina.exercicios 
-          });
+          await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosLimpos });
+          rotina.exercicios = exerciciosLimpos;
         } catch (error) {
           console.error("Erro ao limpar rascunho do treino:", error);
+          showToast('Não foi possível encerrar o treino. Verifique sua conexão.');
+          return;
         }
       }
     }
@@ -185,6 +226,7 @@ btnVoltarExplorar.addEventListener('click', () => { esconderTudo(); viewRotinas.
 btnVoltarBiblioteca.addEventListener('click', () => { esconderTudo(); viewDetalhe.classList.remove('hidden'); });
 
 function atualizarDescanso() {
+  if (descansoTerminaEm) descansoSegundos = Math.max(0, Math.ceil((descansoTerminaEm - Date.now()) / 1000));
   const minutos = Math.floor(descansoSegundos / 60);
   const segundos = descansoSegundos % 60;
   restTime.textContent = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
@@ -194,6 +236,7 @@ function atualizarDescanso() {
 function pararDescanso() {
   clearInterval(descansoInterval);
   descansoInterval = null;
+  descansoTerminaEm = null;
   restTimer.classList.add('hidden');
 }
 
@@ -201,16 +244,23 @@ function iniciarDescanso(indexExercicio) {
   clearInterval(descansoInterval);
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   const exercise = rotina?.exercicios?.[indexExercicio] || rotina?.exercicios?.find(ex => ex.series?.some(s => s.concluida));
-  descansoSegundos = exercise?.descansoSegundos || 90; descansoTotal = descansoSegundos;
+  descansoSegundos = exercise?.descansoSegundos || 90; descansoTotal = descansoSegundos; descansoTerminaEm = Date.now() + descansoSegundos * 1000;
   restTimer.classList.remove('hidden'); atualizarDescanso();
   descansoInterval = setInterval(() => {
-    descansoSegundos--; atualizarDescanso();
+    atualizarDescanso();
     if (descansoSegundos <= 0) { pararDescanso(); showToast('Descanso concluído. Vamos para a próxima!', 'success'); }
   }, 1000);
 }
 
 document.getElementById('btn-skip-rest')?.addEventListener('click', pararDescanso);
-document.getElementById('btn-add-rest')?.addEventListener('click', () => { descansoSegundos += 30; descansoTotal += 30; atualizarDescanso(); });
+document.getElementById('btn-add-rest')?.addEventListener('click', () => {
+  if (!descansoTerminaEm) return;
+  if (descansoTotal >= WORKOUT_LIMITS.rest) return showToast('O descanso máximo é de 60 minutos.');
+  const addition = Math.min(30, WORKOUT_LIMITS.rest - descansoTotal);
+  descansoTerminaEm += addition * 1000;
+  descansoTotal += addition;
+  atualizarDescanso();
+});
 
 document.addEventListener('input', (event) => {
   const match = event.target.id?.match(/^(kg|reps|rir)-(\d+)-(\d+)$/);
@@ -219,8 +269,15 @@ document.addEventListener('input', (event) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[exIndex]?.series?.[serieIndex]) return;
   rotina.exercicios[exIndex].series[serieIndex][campo] = event.target.value;
-  salvarRascunho();
+  salvarRascunho({ force: true });
 });
+
+function atualizarCronometro() {
+  if (!treinoIniciado || !sessaoIniciadaEm) return;
+  tempoSegundos = elapsedSeconds(sessaoIniciadaEm);
+  atualizarDisplayTempo();
+  salvarRascunho();
+}
 
 function iniciarCronometroGlobal() {
   if (treinoIniciado) return;
@@ -228,10 +285,8 @@ function iniciarCronometroGlobal() {
   sessaoIniciadaEm = new Date();
   tempoSegundos = 0;
   if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    tempoSegundos++; salvarRascunho();
-    atualizarDisplayTempo();
-  }, 1000);
+  salvarRascunho({ force: true });
+  timerInterval = setInterval(atualizarCronometro, 1000);
 }
 
 function pararCronometro() {
@@ -241,6 +296,8 @@ function pararCronometro() {
   }
   treinoIniciado = false;
   tempoSegundos = 0;
+  sessaoIniciadaEm = null;
+  checkinPreTreino = null;
 }
 
 function atualizarDisplayTempo() {
@@ -266,8 +323,14 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao }) {
   const modal = document.createElement('div');
   modal.id = 'mol-workout-summary';
   modal.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
-  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl border border-neon/30 bg-[#151b17] p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-3 gap-2"><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div></div><p class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p><button class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black active:scale-[.98]" onclick="this.closest('#mol-workout-summary').remove()">Concluído</button></section>`;
-  document.body.appendChild(modal); renderIcons();
+  modal.setAttribute('aria-labelledby', 'workout-summary-title');
+  modal.setAttribute('aria-describedby', 'workout-summary-description');
+  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl border border-neon/30 bg-[#151b17] p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-3 gap-2"><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black active:scale-[.98]">Concluído</button></section>`;
+  document.body.appendChild(modal);
+  const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
+  modal.querySelector('[data-close]').onclick = close;
+  modal.onclick = event => { if (event.target === modal) close(); };
+  renderIcons();
 }
 
 window.mostrarInfoTreino = (tipo) => {
@@ -284,9 +347,13 @@ window.mostrarInfoTreino = (tipo) => {
   const sheet = document.createElement('div');
   sheet.id = 'mol-training-info';
   sheet.className = 'fixed inset-0 z-[210] flex items-end bg-black/65 p-4 backdrop-blur-sm';
-  sheet.innerHTML = `<div class="w-full max-w-md mx-auto rounded-3xl border border-white/10 bg-[#161a17] p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Guia rápido</p><h2 class="mt-1 text-xl font-extrabold">${titulo}</h2><p class="mt-3 text-sm leading-relaxed text-gray-300">${texto}</p><button class="mt-6 min-h-12 w-full rounded-2xl bg-white/10 text-sm font-bold active:bg-white/15" onclick="this.closest('#mol-training-info').remove()">Entendi</button></div>`;
-  sheet.addEventListener('click', event => { if (event.target === sheet) sheet.remove(); });
+  sheet.setAttribute('aria-labelledby', 'training-info-title');
+  sheet.setAttribute('aria-describedby', 'training-info-description');
+  sheet.innerHTML = `<section class="w-full max-w-md mx-auto rounded-3xl border border-white/10 bg-[#161a17] p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Guia rápido</p><h2 id="training-info-title" class="mt-1 text-xl font-extrabold">${titulo}</h2><p id="training-info-description" class="mt-3 text-sm leading-relaxed text-gray-300">${texto}</p><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl bg-white/10 text-sm font-bold active:bg-white/15">Entendi</button></section>`;
   document.body.appendChild(sheet);
+  const close = activateDialog(sheet, { initialFocus: sheet.querySelector('[data-close]') });
+  sheet.querySelector('[data-close]').onclick = close;
+  sheet.addEventListener('click', event => { if (event.target === sheet) close(); });
 };
 
 function renderRotinas() {
@@ -307,18 +374,28 @@ function renderRotinas() {
           <h3 class="font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
           <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercícios</p>
         </div>
-        <button onclick="deletarRotina('${rotina.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1" title="Excluir Treino">
+        <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="text-gray-500 hover:text-red-400 transition-colors p-1" aria-label="Excluir ${escapeHTML(rotina.nome)}">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
         </button>
       </div>
 
       <div class="mt-4 grid grid-cols-2 gap-3">
-        <button onclick="clicarIniciarRotina('${rotina.id}')" class="min-h-12 rounded-xl bg-neon px-3 text-sm font-bold text-black active:scale-[0.98]">Iniciar</button>
-        <button onclick="editarRotina('${rotina.id}')" class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-bold text-gray-200 active:bg-white/5"><i data-lucide="pencil" class="h-4 w-4"></i> Editar</button>
+        <button type="button" data-routine-action="start" data-routine-id="${escapeHTML(rotina.id)}" class="min-h-12 rounded-xl bg-neon px-3 text-sm font-bold text-black active:scale-[0.98]">Iniciar</button>
+        <button type="button" data-routine-action="edit" data-routine-id="${escapeHTML(rotina.id)}" class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-bold text-gray-200 active:bg-white/5"><i data-lucide="pencil" class="h-4 w-4"></i> Editar</button>
       </div>
-      <button onclick="duplicarRotina('${rotina.id}')" class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-300 active:bg-white/5"><i data-lucide="copy" class="h-4 w-4"></i> Duplicar rotina</button>
+      <button type="button" data-routine-action="duplicate" data-routine-id="${escapeHTML(rotina.id)}" class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-300 active:bg-white/5"><i data-lucide="copy" class="h-4 w-4"></i> Duplicar rotina</button>
     </div>
   `).join('');
+  const actions = {
+    delete: window.deletarRotina,
+    start: window.clicarIniciarRotina,
+    edit: window.editarRotina,
+    duplicate: window.duplicarRotina
+  };
+  rotinasList.querySelectorAll('[data-routine-action]').forEach(button => button.addEventListener('click', () => {
+    const action = actions[button.dataset.routineAction];
+    if (action) void action(button.dataset.routineId);
+  }));
   renderIcons();
 }
 
@@ -330,7 +407,8 @@ function solicitarCheckin() {
     modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'checkin-title');
     modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-[#151b17] p-6 shadow-2xl"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Antes de começar</p><h2 id="checkin-title" class="mt-1 text-xl font-extrabold">Como você está hoje?</h2><p class="mt-2 text-sm text-gray-400">Isso ajuda a ajustar a intensidade com segurança.</p><div class="mt-5 grid grid-cols-3 gap-3"><label class="text-xs font-bold text-gray-400">Energia<input data-checkin="energia" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Sono<input data-checkin="sono" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Dor<input data-checkin="dor" type="number" inputmode="numeric" min="0" max="5" value="0" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-white"></label></div><p class="mt-2 text-[11px] text-gray-500">Energia e sono: 1–5 · Dor muscular: 0–5</p><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl bg-white/5 text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-start class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Iniciar treino</button></div></section>`;
-    const close = value => { modal.remove(); resolve(value); };
+    let closeDialog;
+    const close = value => { closeDialog(); resolve(value); };
     modal.querySelector('[data-cancel]').onclick = () => close(null);
     modal.querySelector('[data-start]').onclick = () => {
       const value = name => Number(modal.querySelector(`[data-checkin="${name}"]`).value);
@@ -339,8 +417,8 @@ function solicitarCheckin() {
       close({ energia, sono, dor });
     };
     modal.onclick = event => { if (event.target === modal) close(null); };
-    modal.onkeydown = event => { if (event.key === 'Escape') close(null); };
-    document.body.appendChild(modal); modal.querySelector('input')?.focus();
+    document.body.appendChild(modal);
+    closeDialog = activateDialog(modal, { initialFocus: modal.querySelector('input'), onCancel: () => close(null) });
   });
 }
 
@@ -370,6 +448,7 @@ window.salvarNomeRotina = async () => {
   const nome = input?.value.trim();
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina || !nome) return showToast('Digite um nome para a rotina.');
+  if (nome.length > 60) return showToast('Use no máximo 60 caracteres no nome da rotina.');
   if (nome === rotina.nome) return;
   try {
     await updateDoc(doc(db, 'treinos', rotinaAbertaId), { nome });
@@ -397,6 +476,7 @@ window.deletarRotina = async (id) => {
 btnSalvarNova.addEventListener('click', async () => {
   const nome = inputNomeRotina.value.trim();
   if (!nome) return showToast('Dê um nome para a rotina.');
+  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
   if (!usuarioAtual) return showToast('A sessão expirou. Entre novamente.');
   btnSalvarNova.disabled = true;
   btnSalvarNova.textContent = "Salvando...";
@@ -423,6 +503,7 @@ window.criarTemplate = async (nome) => {
   };
   const exercicios = (modelos[nome] || []).map(ex => ({ ...ex, descansoSegundos: 90, series: Array.from({ length: 3 }, () => ({ tipo: 'N', kg: '', reps: '', rir: '2', anteriorKg: '', anteriorReps: '', concluida: false })) }));
   if (!usuarioAtual) return showToast('A sessão ainda está carregando.');
+  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
   try {
     await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: 'Modelo Mol editável', exercicios, criadoEm: serverTimestamp() });
     showToast('Modelo criado. Ajuste-o para sua realidade.', 'success'); await carregarRotinasDoBanco(); esconderTudo(); viewRotinas.classList.remove('hidden');
@@ -432,8 +513,10 @@ window.criarTemplate = async (nome) => {
 window.duplicarRotina = async (id) => {
   const origem = rotinasReais.find(r => r.id === id);
   if (!origem) return;
+  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
   const exercicios = JSON.parse(JSON.stringify(origem.exercicios || [])).map(ex => ({ ...ex, series: (ex.series || []).map(s => ({ ...s, kg: '', reps: '', concluida: false })) }));
-  try { await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome: `${origem.nome} (cópia)`, descricao: origem.descricao || '', exercicios, criadoEm: serverTimestamp() }); await carregarRotinasDoBanco(); showToast('Rotina duplicada.', 'success'); }
+  const nome = `${origem.nome || 'Rotina'} (cópia)`.slice(0, 60);
+  try { await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: origem.descricao || '', exercicios, criadoEm: serverTimestamp() }); await carregarRotinasDoBanco(); showToast('Rotina duplicada.', 'success'); }
   catch (error) { console.error(error); showToast('Não foi possível duplicar a rotina.'); }
 };
 
@@ -445,11 +528,12 @@ window.escolherExercicio = async (nomeExercicio) => {
   const ultimo = ultimaPerformance.get(nomeExercicio);
   const novoExercicio = { nome: nomeExercicio, grupo: catalogo?.grupo || 'Outros', descansoSegundos: 90, notas: '', series: [{ tipo: 'N', kg: '', reps: '', rir: '', anteriorKg: ultimo?.kg ?? '', anteriorReps: ultimo?.reps ?? '', concluida: false }] };
   if (!rotina.exercicios) rotina.exercicios = [];
+  if (rotina.exercicios.length >= WORKOUT_STRUCTURE_LIMITS.exercises) return showToast(`Cada rotina pode ter até ${WORKOUT_STRUCTURE_LIMITS.exercises} exercícios.`);
   rotina.exercicios.push(novoExercicio);
   registrarRecente(nomeExercicio);
 
   try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
+    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
   } catch (error) { rotina.exercicios.pop(); console.error(error); showToast('Não foi possível adicionar o exercício.'); }
 };
@@ -494,9 +578,12 @@ window.abrirDetalheExercicio = (nome) => {
   const substitutos = bibliotecaDeExercicios.filter(item => item.nome !== nome && grupoDetalhado(item) === grupo).slice(0, 3);
   document.getElementById('exercise-detail')?.remove();
   const modal = document.createElement('div'); modal.id = 'exercise-detail'; modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
-  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl bg-[#161a17] p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div class="mt-5 flex gap-4"><img src="${exerciseFigure}" alt="" class="h-20 w-16 rounded-2xl bg-white/5 p-2"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">${grupo}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p></div></div>${historico.length ? `<section class="mt-5 rounded-2xl bg-white/[.03] p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button data-close class="min-h-12 rounded-2xl bg-white/5 font-bold text-gray-300">Fechar</button><button data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
-  modal.onclick = event => { if (event.target === modal) modal.remove(); }; document.body.appendChild(modal);
-  modal.querySelector('[data-close]').onclick = () => modal.remove(); modal.querySelector('[data-add]').onclick = () => { modal.remove(); window.escolherExercicio(nome); };
+  modal.setAttribute('aria-labelledby', 'exercise-detail-title');
+  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl bg-[#161a17] p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div class="mt-5 flex gap-4"><img src="${exerciseFigure}" alt="" class="h-20 w-16 rounded-2xl bg-white/5 p-2"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p></div></div>${historico.length ? `<section class="mt-5 rounded-2xl bg-white/[.03] p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl bg-white/5 font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
+  document.body.appendChild(modal);
+  const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
+  modal.onclick = event => { if (event.target === modal) close(); };
+  modal.querySelector('[data-close]').onclick = close; modal.querySelector('[data-add]').onclick = () => { close(); window.escolherExercicio(nome); };
 };
 
 function renderizarBiblioteca(filtro = '') {
@@ -558,30 +645,32 @@ document.querySelectorAll('[data-exercise-filter]').forEach(button => button.add
 
 function prepararAtalhosBiblioteca() {
   if (document.getElementById('library-shortcuts')) return;
-  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button data-library-filter="Favoritos" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button data-library-filter="Recentes" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button data-library-filter="Máquina" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button data-library-filter="Polia" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
+  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button type="button" data-library-filter="Favoritos" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button type="button" data-library-filter="Recentes" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button type="button" data-library-filter="Máquina" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button type="button" data-library-filter="Polia" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button type="button" id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
   document.querySelectorAll('[data-library-filter]').forEach(button => button.onclick = () => { filtroMuscular = button.dataset.libraryFilter; renderizarBiblioteca(inputBuscaExercicio?.value || ''); });
   document.getElementById('create-custom-exercise').onclick = abrirCriadorExercicio;
 }
 
 function abrirCriadorExercicio() {
+  if (exerciciosPersonalizados.length >= MAX_CUSTOM_EXERCISES) return showToast(`Você pode salvar até ${MAX_CUSTOM_EXERCISES} exercícios personalizados.`);
   document.getElementById('custom-exercise-modal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'custom-exercise-modal'; modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'custom-exercise-title');
   modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-[#151b17] p-6"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Biblioteca pessoal</p><h2 id="custom-exercise-title" class="mt-1 text-xl font-extrabold">Novo exercício</h2><label class="mt-5 block text-xs font-bold text-gray-400" for="custom-exercise-name">Nome</label><input id="custom-exercise-name" maxlength="80" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-white" placeholder="Ex.: Remada unilateral"><label class="mt-4 block text-xs font-bold text-gray-400" for="custom-exercise-group">Grupo muscular</label><input id="custom-exercise-group" maxlength="40" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-white" value="Outros"><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl bg-white/5 text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-save class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Criar</button></div></section>`;
-  const close = () => modal.remove();
+  let close;
   modal.querySelector('[data-cancel]').onclick = close;
   modal.querySelector('[data-save]').onclick = () => {
     const nome = modal.querySelector('#custom-exercise-name').value.trim();
     const grupo = modal.querySelector('#custom-exercise-group').value.trim() || 'Outros';
     if (!nome) return showToast('Digite o nome do exercício.');
+    if (exerciciosPersonalizados.length >= MAX_CUSTOM_EXERCISES) return showToast(`Você pode salvar até ${MAX_CUSTOM_EXERCISES} exercícios personalizados.`);
     if (bibliotecaDeExercicios.some(item => item.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'))) return showToast('Esse exercício já existe na biblioteca.');
     const novo = { nome, grupo, personalizado: true };
     exerciciosPersonalizados.push(novo); bibliotecaDeExercicios.push(novo); salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); close(); showToast('Exercício personalizado criado.', 'success');
   };
   modal.onclick = event => { if (event.target === modal) close(); };
-  modal.onkeydown = event => { if (event.key === 'Escape') close(); };
-  document.body.appendChild(modal); modal.querySelector('#custom-exercise-name').focus();
+  document.body.appendChild(modal);
+  close = activateDialog(modal, { initialFocus: modal.querySelector('#custom-exercise-name') });
 }
 
 // Garantir que a busca limpa ao abrir a tela de adicionar exercício
@@ -596,9 +685,16 @@ if (btnAddExercicio) {
   });
 }
 
-window.abrirRotina = (id) => {
+function abrirRotina(id) {
   rotinaAbertaId = id;
   const rotina = rotinasReais.find(r => r.id === id);
+  if (!rotina) {
+    rotinaAbertaId = null;
+    esconderTudo();
+    viewRotinas.classList.remove('hidden');
+    showToast('Esta rotina não está mais disponível.');
+    return;
+  }
   detalheTitulo.textContent = rotina.nome;
   
   let totalSeries = 0;
@@ -631,11 +727,16 @@ window.abrirRotina = (id) => {
       btnConcluir.disabled = false;
       btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold bg-neon text-black transition-all active:scale-95 shadow-lg shadow-neon/20 cursor-pointer";
       btnConcluir.textContent = 'Finalizar';
+    } else if (seriesFeitas > 0) {
+      btnConcluir.classList.remove('hidden');
+      btnConcluir.disabled = false;
+      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon transition-all active:scale-95";
+      btnConcluir.textContent = `Finalizar ${seriesFeitas}/${totalSeries}`;
     } else {
       btnConcluir.classList.remove('hidden');
       btnConcluir.disabled = true;
-      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon transition-all opacity-50 cursor-not-allowed";
-      btnConcluir.textContent = totalSeries ? `Faltam ${totalSeries - seriesFeitas}` : 'Finalizar';
+      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-white/10 text-gray-500 opacity-60 cursor-not-allowed";
+      btnConcluir.textContent = 'Finalize uma série';
     }
   }
 
@@ -656,8 +757,8 @@ window.abrirRotina = (id) => {
         <p class="text-sm font-bold text-white mt-0.5">${seriesFeitas}/${totalSeries}</p>
       </div>
     </div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><p class="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão</p></div>
-  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
-  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 bg-card-dark p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-card-dark-2 px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div></div>`;
+  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button type="button" onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
+  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 bg-card-dark p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-card-dark-2 px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div></div>`;
   
   if (!rotina.exercicios || rotina.exercicios.length === 0) {
     exerciciosList.innerHTML = `
@@ -670,20 +771,20 @@ window.abrirRotina = (id) => {
       let contadorNormal = 0; 
 
       return `
-      <div class="bg-card-dark rounded-xl pt-4 pb-2 px-4 border border-white/5 mb-4">
+      <article class="workout-exercise-card bg-card-dark rounded-2xl pt-4 pb-2 px-4 border border-white/5 mb-4">
         <div class="flex items-center justify-between mb-4">
           <div><h4 class="font-bold text-sm text-neon">${escapeHTML(ex.nome)}</h4><p class="mt-1 text-[11px] text-gray-500">Meta: ${ex.repsMin || 8}–${ex.repsMax || 12} reps · RIR ${ex.rirAlvo ?? 2} · ${ex.descansoSegundos || 90}s</p></div>
-          <div class="flex gap-1"><button onclick="moverExercicio(${indexEx}, -1)" aria-label="Mover para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button onclick="moverExercicio(${indexEx}, 1)" aria-label="Mover para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button onclick="excluirExercicio(${indexEx})" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+          <div class="flex gap-1"><button type="button" onclick="moverExercicio(${indexEx}, -1)" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" onclick="moverExercicio(${indexEx}, 1)" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" onclick="excluirExercicio(${indexEx})" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
         </div>
-        <details class="mb-4 rounded-xl bg-white/[.03] p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="mt-3 grid grid-cols-4 gap-2 text-center"><label class="text-[10px] text-gray-500">REPS mín.<input onchange="atualizarMetaExercicio(${indexEx}, 'repsMin', this.value)" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input onchange="atualizarMetaExercicio(${indexEx}, 'repsMax', this.value)" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input onchange="atualizarMetaExercicio(${indexEx}, 'rirAlvo', this.value)" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input onchange="atualizarMetaExercicio(${indexEx}, 'descansoSegundos', this.value)" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label></div></details>
+        <details class="mb-4 rounded-xl bg-white/[.03] p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMin', this.value)" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMax', this.value)" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'rirAlvo', this.value)" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" onchange="atualizarMetaExercicio(${indexEx}, 'descansoSegundos', this.value)" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg bg-card-dark-2 p-2 text-center text-sm text-white"></label></div></details>
         
-        <div class="flex items-center gap-1 mb-2 px-1"><div class="grid flex-1 grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 text-[10px] text-gray-500 font-semibold text-center tracking-wider items-center">
-          <button onclick="mostrarInfoTreino('serie')" class="min-h-8 rounded-md active:bg-white/10">SÉRIE</button>
-          <button onclick="mostrarInfoTreino('anterior')" class="min-h-8 rounded-md active:bg-white/10">ANTERIOR</button>
-          <button onclick="mostrarInfoTreino('kg')" class="min-h-8 rounded-md active:bg-white/10">KG</button>
-          <button onclick="mostrarInfoTreino('reps')" class="min-h-8 rounded-md active:bg-white/10">REPS</button>
-          <button onclick="mostrarInfoTreino('rir')" class="min-h-8 rounded-md active:bg-white/10">RIR</button>
-          <button onclick="mostrarInfoTreino('check')" aria-label="O que é concluir série" class="min-h-8 rounded-md active:bg-white/10"><i data-lucide="check" class="w-3 h-3 mx-auto"></i></button>
+        <div class="workout-set-header flex items-center gap-1 mb-2 px-1"><div class="workout-set-grid grid flex-1 grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 text-[10px] text-gray-500 font-semibold text-center tracking-wider items-center">
+          <button type="button" onclick="mostrarInfoTreino('serie')" class="min-h-8 rounded-md active:bg-white/10">SÉRIE</button>
+          <button type="button" onclick="mostrarInfoTreino('anterior')" class="min-h-8 rounded-md active:bg-white/10">ANTERIOR</button>
+          <button type="button" onclick="mostrarInfoTreino('kg')" class="min-h-8 rounded-md active:bg-white/10">KG</button>
+          <button type="button" onclick="mostrarInfoTreino('reps')" class="min-h-8 rounded-md active:bg-white/10">REPS</button>
+          <button type="button" onclick="mostrarInfoTreino('rir')" class="min-h-8 rounded-md active:bg-white/10">RIR</button>
+          <button type="button" onclick="mostrarInfoTreino('check')" aria-label="O que é concluir série" class="min-h-8 rounded-md active:bg-white/10"><i data-lucide="check" class="w-3 h-3 mx-auto"></i></button>
         </div><div class="w-8 shrink-0"></div></div>
 
         <div class="space-y-1">
@@ -702,7 +803,8 @@ window.abrirRotina = (id) => {
               label = 'D'; corFundo = 'text-blue-400 bg-blue-400/10';
             }
 
-            const textoAnterior = (serie.anteriorKg && serie.anteriorReps) ? `${serie.anteriorKg}kg x ${serie.anteriorReps}` : '-';
+            const temAnterior = serie.anteriorKg !== '' && serie.anteriorKg != null && Number(serie.anteriorReps) > 0;
+            const textoAnterior = temAnterior ? `${serie.anteriorKg}kg x ${serie.anteriorReps}` : '-';
             
             const bgLinha = serie.concluida ? 'bg-neon/10' : 'bg-card-dark-2/30';
             const bgBotaoCheck = serie.concluida ? 'bg-neon text-black' : 'bg-card-dark-2 border border-white/10 text-transparent';
@@ -710,38 +812,38 @@ window.abrirRotina = (id) => {
 
             return `
             <div class="relative flex items-center gap-1 mb-1">
-              <div class="flex-1 ${bgLinha} grid items-center grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 py-1.5 px-1 rounded transition-colors">
+              <div class="workout-set-grid flex-1 ${bgLinha} grid items-center grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 py-1.5 px-1 rounded transition-colors">
                 
                 <div class="w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold cursor-pointer transition-colors ${corFundo}" 
                      onclick="abrirModalTipoSerie(${indexEx}, ${indexSerie})">
                   ${label}
                 </div>
                 
-                <button onclick="copiarAnterior(${indexEx}, ${indexSerie})" class="min-w-0 text-center text-gray-400 text-[11px] font-medium flex min-h-10 w-full items-center justify-center rounded-lg active:bg-white/10" aria-label="Copiar carga anterior">
+                <button type="button" onclick="copiarAnterior(${indexEx}, ${indexSerie})" class="min-w-0 text-center text-gray-400 text-[11px] font-medium flex min-h-10 w-full items-center justify-center rounded-lg active:bg-white/10" aria-label="Copiar carga anterior">
                   <span>${textoAnterior}</span>
                 </button>
                 
-                <input type="number" id="kg-${indexEx}-${indexSerie}" placeholder="-" value="${serie.kg || ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                <input type="number" id="reps-${indexEx}-${indexSerie}" placeholder="-" value="${serie.reps || ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                <input type="number" min="0" max="10" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir || ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="-" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="-" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da série ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 
-                <button onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir série ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">
-                  <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-black' : 'text-gray-600'}"></i>
+                <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir série ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">
+                  <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-white' : 'text-gray-600'}"></i>
                 </button>
               </div>
 
 
-              <button onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir série" class="flex h-11 w-9 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400" title="Excluir série">
+              <button type="button" onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir série" class="flex h-11 w-9 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
           `}).join('')}
         </div>
 
-        <button onclick="adicionarSerie(${indexEx})" class="w-full text-center py-3 mt-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-1">
+        <button type="button" onclick="adicionarSerie(${indexEx})" class="w-full text-center py-3 mt-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-1">
           <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Série
         </button>
-      </div>
+      </article>
     `}).join('');
 
     exerciciosList.innerHTML = painelMetricasHTML + editorNomeHTML + exerciciosHtml;
@@ -753,21 +855,26 @@ window.abrirRotina = (id) => {
   viewDetalhe.classList.remove('hidden');
   renderIcons();
   atualizarDisplayTempo();
-};
+  if (treinoIniciado) salvarRascunho({ force: true });
+}
+window.abrirRotina = abrirRotina;
 
 window.atualizarMetaExercicio = async (indexEx, campo, valor) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
-  const numero = Number(valor);
-  if (!Number.isFinite(numero) || numero < 0) return;
-  rotina.exercicios[indexEx][campo] = numero;
-  salvarRascunho();
-  try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: rotina.exercicios }); showToast('Meta atualizada.', 'success'); }
-  catch (error) { console.error(error); showToast('Não foi possível salvar a meta.'); }
+  const exercicio = rotina?.exercicios?.[indexEx];
+  if (!exercicio) return;
+  const validacao = validateExerciseTargets(exercicio, campo, valor);
+  if (!validacao.valid) { showToast(validacao.message); abrirRotina(rotinaAbertaId); return; }
+  const anterior = exercicio[campo];
+  exercicio[campo] = validacao.value;
+  salvarRascunho({ force: true });
+  try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); showToast('Meta atualizada.', 'success'); }
+  catch (error) { exercicio[campo] = anterior; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível salvar a meta.'); }
 };
 
 window.copiarAnterior = (indexEx, indexSerie) => {
   const serie = rotinasReais.find(r => r.id === rotinaAbertaId)?.exercicios[indexEx]?.series[indexSerie];
-  if (!serie?.anteriorKg || !serie?.anteriorReps) return showToast('Ainda não há carga anterior para copiar.');
+  if (!serie || serie.anteriorKg === '' || serie.anteriorKg == null || !Number(serie.anteriorReps)) return showToast('Ainda não há carga anterior para copiar.');
   const kg = document.getElementById(`kg-${indexEx}-${indexSerie}`);
   const reps = document.getElementById(`reps-${indexEx}-${indexSerie}`);
   kg.value = serie.anteriorKg; reps.value = serie.anteriorReps;
@@ -791,26 +898,17 @@ window.concluirSerie = async (indexEx, indexSerie) => {
   if (serie.concluida) {
     serie.concluida = false;
   } else {
-    // Se NÃO está concluída, exige preenchimento obrigatório de KG e REPS
-    if (!inputKg || !inputReps || parseFloat(inputKg) <= 0 || parseFloat(inputReps) <= 0) {
-      showToast('Preencha peso e repetições antes de concluir a série.');
-      return; // Interrompe e não deixa marcar o check
-    }
+    const validacao = validateSet({ kg: inputKg, reps: inputReps, rir: inputRir });
+    if (!validacao.valid) return showToast(validacao.message);
 
     serie.concluida = true;
-    serie.kg = inputKg;
-    serie.reps = inputReps;
-    serie.rir = inputRir;
-    serie.anteriorKg = inputKg;
-    serie.anteriorReps = inputReps;
+    serie.kg = validacao.values.kg;
+    serie.reps = validacao.values.reps;
+    serie.rir = validacao.values.rir ?? '';
   }
-
-  try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
-    abrirRotina(rotinaAbertaId);
-    salvarRascunho();
-    if (serie.concluida) iniciarDescanso(indexEx);
-  } catch (error) { console.error(error); showToast('Não foi possível salvar a série.'); await carregarRotinasDoBanco(); }
+  salvarRascunho({ force: true });
+  abrirRotina(rotinaAbertaId);
+  if (serie.concluida) iniciarDescanso(indexEx);
 };
 
 // ---------------------------------------------
@@ -821,55 +919,21 @@ window.finalizarEConcluirTreino = async () => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina || !rotina.exercicios) return;
 
-  // Verifica se 100% das séries estão concluídas antes de salvar
-  let totalSeries = 0;
-  let seriesFeitas = 0;
-
-  rotina.exercicios.forEach(ex => {
-    if (ex.series) {
-      ex.series.forEach(s => {
-        totalSeries++;
-        if (s.concluida) seriesFeitas++;
-      });
-    }
-  });
-
-  if (totalSeries === 0 || seriesFeitas < totalSeries) {
-    showToast('Conclua todas as séries antes de finalizar.');
-    return;
+  const totais = workoutTotals(rotina.exercicios);
+  if (totais.completed === 0) return showToast('Conclua ao menos uma série antes de finalizar.');
+  if (totais.completed < totais.total) {
+    const confirmar = await confirmAction({ title: 'Finalizar treino?', message: `${totais.total - totais.completed} série(s) ficarão como não realizadas.`, confirmText: 'Finalizar assim' });
+    if (!confirmar) return;
   }
   finalizandoTreino = true;
   const btnFinalizar = document.getElementById('btn-concluir-treino');
   if (btnFinalizar) { btnFinalizar.disabled = true; btnFinalizar.textContent = 'Salvando...'; }
 
-  const sessaoConcluida = JSON.parse(JSON.stringify(rotina.exercicios));
-  const resumoVolume = sessaoConcluida.reduce((total, ex) => total + ex.series.reduce((sum, serie) => sum + ((Number(serie.kg) || 0) * (Number(serie.reps) || 0)), 0), 0);
+  atualizarCronometro();
+  const sessaoConcluida = completedWorkoutSnapshot(rotina.exercicios);
+  const resumoVolume = totais.volume;
   const duracaoConcluida = tempoSegundos;
-
-  // Atualiza os recordes (anteriorKg e anteriorReps) e limpa o check/campos para a próxima semana
-  rotina.exercicios.forEach((ex, indexEx) => {
-    if (ex.series) {
-      ex.series.forEach((serie, indexSerie) => {
-        const inputKg = document.getElementById(`kg-${indexEx}-${indexSerie}`);
-        const inputReps = document.getElementById(`reps-${indexEx}-${indexSerie}`);
-        
-        if (inputKg && inputReps) {
-          const valKg = inputKg.value.trim();
-          const valReps = inputReps.value.trim();
-          
-          if (valKg && valReps) {
-            serie.anteriorKg = valKg;
-            serie.anteriorReps = valReps;
-          }
-        }
-        
-        // REQUISITO 3: Zera os inputs e desmarca o check para o próximo treino da semana seguinte
-        serie.concluida = false;
-        serie.kg = '';
-        serie.reps = '';
-      });
-    }
-  });
+  const exerciciosLimpos = cleanRoutineExercises(rotina.exercicios);
 
   try {
     // A sessão é um registro imutável: rotinas podem mudar, o histórico não.
@@ -887,15 +951,21 @@ window.finalizarEConcluirTreino = async () => {
       concluidoEm: serverTimestamp()
     });
     batch.update(doc(db, "treinos", rotinaAbertaId), {
-      exercicios: rotina.exercicios,
+      exercicios: exerciciosLimpos,
       ultimoTreinoEm: serverTimestamp() 
     });
     await batch.commit();
 
+    removeSessionItems(
+      `mol-progress-cache-${usuarioAtual.uid}`,
+      `mol-history-cache-${usuarioAtual.uid}`,
+      `mol-profile-cache-${usuarioAtual.uid}`
+    );
+    rotina.exercicios = exerciciosLimpos;
     limparRascunho();
     pararCronometro();
     pararDescanso();
-    mostrarResumoTreino({ series: totalSeries, volume: resumoVolume, exercicios: sessaoConcluida.length, duracao: duracaoConcluida });
+    mostrarResumoTreino({ series: totais.completed, volume: resumoVolume, exercicios: sessaoConcluida.filter(ex => ex.series?.some(serie => serie.concluida)).length, duracao: duracaoConcluida });
     
     esconderTudo();
     viewRotinas.classList.remove('hidden');
@@ -905,32 +975,31 @@ window.finalizarEConcluirTreino = async () => {
     showToast('Não foi possível concluir o treino.');
   } finally {
     finalizandoTreino = false;
-    if (btnFinalizar) btnFinalizar.disabled = false;
+    if (btnFinalizar) { btnFinalizar.disabled = false; btnFinalizar.textContent = 'Finalizar'; }
   }
 };
 
 window.adicionarSerie = async (indexEx) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  if (!rotina?.exercicios?.[indexEx]) return;
+  if (rotina.exercicios[indexEx].series.length >= WORKOUT_STRUCTURE_LIMITS.setsPerExercise) return showToast(`Cada exercício pode ter até ${WORKOUT_STRUCTURE_LIMITS.setsPerExercise} séries.`);
   rotina.exercicios[indexEx].series.push({ tipo: 'N', kg: '', reps: '', concluida: false }); 
 
   try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
+    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
   } catch (error) { console.error(error); showToast('Não foi possível adicionar a série.'); await carregarRotinasDoBanco(); }
 };
 
-window.excluirSerie = async (indexEx, indexSerie) => {
+async function excluirSerie(indexEx, indexSerie) {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[indexEx]?.series?.[indexSerie]) return;
+  if (rotina.exercicios[indexEx].series.length === 1) return showToast('O exercício precisa manter ao menos uma série. Para removê-lo, use a lixeira do exercício.');
   if (!await confirmAction({ title: 'Excluir série?', message: 'Os dados preenchidos nesta série serão removidos.', confirmText: 'Excluir', danger: true })) return;
   rotina.exercicios[indexEx].series.splice(indexSerie, 1); 
 
-  if (rotina.exercicios[indexEx].series.length === 0) {
-    rotina.exercicios.splice(indexEx, 1);
-  }
-
   try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
+    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
   } catch (error) { console.error(error); showToast('Não foi possível excluir a série.'); await carregarRotinasDoBanco(); }
 };
@@ -940,8 +1009,8 @@ window.moverExercicio = async (indexEx, direcao) => {
   const destino = indexEx + direcao;
   if (!rotina || destino < 0 || destino >= rotina.exercicios.length) return;
   [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]];
-  try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: rotina.exercicios }); abrirRotina(rotinaAbertaId); }
-  catch (error) { console.error(error); showToast('Não foi possível reordenar o exercício.'); }
+  try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); abrirRotina(rotinaAbertaId); }
+  catch (error) { [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]]; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível reordenar o exercício.'); }
 };
 
 window.excluirExercicio = async (indexEx) => {
@@ -951,7 +1020,7 @@ window.excluirExercicio = async (indexEx) => {
   rotina.exercicios.splice(indexEx, 1);
 
   try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
+    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
   } catch (error) { console.error(error); showToast('Não foi possível excluir o exercício.'); await carregarRotinasDoBanco(); }
 };
@@ -976,7 +1045,8 @@ window.abrirModalTipoSerie = (indexEx, indexSerie) => {
     modalTipoSerieContent.classList.remove('translate-y-full');
     modalTipoSerieContent.querySelector('button')?.focus();
   }, 10);
-};
+}
+window.excluirSerie = excluirSerie;
 
 window.mudarTipoSerie = async (novoTipo) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
@@ -985,7 +1055,7 @@ window.mudarTipoSerie = async (novoTipo) => {
   fecharModalTipoSerie();
 
   try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: rotina.exercicios });
+    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId); 
   } catch (error) { console.error(error); showToast('Não foi possível alterar o tipo da série.'); await carregarRotinasDoBanco(); }
 };
@@ -1005,7 +1075,12 @@ modalTipoSerie.addEventListener('click', (e) => {
 });
 
 modalTipoSerie.addEventListener('keydown', event => {
-  if (event.key === 'Escape') fecharModalTipoSerie();
+  if (event.key === 'Escape') { event.preventDefault(); fecharModalTipoSerie(); return; }
+  if (event.key !== 'Tab') return;
+  const controls = [...modalTipoSerie.querySelectorAll('button:not(:disabled)')];
+  const first = controls[0]; const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 
 window.addEventListener('load', () => renderIcons(), { once: true });

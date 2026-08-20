@@ -1,84 +1,41 @@
-# Pulse — Sprint 1: Estrutura + Login
+# Mol
 
-## Estrutura de pastas
+Aplicativo web responsivo para organizar rotinas de treino, registrar sessões, acompanhar evolução corporal, planejar refeições e manter os dados sincronizados com a conta Google.
 
-```
-pulse-app/
-├── index.html                  ← (Sprint 2) Dashboard, futura tela inicial
-├── pages/
-│   └── login.html               ← Tela de login (Sprint 1)
-├── css/
-│   └── style.css                 ← Estilos globais compartilhados
-├── js/
-│   ├── config/
-│   │   ├── firebase-config.js    ← Inicialização do Firebase (Auth + Firestore)
-│   │   └── tailwind.config.js    ← Tema Tailwind compartilhado (cores, glow)
-│   ├── modules/
-│   │   └── auth.js               ← Lógica de autenticação (login, logout, guard)
-│   ├── utils/
-│   │   └── ui.js                 ← Helpers de UI (toast, loading de botão)
-│   └── pages/
-│       └── login.js               ← Controller da tela de login
-└── assets/
-    ├── icons/                     ← Ícones customizados (SVG/PNG), se precisar
-    └── images/                    ← Imagens (fotos, ilustrações)
-```
+## Funcionalidades
 
-**Por que essa organização?**
-- `config/` = tudo que é "ligar o motor" do app (Firebase, Tailwind).
-- `modules/` = regras de negócio reutilizáveis (auth, treino, dieta — cada
-  domínio vira um módulo no futuro: `workouts.js`, `diet.js`).
-- `pages/` (dentro de `js/`) = um controller por tela HTML, só orquestra
-  DOM + módulos, sem lógica de negócio duplicada.
-- `utils/` = funções puramente de interface, sem relação com Firebase.
+- Dashboard com treino do dia, sequência semanal, última sessão, peso e próxima refeição.
+- Biblioteca de exercícios, rotinas editáveis, check-in, cronômetro, descanso e recuperação de treino em andamento.
+- Histórico, progresso por grupo muscular, recordes estimados e evolução corporal.
+- Dieta com refeições, alimentos, porções, calorias e macronutrientes.
+- Perfil, dados pessoais, backup/restauração e exclusão completa da conta.
+- Tema claro/escuro, contraste elevado e texto ampliado sincronizados com o perfil.
+- PWA instalável e lembretes locais enquanto o Mol estiver aberto.
 
-Isso separa **o que o app faz** (modules) de **como ele conversa com o
-Firebase** (config) e **como a tela reage** (pages) — o padrão que
-qualquer projeto JS Vanilla modular de verdade usa.
+## Desenvolvimento local
 
-## Como rodar localmente
+Requisitos: Node.js e npm.
 
-⚠️ **Diferente da Sprint anterior**: como agora usamos `<script type="module">`
-e imports ES6, o navegador **bloqueia isso se você abrir o HTML direto
-com duplo clique** (erro de CORS `file://`). É preciso servir os arquivos
-por um mini servidor local — ainda 100% gratuito, sem instalar nada pesado:
-
-**Opção 1 — VSCode (recomendado):**
-1. Instale a extensão gratuita **"Live Server"** (by Ritwick Dey).
-2. Clique com o botão direito em `pages/login.html` → **"Open with Live Server"**.
-3. O navegador abre automaticamente em `http://127.0.0.1:5500/...`.
-
-**Opção 2 — Terminal (sem VSCode):**
 ```bash
-# Dentro da pasta pulse-app, com Python instalado:
-python3 -m http.server 8000
-# Depois acesse: http://localhost:8000/pages/login.html
+npm install
+npm run dev
 ```
 
-## Configurar o Firebase (grátis, plano Spark)
+O Vite informa o endereço local. Não abra os arquivos HTML diretamente por `file://`, pois o app usa módulos ES.
 
-Siga os comentários no topo do arquivo `js/config/firebase-config.js` —
-o passo a passo completo está lá. Resumo:
+## Qualidade e produção
 
-1. Crie um projeto em https://console.firebase.google.com
-2. Registre um app Web e copie o `firebaseConfig`.
-3. Cole em `js/config/firebase-config.js`.
-4. Ative o provedor **Google** em *Authentication → Sign-in method*.
-5. Crie o banco em *Firestore Database → Criar banco de dados*.
+```bash
+npm run check
+npm audit --omit=dev
+```
 
-Sem isso, o botão "Continuar com Google" vai gerar erro — é esperado até
-você conectar seu próprio projeto Firebase.
+`npm run check` executa lint, testes de lógica, acessibilidade estrutural, validação HTML e o build. A produção é gerada em `dist/`; os arquivos-fonte ficam em `index.html`, `pages/`, `js/`, `css/` e `assets/`.
 
-## O que tem nesta Sprint
+Com Firebase CLI e Java instalados, `npm run check:rules` valida localmente o isolamento entre contas e os limites das regras do Firestore.
 
-- ✅ Estrutura de pastas modular
-- ✅ Tema Tailwind centralizado (`tailwind.config.js`)
-- ✅ `firebase-config.js` pronto para receber suas chaves
-- ✅ Módulo `auth.js` com `loginWithGoogle`, `logout`, `watchAuthState`, `requireAuth`
-- ✅ Tela `login.html` com botão "Continuar com Google" funcional
-- ✅ Criação automática do documento do usuário no Firestore no primeiro login
+## Firebase
 
-## Próxima Sprint (sugestão)
+O projeto usa Firebase Authentication e Cloud Firestore. As instruções de ambiente e publicação estão em `FIREBASE_SETUP.md`; as regras versionadas ficam em `firestore.rules`.
 
-Sprint 2: Dashboard modular (`index.html`) consumindo dados reais do
-Firestore, com `requireAuth()` protegendo a rota e botão de logout.
+Antes de publicar, execute `npm run check`, confirme os domínios autorizados no Firebase Authentication e implante as regras junto com o site. O deploy pode ser iniciado nesta pasta ou na raiz do repositório; ambas as configurações publicam o mesmo conteúdo de `dist/`.

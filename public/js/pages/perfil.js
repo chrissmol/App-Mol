@@ -1,25 +1,96 @@
 import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { showToast, confirmAction, setButtonLoading } from '../utils/ui.js';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
+import { formatTrainingTime, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
+import { getSessionItem, setSessionItem } from '../utils/storage.js';
+
 setupAppShell();
-const $=id=>document.getElementById(id); let user;
-function setupProfileHome(){const dados=$('input-meta-cal').closest('.glass-card'),evolucao=$('peso-atual').closest('.glass-card'),preferencias=$('input-nivel').closest('.glass-card'),medidas=$('medida-cintura').closest('.glass-card');[dados,evolucao,preferencias,medidas].forEach(e=>e.classList.add('hidden'));const menu=document.createElement('div');menu.className='mb-6 grid gap-3';menu.innerHTML='<button id="open-data" class="glass-card flex min-h-20 items-center gap-4 rounded-3xl p-5 text-left"><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="sliders-horizontal" class="h-5 w-5"></i></span><span class="flex-1"><strong class="block">Dados pessoais e metas</strong><small class="block text-gray-500">Objetivo, preferências e medidas</small></span><i data-lucide="chevron-right"></i></button><button id="open-body" class="glass-card flex min-h-20 items-center gap-4 rounded-3xl p-5 text-left"><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></span><span class="flex-1"><strong class="block">Evolução corporal</strong><small class="block text-gray-500">Peso e tendência ao longo do tempo</small></span><i data-lucide="chevron-right"></i></button>';dados.before(menu);$('open-data').onclick=()=>[dados,preferencias,medidas].forEach(e=>e.classList.toggle('hidden'));$('open-body').onclick=()=>evolucao.classList.toggle('hidden');lucide.createIcons();}
-function fill(data){['metaCalorias','alturaCm','metaPesoKg','objetivo','metaSemanal'].forEach((key,i)=>{const ids=['input-meta-cal','input-altura','input-meta-peso','input-objetivo','input-meta-semanal']; $(ids[i]).value=data[key]??$(ids[i]).value;}); $('input-nivel').value=data.nivel||''; $('input-duracao').value=data.duracaoPreferida||60; $('input-descanso').value=data.descansoPadrao||90; ['cintura','peito','braco'].forEach(k=>$(`medida-${k}`).value=data.medidas?.[k]||''); [...$('perfil-dias').querySelectorAll('input')].forEach(i=>i.checked=(data.diasPreferidos||[]).includes(+i.value));}
-function weights(items){items.sort((a,b)=>(a.registradoEm?.seconds||0)-(b.registradoEm?.seconds||0));const last=items.at(-1);$('peso-atual').textContent=last?`${last.pesoKg} kg`:'— kg';$('peso-tendencia').textContent=items.length>1?`${(last.pesoKg-items[0].pesoKg).toLocaleString('pt-BR',{signDisplay:'always'})} kg desde o primeiro registro.`:'Registre seu peso para acompanhar a tendência.';}
-setupProfileHome();
-onAuthStateChanged(auth,async u=>{if(!u)return location.href='./login.html';user=u;$('user-name').textContent=u.displayName||'Usuário';$('user-email').textContent=u.email||'';if(u.photoURL){$('user-avatar').src=u.photoURL;$('user-avatar').classList.remove('hidden');$('default-avatar-icon').classList.add('hidden');}try{const p=await getDoc(doc(db,'users',u.uid));if(p.exists())fill(p.data());const w=await getDocs(query(collection(db,'pesos'),where('userId','==',u.uid)));weights(w.docs.map(d=>d.data()));}catch(e){console.warn(e);}});
-$('btn-salvar-meta').onclick=async()=>{if(!user)return showToast('Aguarde o carregamento do perfil.');const original=$('btn-salvar-meta').innerHTML;setButtonLoading($('btn-salvar-meta'),true,original);const n=id=>Number($(id).value)||null;const data={metaCalorias:n('input-meta-cal')||2400,alturaCm:n('input-altura'),metaPesoKg:n('input-meta-peso'),objetivo:$('input-objetivo').value,metaSemanal:n('input-meta-semanal')||3,nivel:$('input-nivel').value,duracaoPreferida:n('input-duracao')||60,descansoPadrao:n('input-descanso')||90,diasPreferidos:[...$('perfil-dias').querySelectorAll('input:checked')].map(i=>+i.value),medidas:{cintura:n('medida-cintura'),peito:n('medida-peito'),braco:n('medida-braco')}};try{await setDoc(doc(db,'users',user.uid),data,{merge:true});showToast('Perfil salvo.','success');}catch(e){showToast('Não foi possível salvar.');}finally{setButtonLoading($('btn-salvar-meta'),false,original);}};
-$('btn-registrar-peso').onclick=async()=>{const peso=Number($('input-peso').value);if(!user)return showToast('Aguarde o carregamento do perfil.');if(!Number.isFinite(peso)||peso<20||peso>400)return showToast('Informe um peso entre 20 e 400 kg.');try{await addDoc(collection(db,'pesos'),{userId:user.uid,pesoKg:peso,registradoEm:serverTimestamp()});$('input-peso').value='';const w=await getDocs(query(collection(db,'pesos'),where('userId','==',user.uid)));weights(w.docs.map(d=>d.data()));showToast('Peso registrado.','success');}catch(e){showToast('Não foi possível registrar o peso.');}};
-$('btn-logout').onclick=async()=>{if(await confirmAction({title:'Sair da conta?',message:'Você precisará entrar novamente.',confirmText:'Sair',danger:true}))await signOut(auth);};
-document.title = 'Mol';
-document.addEventListener('click', event => { if (event.target.closest('#open-settings')) location.href = './configuracoes.html'; });
-document.addEventListener('click', event => { if (event.target.closest('#open-body')) location.href = './evolucao.html'; });
-document.addEventListener('click', event => { if (event.target.closest('#open-data')) location.href = './dados-pessoais.html'; });
-onAuthStateChanged(auth, async account => { if (!account) return; try { const snap = await getDocs(query(collection(db,'sessoes'),where('userId','==',account.uid))); let series=0, volume=0, segundos=0; snap.docs.map(d=>d.data()).forEach(s=>{segundos+=s.duracaoSegundos||0;(s.exercicios||[]).forEach(ex=>(ex.series||[]).forEach(set=>{if(set.concluida){series++;volume+=(Number(set.kg)||0)*(Number(set.reps)||0);}}));}); const card=document.createElement('section');card.className='glass-card mb-6 rounded-3xl p-5';card.innerHTML=`<p class="text-xs font-semibold uppercase tracking-wider text-neon">Sua jornada</p><div class="mt-4 grid grid-cols-2 gap-3 text-center"><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-xl">${snap.size}</strong><span class="text-[10px] uppercase text-gray-500">treinos</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-xl">${series}</strong><span class="text-[10px] uppercase text-gray-500">séries</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-xl text-neon">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] uppercase text-gray-500">kg volume</span></div><div class="rounded-2xl bg-white/5 p-3"><strong class="block text-xl">${Math.round(segundos/3600)}h</strong><span class="text-[10px] uppercase text-gray-500">treinando</span></div></div>`;document.querySelector('.glass-card')?.after(card);}catch(e){console.warn(e);}});
-onAuthStateChanged(auth, account => { if (!account || document.getElementById('mol-backup')) return; const card=document.createElement('section');card.id='mol-backup';card.className='glass-card mb-6 rounded-3xl p-5';card.innerHTML='<p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Seus dados</p><h3 class="mt-1 text-lg font-extrabold">Backup pessoal</h3><p class="mt-1 text-sm text-gray-500">Baixe treinos, histórico, peso e dieta em um arquivo privado.</p><button id="download-backup" class="mt-4 min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold text-gray-200">Baixar backup JSON</button>';document.querySelector('.glass-card')?.after(card);card.querySelector('button').onclick=async()=>{try{const names=['treinos','sessoes','pesos','dietas'];const entries=await Promise.all(names.map(async name=>[name,(await getDocs(query(collection(db,name),where('userId','==',account.uid)))).docs.map(d=>({id:d.id,...d.data()}))]));const blob=new Blob([JSON.stringify({versao:1,exportadoEm:new Date().toISOString(),dados:Object.fromEntries(entries)},null,2)],{type:'application/json'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`mol-backup-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(link.href);showToast('Backup baixado.','success');}catch(e){showToast('Não foi possível gerar o backup.');}};});
-onAuthStateChanged(auth, async account => { if (!account || document.getElementById('mol-consistency')) return; const snap=await getDocs(query(collection(db,'sessoes'),where('userId','==',account.uid)));const sessions=snap.docs.map(d=>d.data());const start=new Date();start.setDate(start.getDate()-start.getDay());start.setHours(0,0,0,0);const week=sessions.filter(s=>(s.concluidoEm?.toDate?.()||0)>=start).length;const card=document.createElement('section');card.id='mol-consistency';card.className='glass-card mb-6 rounded-3xl p-5';card.innerHTML=`<p class="text-xs font-semibold uppercase tracking-wider text-neon">Consistência</p><h3 class="mt-1 text-lg font-extrabold">${week} treino${week===1?'':'s'} nesta semana</h3><p class="mt-1 text-sm text-gray-500">${sessions.length>=10?'🏅 10 treinos concluídos':'Complete sessões para desbloquear badges.'}</p>`;document.querySelector('.glass-card')?.after(card);});
-onAuthStateChanged(auth, account => { if (!account || document.getElementById('mol-accessibility')) return; const saved=JSON.parse(localStorage.getItem('mol-accessibility')||'{}');const card=document.createElement('section');card.id='mol-accessibility';card.className='glass-card mb-6 rounded-3xl p-5';card.innerHTML=`<p class="text-xs font-semibold uppercase tracking-wider text-neon">Acessibilidade</p><h3 class="mt-1 text-lg font-extrabold">Aparência</h3><label class="mt-4 block text-sm text-gray-400">Tema<select id="access-theme" class="mt-1 w-full rounded-xl bg-card-dark-2 p-3 text-white"><option value="system">Seguir o sistema</option><option value="">Escuro</option><option value="light">Claro</option></select></label><label class="mt-4 flex items-center justify-between text-sm">Contraste elevado<input id="access-contrast" type="checkbox" class="h-5 w-5"></label><label class="mt-4 flex items-center justify-between text-sm">Texto ampliado<input id="access-text" type="checkbox" class="h-5 w-5"></label>`;document.querySelector('.glass-card')?.after(card);const theme=card.querySelector('#access-theme'),contrast=card.querySelector('#access-contrast'),text=card.querySelector('#access-text');theme.value=saved.theme??'system';contrast.checked=!!saved.contrast;text.checked=!!saved.largeText;const apply=()=>{const prefs={theme:theme.value,contrast:contrast.checked,largeText:text.checked};localStorage.setItem('mol-accessibility',JSON.stringify(prefs));document.body.dataset.theme=prefs.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'':'light'):prefs.theme;document.body.dataset.highContrast=prefs.contrast;document.body.dataset.largeText=prefs.largeText?'true':'';};theme.onchange=contrast.onchange=text.onchange=apply;});
-onAuthStateChanged(auth, account => { if (!account) return; setTimeout(()=>{const select=$('access-theme');if(!select||select.dataset.segmented)return;select.dataset.segmented='true';select.style.display='none';const group=document.createElement('div');group.className='theme-segments mt-2 grid grid-cols-3 gap-2';[['system','Sistema'],['','Escuro'],['light','Claro']].forEach(([value,label])=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.theme=value;button.className='min-h-11 rounded-xl text-xs font-bold';const paint=()=>button.classList.toggle('is-active',select.value===value);paint();button.onclick=()=>{select.value=value;select.dispatchEvent(new Event('change'));group.querySelectorAll('button').forEach(item=>item.classList.toggle('is-active',item===button));};group.appendChild(button);});select.parentElement.appendChild(group);},0);});
-onAuthStateChanged(auth, account => { if (!account) return; setTimeout(()=>{const dataButton=$('open-data'), backup=$('mol-backup'), access=$('mol-accessibility');if(!dataButton||!backup||!access)return;const dataCard=$('input-meta-cal').closest('.glass-card');dataCard.appendChild(backup);access.classList.add('hidden');const menu=dataButton.closest('.mb-6');if(!$('open-settings')){const settings=document.createElement('button');settings.id='open-settings';settings.className='glass-card flex min-h-20 items-center gap-4 rounded-3xl p-5 text-left';settings.innerHTML='<span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="settings-2" class="h-5 w-5"></i></span><span class="flex-1"><strong class="block">Configurações</strong><small class="block text-gray-500">Acessibilidade, aparência e preferências</small></span><i data-lucide="chevron-right"></i>';menu.appendChild(settings);settings.onclick=()=>access.classList.toggle('hidden');lucide.createIcons();}},50);});
+const $ = id => document.getElementById(id);
+const renderIcons = () => window.lucide?.createIcons();
+const withTimeout = (promise, label, milliseconds = 12000) => {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })]).finally(() => clearTimeout(timer));
+};
+
+function renderIdentity(account, profile = {}) {
+  const name = String(account.displayName || profile.name || profile.nome || 'Usuário').trim().slice(0, 80) || 'Usuário';
+  $('user-name').textContent = name;
+  $('user-email').textContent = String(account.email || profile.email || '').slice(0, 254);
+  const avatar = $('user-avatar');
+  const fallback = $('default-avatar-icon');
+  const photoURL = account.photoURL || profile.photoURL;
+  avatar.alt = name ? `Foto de ${name}` : 'Foto do perfil';
+  avatar.onerror = () => { avatar.classList.add('hidden'); fallback.classList.remove('hidden'); };
+  if (photoURL) { avatar.src = photoURL; avatar.classList.remove('hidden'); fallback.classList.add('hidden'); }
+}
+
+function renderStats(stats) {
+  $('journey-workouts').textContent = stats.workouts;
+  $('journey-sets').textContent = stats.sets.toLocaleString('pt-BR');
+  $('journey-volume').textContent = Math.round(stats.volume).toLocaleString('pt-BR');
+  $('journey-time').textContent = formatTrainingTime(stats.seconds);
+  $('consistency-title').textContent = `${stats.weekly} de ${stats.goal} treino${stats.goal === 1 ? '' : 's'} nesta semana`;
+  $('consistency-progress').style.width = `${stats.percent}%`;
+  $('consistency-message').textContent = stats.weekly >= stats.goal ? `Meta semanal concluída. ${profileMilestone(stats.workouts)}` : `${stats.goal - stats.weekly} treino${stats.goal - stats.weekly === 1 ? '' : 's'} para concluir a meta. ${profileMilestone(stats.workouts)}`;
+  $('profile-content').classList.remove('hidden');
+  renderIcons();
+}
+
+function setReady(message = '') {
+  $('profile-status').classList.toggle('hidden', !message);
+  if (message) $('profile-status').textContent = message;
+  document.body.setAttribute('aria-busy', 'false');
+}
+
+async function loadProfile(account) {
+  renderIdentity(account);
+  const cacheKey = `mol-profile-cache-${account.uid}`;
+  const cached = readProfileCache(getSessionItem(cacheKey));
+  if (cached) renderStats(cached);
+
+  const profilePromise = withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil');
+  const sessionsPromise = cached ? null : withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'O histórico');
+  const [profileResult, sessionsResult] = await Promise.allSettled([profilePromise, sessionsPromise]);
+  const profile = profileResult.status === 'fulfilled' && profileResult.value.exists() ? profileResult.value.data() : {};
+  renderIdentity(account, profile);
+  if (cached) {
+    const goal = Math.max(1, Math.min(7, Number(profile.metaSemanal) || cached.goal || 3));
+    renderStats({ ...cached, goal, percent: Math.min(100, Math.round((cached.weekly / goal) * 100)) });
+  }
+
+  if (!cached && sessionsResult.status === 'fulfilled' && sessionsResult.value) {
+    const stats = profileStats(sessionsResult.value.docs.map(item => item.data()), profile.metaSemanal || 3);
+    setSessionItem(cacheKey, JSON.stringify({ savedAt: Date.now(), stats }));
+    renderStats(stats);
+  }
+
+  const profileFailed = profileResult.status === 'rejected';
+  const sessionsFailed = !cached && sessionsResult.status === 'rejected';
+  if (!cached && sessionsFailed) renderStats(profileStats([], profile.metaSemanal || 3));
+  if (profileFailed || sessionsFailed) setReady('Alguns dados não puderam ser atualizados. Confira sua conexão e tente novamente mais tarde.');
+  else setReady();
+}
+
+onAuthStateChanged(auth, account => {
+  if (!account) { window.location.replace('./login.html'); return; }
+  loadProfile(account).catch(error => {
+    console.error('Perfil não carregado:', error);
+    renderIdentity(account);
+    renderStats(profileStats([], 3));
+    setReady('Não foi possível atualizar o perfil agora. Confira sua conexão.');
+  });
+});
+
+$('btn-logout').addEventListener('click', async () => {
+  const confirmed = await confirmAction({ title: 'Sair da conta?', message: 'Você precisará entrar novamente para acessar seus dados.', confirmText: 'Sair', danger: true });
+  if (!confirmed) return;
+  const button = $('btn-logout');
+  const original = button.innerHTML;
+  setButtonLoading(button, true, original);
+  try { await withTimeout(signOut(auth), 'A saída da conta', 10000); }
+  catch (error) { console.error('Não foi possível sair:', error); showToast('Não foi possível sair da conta. Tente novamente.'); setButtonLoading(button, false, original); renderIcons(); }
+});
+
+renderIcons();
