@@ -27,7 +27,13 @@
         ]
       },
       {
-        "source": "/@(sw.js|registerSW.js|manifest.webmanifest)",
+        "source": "/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "/@(sw.js|registerSW.js|notification-sw.js|manifest.webmanifest)",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache" }
         ]
