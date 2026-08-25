@@ -21,7 +21,7 @@ import {
   getDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { auth, db, googleProvider } from "../config/firebase-config.js";
+import { auth, authReady, db, googleProvider } from "../config/firebase-config.js";
 
 const AUTH_THROTTLE_KEY = 'mol-auth-throttle-v1';
 const AUTH_THROTTLE_WINDOW_MS = 10 * 60 * 1000;
@@ -79,6 +79,7 @@ function recordAuthAttemptFailure(error) {
 export async function loginWithGoogle() {
   assertAuthAttemptAllowed();
   try {
+    await authReady;
     const result = await signInWithPopup(auth, googleProvider);
     clearAuthThrottle();
     return result.user;
@@ -91,13 +92,14 @@ export async function loginWithGoogle() {
 /** Usa navegação completa quando o navegador bloqueia popups. */
 export function loginWithGoogleRedirect() {
   assertAuthAttemptAllowed();
-  return signInWithRedirect(auth, googleProvider);
+  return authReady.then(() => signInWithRedirect(auth, googleProvider));
 }
 
 /** Finaliza o retorno do login por redirecionamento, quando existir. */
 export async function getGoogleRedirectUser() {
   assertAuthAttemptAllowed();
   try {
+    await authReady;
     const result = await getRedirectResult(auth);
     if (!result?.user) return null;
     clearAuthThrottle();

@@ -18,7 +18,7 @@ function navigateHome() {
   if (navigating) return;
   navigating = true;
   setSessionItem('mol-login-success', 'true');
-  window.location.replace('../index.html');
+  window.location.replace('/index.html');
 }
 
 function showError(message) {

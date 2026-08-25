@@ -7,8 +7,10 @@
 // Importa os SDKs do Firebase
 import { initializeApp } from 'firebase/app';
 import {
+  browserLocalPersistence,
   getAuth,
   GoogleAuthProvider,
+  setPersistence,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -27,5 +29,8 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta instâncias prontas para uso em outros arquivos
 export const auth = getAuth(app);
+export const authReady = setPersistence(auth, browserLocalPersistence).catch(error => {
+  console.warn('[Mol] Persistência local do login indisponível; usando padrão do navegador:', error.message);
+});
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();

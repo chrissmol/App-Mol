@@ -1,4 +1,4 @@
-import { auth, db } from '../config/firebase-config.js';
+import { auth, authReady, db } from '../config/firebase-config.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { sessionMetrics } from '../modules/workout-analytics.js';
@@ -196,7 +196,7 @@ function openDashboardEditor() {
   document.body.appendChild(panel); render();
 }
 
-onAuthStateChanged(auth, async user => {
+authReady.finally(() => onAuthStateChanged(auth, async user => {
   if (!user) return window.location.href = './pages/login.html';
   dashboardUser = user;
   // O esqueleto do Início não depende do banco: aparece assim que a sessão existe.
@@ -265,5 +265,5 @@ onAuthStateChanged(auth, async user => {
   await Promise.allSettled([loadRoutines(), loadSessions(), loadWeights()]);
   clearTimeout(window.__molDashboardFallback);
   document.body.setAttribute('aria-busy','false'); renderIcons();
-});
+}));
 renderIcons();
