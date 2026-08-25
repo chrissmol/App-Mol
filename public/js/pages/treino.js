@@ -471,6 +471,28 @@ window.salvarNomeRotina = async () => {
   }
 };
 
+const WEEKDAYS = [[1, 'Segunda'], [2, 'Terça'], [3, 'Quarta'], [4, 'Quinta'], [5, 'Sexta'], [6, 'Sábado'], [0, 'Domingo']];
+
+function routineDaysEditor(days = []) {
+  const selected = new Set((Array.isArray(days) ? days : []).map(Number));
+  return `<div class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Dias de treino</p><div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">${WEEKDAYS.map(([day, label]) => `<label><input class="peer sr-only" type="checkbox" value="${day}" ${selected.has(day) ? 'checked' : ''}><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><button type="button" onclick="salvarDiasRotina()" class="mt-3 min-h-10 rounded-xl border border-white/10 px-3 text-xs font-bold text-gray-200">Salvar dias</button></div>`;
+}
+
+window.salvarDiasRotina = async () => {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  const selector = document.getElementById('routine-days-editor');
+  if (!rotina || !selector) return;
+  const diasSemana = [...selector.querySelectorAll('input:checked')].map(input => Number(input.value)).sort((a, b) => a - b);
+  try {
+    await updateDoc(doc(db, 'treinos', rotina.id), { diasSemana });
+    rotina.diasSemana = diasSemana;
+    showToast('Dias de treino atualizados.', 'success');
+  } catch (error) {
+    console.error('Dias da rotina não salvos:', error);
+    showToast('Não foi possível salvar os dias de treino.');
+  }
+};
+
 window.deletarRotina = async (id) => {
   if (await confirmAction({ title: 'Excluir rotina?', message: 'Essa rotina e seus exercícios serão removidos permanentemente.', confirmText: 'Excluir', danger: true })) {
     try {
@@ -492,12 +514,15 @@ btnSalvarNova.addEventListener('click', async () => {
   btnSalvarNova.textContent = "Salvando...";
   try {
     const diasSemana = [...routineDays.querySelectorAll('input:checked')].map(input => Number(input.value));
-    await addDoc(collection(db, "treinos"), { userId: usuarioAtual.uid, nome: nome, descricao: "Treino Personalizado", diasSemana, exercicios: [], criadoEm: serverTimestamp() });
+    const novaRotina = { userId: usuarioAtual.uid, nome, descricao: 'Treino Personalizado', diasSemana, exercicios: [], criadoEm: new Date() };
+    const reference = await addDoc(collection(db, 'treinos'), { ...novaRotina, criadoEm: serverTimestamp() });
+    rotinasReais = [...rotinasReais, { id: reference.id, ...novaRotina }];
     inputNomeRotina.value = '';
     routineDays.querySelectorAll('input').forEach(input => input.checked = false);
-    await carregarRotinasDoBanco();
     esconderTudo();
     viewRotinas.classList.remove('hidden');
+    renderRotinas();
+    void carregarRotinasDoBanco();
     showToast('Rotina criada com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao criar rotina:', error);
@@ -806,7 +831,7 @@ function abrirRotina(id) {
       </div>
     </div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><p class="mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão</p></div>
   ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[.03] p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button type="button" onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
-  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 bg-card-dark p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-card-dark-2 px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div></div>`;
+  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 bg-card-dark p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-card-dark-2 px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
   
   if (!rotina.exercicios || rotina.exercicios.length === 0) {
     exerciciosList.innerHTML = `
@@ -817,6 +842,7 @@ function abrirRotina(id) {
   } else {
     let exerciciosHtml = rotina.exercicios.map((ex, indexEx) => {
       let contadorNormal = 0; 
+      const ultimoTreino = ultimaPerformance.get(ex.nome);
 
       return `
       <article class="workout-exercise-card bg-card-dark rounded-2xl pt-4 pb-2 px-4 border border-white/5 mb-4">
@@ -851,8 +877,10 @@ function abrirRotina(id) {
               label = 'D'; corFundo = 'text-blue-400 bg-blue-400/10';
             }
 
-            const temAnterior = serie.anteriorKg !== '' && serie.anteriorKg != null && Number(serie.anteriorReps) > 0;
-            const textoAnterior = temAnterior ? `${serie.anteriorKg}kg x ${serie.anteriorReps}` : '-';
+            const anteriorKg = serie.anteriorKg !== '' && serie.anteriorKg != null ? serie.anteriorKg : ultimoTreino?.kg;
+            const anteriorReps = Number(serie.anteriorReps) > 0 ? serie.anteriorReps : ultimoTreino?.reps;
+            const temAnterior = anteriorKg != null && Number(anteriorReps) > 0;
+            const textoAnterior = temAnterior ? `${anteriorKg}kg x ${anteriorReps}` : '-';
             
             const bgLinha = serie.concluida ? 'bg-neon/10' : 'bg-card-dark-2/30';
             const bgBotaoCheck = serie.concluida ? 'bg-neon text-black' : 'bg-card-dark-2 border border-white/10 text-transparent';
@@ -871,8 +899,8 @@ function abrirRotina(id) {
                   <span>${textoAnterior}</span>
                 </button>
                 
-                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="-" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="-" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${ultimoTreino?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${ultimoTreino?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da série ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 
                 <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir série ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">

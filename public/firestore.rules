@@ -14,16 +14,19 @@ service cloud.firestore {
       return signedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-    function validUserProfile() {
-      return request.resource.data.keys().hasOnly([
+    function userProfileFields() {
+      return [
         'name', 'email', 'photoURL', 'createdAt',
         'dailyCalorieGoal', 'metaCalorias', 'macroGoals',
         'metaSemanal', 'alturaCm', 'metaPesoKg', 'objetivo',
         'preferenciasAcessibilidade', 'dashboardCards', 'dashboardCardsUpdatedAt',
         'exerciseLibraryPreferences', 'medidasHistorico', 'fotosProgresso',
         'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas'
-      ])
-        && (!('name' in request.resource.data) || request.resource.data.name is string || request.resource.data.name == null)
+      ];
+    }
+
+    function validUserProfileValues() {
+      return (!('name' in request.resource.data) || request.resource.data.name is string || request.resource.data.name == null)
         && (!('email' in request.resource.data) || request.resource.data.email is string || request.resource.data.email == null)
         && (!('photoURL' in request.resource.data) || request.resource.data.photoURL is string || request.resource.data.photoURL == null)
         && (!('metaSemanal' in request.resource.data) || (request.resource.data.metaSemanal is number && request.resource.data.metaSemanal >= 1 && request.resource.data.metaSemanal <= 7))
@@ -32,6 +35,16 @@ service cloud.firestore {
         && (!('objetivo' in request.resource.data) || request.resource.data.objetivo in ['', 'Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'])
         && (!('medidasHistorico' in request.resource.data) || (request.resource.data.medidasHistorico is list && request.resource.data.medidasHistorico.size() <= 50))
         && (!('fotosProgresso' in request.resource.data) || (request.resource.data.fotosProgresso is list && request.resource.data.fotosProgresso.size() <= 5));
+    }
+
+    function validNewUserProfile() {
+      return request.resource.data.keys().hasOnly(userProfileFields()) && validUserProfileValues();
+    }
+
+    // Perfis antigos podem ter campos legados. Eles não bloqueiam a edição dos
+    // campos atuais, mas o cliente não pode criar ou mudar campos fora da lista.
+    function validUserProfileUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(userProfileFields()) && validUserProfileValues();
     }
 
     function validRoutine() {
@@ -70,9 +83,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, delete: if signedIn() && request.auth.uid == userId;
-      allow create, update: if signedIn()
-        && request.auth.uid == userId
-        && validUserProfile();
+      allow create: if signedIn() && request.auth.uid == userId && validNewUserProfile();
+      allow update: if signedIn() && request.auth.uid == userId && validUserProfileUpdate();
     }
 
     match /treinos/{treinoId} {

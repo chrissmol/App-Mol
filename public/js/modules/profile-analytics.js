@@ -61,6 +61,16 @@ export function profileMilestone(workouts) {
   return `${remaining === 1 ? 'Falta' : 'Faltam'} ${remaining} treino${remaining === 1 ? '' : 's'} para o marco de ${next}.`;
 }
 
+export function avatarTier(workouts) {
+  const count = Math.max(0, Math.floor(Number(workouts) || 0));
+  if (count >= 100) return { id: 'diamond', label: 'Diamante', next: null };
+  if (count >= 60) return { id: 'gold', label: 'Ouro', next: 100 };
+  if (count >= 30) return { id: 'silver', label: 'Prata', next: 60 };
+  if (count >= 15) return { id: 'bronze', label: 'Bronze', next: 30 };
+  if (count >= 5) return { id: 'wood', label: 'Madeira', next: 15 };
+  return { id: 'plastic', label: 'Plástico', next: 5 };
+}
+
 export function readProfileCache(raw, now = Date.now(), maxAge = 5 * 60 * 1000) {
   try {
     const cache = JSON.parse(raw || 'null');

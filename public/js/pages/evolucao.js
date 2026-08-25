@@ -222,11 +222,20 @@ async function compressPhoto(file) {
   if (source.draw) source.draw(context, canvas.width, canvas.height);
   else context.drawImage(source, 0, 0, canvas.width, canvas.height);
   source.close?.();
+  const canvasBlob = (quality) => new Promise(resolve => {
+    if (typeof canvas.toBlob === 'function') { canvas.toBlob(resolve, 'image/jpeg', quality); return; }
+    try {
+      const [, data] = canvas.toDataURL('image/jpeg', quality).split(',');
+      const bytes = atob(data); const values = new Uint8Array(bytes.length);
+      for (let index = 0; index < bytes.length; index += 1) values[index] = bytes.charCodeAt(index);
+      resolve(new Blob([values], { type: 'image/jpeg' }));
+    } catch { resolve(null); }
+  });
   let quality = 0.78;
-  let image = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+  let image = await canvasBlob(quality);
   while (image && image.size > 90 * 1024 && quality > 0.32) {
     quality -= 0.08;
-    image = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    image = await canvasBlob(quality);
   }
   if (!image || image.size > 90 * 1024) throw new Error('A foto ficou grande demais. Escolha uma imagem mais simples.');
   return new Promise((resolve, reject) => {
@@ -394,7 +403,13 @@ $('save-photo').onclick = async () => {
     $('progress-photo').value = '';
     await load();
     showToast('Foto adicionada.', 'success');
-  } catch (error) { showToast(error.message || 'Não foi possível salvar a foto.'); }
+  } catch (error) {
+    console.error('Foto de evolução não salva:', error);
+    const message = error?.code === 'permission-denied'
+      ? 'O perfil ainda não tem permissão para salvar fotos. Atualize a página e tente novamente.'
+      : (error.message || 'Não foi possível salvar a foto.');
+    showToast(message);
+  }
   finally { setButtonLoading(button, false); }
 };
 

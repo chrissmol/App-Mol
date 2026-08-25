@@ -3,7 +3,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { formatTrainingTime, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
+import { avatarTier, formatTrainingTime, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
@@ -27,6 +27,9 @@ function renderIdentity(account, profile = {}) {
 }
 
 function renderStats(stats) {
+  const tier = avatarTier(stats.workouts);
+  const frame = $('avatar-frame');
+  if (frame) { frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim() + ` avatar-frame--${tier.id}`; frame.setAttribute('aria-label', `Moldura de ${tier.label}`); }
   $('journey-workouts').textContent = stats.workouts;
   $('journey-sets').textContent = stats.sets.toLocaleString('pt-BR');
   $('journey-volume').textContent = Math.round(stats.volume).toLocaleString('pt-BR');

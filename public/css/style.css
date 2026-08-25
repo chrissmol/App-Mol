@@ -57,6 +57,14 @@ body {
 
 body[data-theme="light"] { background: var(--mol-bg); color: var(--mol-text); }
 body[data-theme="light"].app-surface { background: radial-gradient(ellipse 90% 42% at 50% -10%, rgba(30,115,73,.12), transparent 65%), var(--mol-bg); color: var(--mol-text); }
+/* Também usa o atributo do HTML: garante o tema durante a troca de página,
+   antes de o módulo conseguir aplicar o atributo no body novamente. */
+html[data-theme="light"] body,
+html[data-theme="light"] body.app-surface,
+html[data-theme="light"] body.dashboard-surface {
+  background: radial-gradient(ellipse 90% 42% at 50% -10%, rgba(30,115,73,.12), transparent 65%), var(--mol-bg) !important;
+  color: var(--mol-text) !important;
+}
 body[data-theme="light"] .glass-card { background: linear-gradient(145deg, var(--mol-surface), #f8fbf9); border-color: var(--mol-border); box-shadow: 0 8px 24px rgba(18,45,29,.05); }
 body[data-theme="light"] .bg-card-dark, body[data-theme="light"] .bg-card-dark-2 { background-color: var(--mol-surface-2) !important; }
 body[data-theme="light"] .bg-white\/5, body[data-theme="light"] .bg-white\/10, body[data-theme="light"] .bg-white\/\[\.03\] { background-color: var(--mol-surface-soft) !important; }
@@ -101,6 +109,13 @@ body[data-theme="light"] .bg-neon\/10,
 body[data-theme="light"] .bg-neon\/15 { background-color: rgba(30,115,73,.1) !important; }
 body[data-theme="light"] .bg-neon { background-color: var(--mol-brand-green) !important; }
 body[data-theme="light"] .text-neon { color: var(--mol-brand-text) !important; }
+.avatar-frame { border-width: 3px; transition: border-color .25s ease, box-shadow .25s ease; }
+.avatar-frame--plastic { border-color: #aeb8b2; box-shadow: 0 0 0 2px rgba(174,184,178,.14); }
+.avatar-frame--wood { border-color: #8b5a2b; box-shadow: 0 0 0 2px rgba(139,90,43,.2), inset 0 0 0 1px rgba(255,219,171,.18); }
+.avatar-frame--bronze { border-color: #cd7f32; box-shadow: 0 0 0 2px rgba(205,127,50,.22); }
+.avatar-frame--silver { border-color: #c3ccd2; box-shadow: 0 0 0 2px rgba(195,204,210,.24); }
+.avatar-frame--gold { border-color: #e1b12c; box-shadow: 0 0 0 2px rgba(225,177,44,.25), 0 0 16px rgba(225,177,44,.2); }
+.avatar-frame--diamond { border-color: #67e8f9; box-shadow: 0 0 0 2px rgba(103,232,249,.28), 0 0 20px rgba(103,232,249,.32); }
 body[data-high-contrast="true"] { filter: contrast(1.18); }
 html[data-large-text="true"] { font-size: 112.5%; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }

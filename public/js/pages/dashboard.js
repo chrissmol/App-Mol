@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { dateOf, estimatedWorkoutMinutes, monday, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../modules/dashboard-analytics.js';
+import { avatarTier, profileStats } from '../modules/profile-analytics.js';
 import { foodNutrients, nextMeal, normalizeDietMeals } from '../modules/nutrition.js';
 import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
@@ -50,6 +51,9 @@ function normalizeCards(value) {
 }
 
 function setWeek(sessions, goal = 1) {
+  const tier = avatarTier(profileStats(sessions, goal).workouts);
+  const frame = $('dashboard-avatar-frame');
+  if (frame) { frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim() + ` avatar-frame--${tier.id}`; frame.setAttribute('aria-label', `Abrir perfil · moldura de ${tier.label}`); }
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);
