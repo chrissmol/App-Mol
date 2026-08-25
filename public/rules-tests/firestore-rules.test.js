@@ -21,9 +21,16 @@ const routine = uid => ({ userId: uid, nome: 'Treino A', exercicios: [] });
 
 describe('regras do Firestore', () => {
   it('isola perfis entre contas e bloqueia visitantes', async () => {
-    await assertSucceeds(setDoc(doc(user('user-a'), 'users', 'user-a'), { nome: 'A' }));
+    await assertSucceeds(setDoc(doc(user('user-a'), 'users', 'user-a'), { name: 'A' }));
     await assertFails(getDoc(doc(user('user-b'), 'users', 'user-a')));
     await assertFails(getDoc(doc(environment.unauthenticatedContext().firestore(), 'users', 'user-a')));
+  });
+
+  it('bloqueia campos extras no perfil do usuário', async () => {
+    const owner = user('user-a');
+    await assertSucceeds(setDoc(doc(owner, 'users', 'user-a'), { name: 'A', metaSemanal: 3 }));
+    await assertFails(setDoc(doc(owner, 'users', 'user-a'), { name: 'A', role: 'admin' }));
+    await assertFails(setDoc(doc(owner, 'users', 'user-a'), { name: 'A', metaSemanal: 99 }));
   });
 
   it('valida dono, nome e limite estrutural das rotinas', async () => {
@@ -32,6 +39,7 @@ describe('regras do Firestore', () => {
     await assertFails(setDoc(doc(owner, 'treinos', 'rotina-b'), routine('user-b')));
     await assertFails(setDoc(doc(owner, 'treinos', 'sem-nome'), { ...routine('user-a'), nome: '' }));
     await assertFails(setDoc(doc(owner, 'treinos', 'grande'), { ...routine('user-a'), exercicios: Array.from({ length: 61 }, () => ({})) }));
+    await assertFails(setDoc(doc(owner, 'treinos', 'admin'), { ...routine('user-a'), admin: true }));
     await assertFails(getDoc(doc(user('user-b'), 'treinos', 'rotina-a')));
   });
 
@@ -39,6 +47,7 @@ describe('regras do Firestore', () => {
     const owner = user('user-a');
     const reference = doc(owner, 'sessoes', 'sessao-a');
     await assertSucceeds(setDoc(reference, { userId: 'user-a', nomeRotina: 'Treino A', exercicios: [] }));
+    await assertFails(setDoc(doc(owner, 'sessoes', 'sessao-extra'), { userId: 'user-a', nomeRotina: 'Treino A', exercicios: [], internalFlag: true }));
     await assertFails(updateDoc(reference, { nomeRotina: 'Alterado' }));
     await assertSucceeds(deleteDoc(reference));
   });
@@ -48,6 +57,7 @@ describe('regras do Firestore', () => {
     await assertSucceeds(setDoc(doc(owner, 'pesos', 'peso-a'), { userId: 'user-a', pesoKg: 75.5 }));
     await assertFails(setDoc(doc(owner, 'pesos', 'peso-baixo'), { userId: 'user-a', pesoKg: 10 }));
     await assertFails(setDoc(doc(owner, 'pesos', 'peso-alheio'), { userId: 'user-b', pesoKg: 80 }));
+    await assertFails(setDoc(doc(owner, 'pesos', 'peso-extra'), { userId: 'user-a', pesoKg: 80, privado: false }));
   });
 
   it('protege a dieta pelo ID da conta e limita sua estrutura', async () => {

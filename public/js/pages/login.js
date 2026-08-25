@@ -3,7 +3,9 @@ import { authErrorMessage, LEGAL_DOCUMENTS, withTimeout } from '../modules/login
 import { setButtonLoading } from '../utils/ui.js';
 import { initializeAccessibility } from '../utils/accessibility.js';
 import { setSessionItem } from '../utils/storage.js';
+import { setupMobileAppMode } from '../utils/mobile-app.js';
 
+setupMobileAppMode();
 initializeAccessibility();
 
 const googleBtn = document.getElementById('googleLoginBtn');

@@ -1,5 +1,4 @@
 import { setupAppShell } from '../utils/app-shell.js';
-import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { auth, db, googleProvider } from '../config/firebase-config.js';
 import { EmailAuthProvider, deleteUser, onAuthStateChanged, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
@@ -51,101 +50,6 @@ themeChoices.forEach(([value, icon, label]) => {
 
 $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };
 $('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
-
-const defaultReminderNote = 'Os lembretes funcionam enquanto o Mol estiver aberto. O navegador pode pausar avisos em segundo plano.';
-
-function renderReminders(message = '') {
-  const prefs = getReminderPreferences();
-  $('reminders-enabled').checked = prefs.enabled;
-  $('workout-time').value = prefs.workoutTime;
-  $('meal-time').value = prefs.mealTime;
-  $('reminder-options').classList.toggle('opacity-50', !prefs.enabled);
-  $('reminder-options').querySelectorAll('input').forEach(input => { input.disabled = !prefs.enabled; });
-  $('test-reminder').disabled = !prefs.enabled;
-  $('test-reminder').classList.toggle('opacity-50', !prefs.enabled);
-  if (message) $('reminder-note').textContent = message;
-  else if (!('Notification' in window)) $('reminder-note').textContent = 'Este navegador não oferece notificações locais.';
-  else if (Notification.permission === 'denied') $('reminder-note').textContent = 'As notificações estão bloqueadas. Libere a permissão nas configurações deste site.';
-  else if (prefs.enabled && Notification.permission === 'granted') $('reminder-note').textContent = 'Lembretes ativos. Mantenha o Mol aberto para receber os avisos.';
-  else $('reminder-note').textContent = defaultReminderNote;
-}
-
-$('reminders-enabled').onchange = async () => {
-  const enabled = $('reminders-enabled').checked;
-  if (enabled) {
-    try {
-      await requestReminderPermission();
-    } catch (error) {
-      saveReminderPreferences({ enabled: false });
-      renderReminders(error.message || 'Não foi possível ativar as notificações.');
-      showToast(error.message || 'Não foi possível ativar as notificações.');
-      return;
-    }
-  }
-  if (!saveReminderPreferences({ enabled })) {
-    renderReminders('O navegador não permitiu salvar os lembretes neste dispositivo.');
-    showToast('Não foi possível salvar a preferência de lembretes.');
-    return;
-  }
-  renderReminders(enabled ? 'Lembretes ativados.' : 'Lembretes desativados.');
-};
-
-['workout-time', 'meal-time'].forEach(id => {
-  $(id).onchange = () => {
-    if (!$(id).value) return renderReminders('Escolha um horário válido.');
-    if (!saveReminderPreferences({ [id === 'workout-time' ? 'workoutTime' : 'mealTime']: $(id).value })) {
-      renderReminders('O navegador não permitiu salvar os horários.');
-      showToast('Não foi possível salvar o horário.');
-      return;
-    }
-    renderReminders('Horários atualizados.');
-  };
-});
-
-$('test-reminder').onclick = async () => {
-  if (!getReminderPreferences().enabled) return;
-  const button = $('test-reminder');
-  setButtonLoading(button, true);
-  try {
-    await sendTestReminder();
-    renderReminders('Notificação de teste enviada.');
-    showToast('Notificação enviada.', 'success');
-  } catch (error) {
-    renderReminders(error.message || 'Não foi possível enviar a notificação.');
-    showToast(error.message || 'Não foi possível enviar a notificação.');
-  } finally {
-    setButtonLoading(button, false);
-    window.lucide?.createIcons();
-  }
-};
-
-function renderInstall() {
-  const installed = matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (installed) {
-    $('install-app').hidden = true;
-    $('install-note').textContent = 'O Mol já está instalado neste dispositivo.';
-  } else if (window.__molInstallPrompt) {
-    $('install-app').hidden = false;
-    $('install-note').textContent = 'Instale o Mol para abrir em tela cheia e acessar mais rapidamente.';
-  } else {
-    $('install-app').hidden = true;
-    $('install-note').textContent = /iphone|ipad|ipod/i.test(navigator.userAgent)
-      ? 'No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.'
-      : 'A instalação aparecerá aqui quando estiver disponível neste navegador.';
-  }
-}
-
-$('install-app').onclick = async () => {
-  const promptEvent = window.__molInstallPrompt;
-  if (!promptEvent) return;
-  await promptEvent.prompt();
-  const choice = await promptEvent.userChoice;
-  window.__molInstallPrompt = null;
-  renderInstall();
-  if (choice.outcome === 'accepted') showToast('Instalação iniciada.', 'success');
-};
-window.addEventListener('mol-install-available', renderInstall);
-window.addEventListener('appinstalled', renderInstall);
 
 async function deleteUserData(user) {
   const names = ['treinos', 'sessoes', 'pesos'];
@@ -257,6 +161,4 @@ onAuthStateChanged(auth, async user => {
 });
 
 applyAppearance();
-renderReminders();
-renderInstall();
 window.lucide?.createIcons();

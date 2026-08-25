@@ -64,6 +64,18 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.*
+!.env.example
+
+# Secrets and local credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*service-account*.json
+*firebase-admin*.json
+secrets/
+credentials/
 
 # dataconnect generated files
 .dataconnect

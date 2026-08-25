@@ -14,40 +14,76 @@ service cloud.firestore {
       return signedIn() && request.resource.data.userId == request.auth.uid;
     }
 
+    function validUserProfile() {
+      return request.resource.data.keys().hasOnly([
+        'name', 'email', 'photoURL', 'createdAt',
+        'dailyCalorieGoal', 'metaCalorias', 'macroGoals',
+        'metaSemanal', 'alturaCm', 'metaPesoKg', 'objetivo',
+        'preferenciasAcessibilidade', 'dashboardCards', 'dashboardCardsUpdatedAt',
+        'exerciseLibraryPreferences', 'medidasHistorico', 'fotosProgresso',
+        'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas'
+      ])
+        && (!('name' in request.resource.data) || request.resource.data.name is string || request.resource.data.name == null)
+        && (!('email' in request.resource.data) || request.resource.data.email is string || request.resource.data.email == null)
+        && (!('photoURL' in request.resource.data) || request.resource.data.photoURL is string || request.resource.data.photoURL == null)
+        && (!('metaSemanal' in request.resource.data) || (request.resource.data.metaSemanal is number && request.resource.data.metaSemanal >= 1 && request.resource.data.metaSemanal <= 7))
+        && (!('alturaCm' in request.resource.data) || request.resource.data.alturaCm == null || (request.resource.data.alturaCm is number && request.resource.data.alturaCm >= 100 && request.resource.data.alturaCm <= 250))
+        && (!('metaPesoKg' in request.resource.data) || request.resource.data.metaPesoKg == null || (request.resource.data.metaPesoKg is number && request.resource.data.metaPesoKg >= 20 && request.resource.data.metaPesoKg <= 400))
+        && (!('objetivo' in request.resource.data) || request.resource.data.objetivo in ['', 'Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'])
+        && (!('medidasHistorico' in request.resource.data) || (request.resource.data.medidasHistorico is list && request.resource.data.medidasHistorico.size() <= 50))
+        && (!('fotosProgresso' in request.resource.data) || (request.resource.data.fotosProgresso is list && request.resource.data.fotosProgresso.size() <= 5));
+    }
+
     function validRoutine() {
-      return request.resource.data.nome is string
+      return request.resource.data.keys().hasOnly(['userId', 'nome', 'descricao', 'diasSemana', 'exercicios', 'criadoEm', 'ultimoTreinoEm'])
+        && request.resource.data.nome is string
         && request.resource.data.nome.size() >= 1
         && request.resource.data.nome.size() <= 80
+        && (!('descricao' in request.resource.data) || (request.resource.data.descricao is string && request.resource.data.descricao.size() <= 240))
+        && (!('diasSemana' in request.resource.data) || (request.resource.data.diasSemana is list && request.resource.data.diasSemana.size() <= 7))
         && request.resource.data.exercicios is list
         && request.resource.data.exercicios.size() <= 60;
     }
 
+    function validSession() {
+      return request.resource.data.keys().hasOnly(['userId', 'rotinaId', 'nomeRotina', 'exercicios', 'volumeTotal', 'duracaoSegundos', 'checkinPreTreino', 'iniciadaEm', 'concluidoEm'])
+        && request.resource.data.nomeRotina is string
+        && request.resource.data.nomeRotina.size() <= 80
+        && request.resource.data.exercicios is list
+        && request.resource.data.exercicios.size() <= 60
+        && (!('volumeTotal' in request.resource.data) || (request.resource.data.volumeTotal is number && request.resource.data.volumeTotal >= 0))
+        && (!('duracaoSegundos' in request.resource.data) || (request.resource.data.duracaoSegundos is number && request.resource.data.duracaoSegundos >= 0 && request.resource.data.duracaoSegundos <= 86400));
+    }
+
     function validWeight() {
-      return request.resource.data.pesoKg is number
+      return request.resource.data.keys().hasOnly(['userId', 'pesoKg', 'registradoEm'])
+        && request.resource.data.pesoKg is number
         && request.resource.data.pesoKg >= 20
         && request.resource.data.pesoKg <= 400;
     }
 
+    function validDiet() {
+      return request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'atualizadoEm'])
+        && request.resource.data.refeicoes is list
+        && request.resource.data.refeicoes.size() <= 12;
+    }
+
     match /users/{userId} {
-      allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      allow read, delete: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && validUserProfile();
     }
 
     match /treinos/{treinoId} {
       allow read, delete: if ownsExisting();
       allow create: if ownsNew() && validRoutine();
-      allow update: if ownsExisting()
-        && ownsNew()
-        && validRoutine();
+      allow update: if ownsExisting() && ownsNew() && validRoutine();
     }
 
     match /sessoes/{sessaoId} {
       allow read, delete: if ownsExisting();
-      allow create: if ownsNew()
-        && request.resource.data.nomeRotina is string
-        && request.resource.data.nomeRotina.size() <= 80
-        && request.resource.data.exercicios is list
-        && request.resource.data.exercicios.size() <= 60;
-      // Sessões concluídas são histórico: não podem ser alteradas pelo cliente.
+      allow create: if ownsNew() && validSession();
       allow update: if false;
     }
 
@@ -59,14 +95,8 @@ service cloud.firestore {
 
     match /dietas/{dietaId} {
       allow read, delete: if ownsExisting() && dietaId == request.auth.uid;
-      allow create: if ownsNew() && dietaId == request.auth.uid
-        && request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'atualizadoEm'])
-        && request.resource.data.refeicoes is list
-        && request.resource.data.refeicoes.size() <= 12;
-      allow update: if ownsExisting() && ownsNew() && dietaId == request.auth.uid
-        && request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'atualizadoEm'])
-        && request.resource.data.refeicoes is list
-        && request.resource.data.refeicoes.size() <= 12;
+      allow create: if ownsNew() && dietaId == request.auth.uid && validDiet();
+      allow update: if ownsExisting() && ownsNew() && dietaId == request.auth.uid && validDiet();
     }
   }
 }

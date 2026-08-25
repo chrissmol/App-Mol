@@ -29,7 +29,10 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
   const resolvedTheme = preferences.theme === 'system'
     ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : preferences.theme;
-  document.body.dataset.theme = resolvedTheme === 'light' ? 'light' : '';
+  const themeValue = resolvedTheme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = themeValue;
+  document.body.dataset.theme = themeValue;
+  document.documentElement.style.colorScheme = themeValue;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'light' ? '#f4f7f5' : '#070a08');
   document.body.dataset.highContrast = preferences.contrast ? 'true' : '';
   document.documentElement.dataset.largeText = preferences.largeText ? 'true' : '';

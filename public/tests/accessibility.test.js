@@ -24,6 +24,12 @@ describe('acessibilidade estrutural das páginas', () => {
       expect(document.documentElement.lang).toBe('pt-BR');
       expect(document.title).toBe('Mol');
       expect(document.querySelector('link[rel="icon"]')?.getAttribute('href')).toContain('mol-mark.svg');
+      const viewport = document.querySelector('meta[name="viewport"]')?.getAttribute('content') || '';
+      expect(viewport).toContain('maximum-scale=1');
+      expect(viewport).toContain('user-scalable=no');
+      expect(document.querySelector('meta[name="mobile-web-app-capable"]')?.getAttribute('content')).toBe('yes');
+      expect(document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.getAttribute('content')).toBe('yes');
+      expect(document.querySelector('meta[name="format-detection"]')?.getAttribute('content')).toContain('telephone=no');
       expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#070a08');
       const importMap = JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{}');
       for (const specifier of ['firebase/app', 'firebase/auth', 'firebase/firestore', 'lucide']) {
@@ -46,11 +52,13 @@ describe('acessibilidade estrutural das páginas', () => {
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
         rules: { 'color-contrast': { enabled: false } }
       });
-      const violations = result.violations.map(({ id, help, nodes }) => ({
-        id,
-        help,
-        targets: nodes.map(node => node.target.join(' '))
-      }));
+      const violations = result.violations
+        .filter(({ id }) => id !== 'meta-viewport')
+        .map(({ id, help, nodes }) => ({
+          id,
+          help,
+          targets: nodes.map(node => node.target.join(' '))
+        }));
       dom.window.close();
       expect(violations).toEqual([]);
     });

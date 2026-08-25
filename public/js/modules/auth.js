@@ -22,6 +22,52 @@ import {
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from "../config/firebase-config.js";
 
+const AUTH_THROTTLE_KEY = 'mol-auth-throttle-v1';
+const AUTH_THROTTLE_WINDOW_MS = 10 * 60 * 1000;
+const AUTH_THROTTLE_LOCK_MS = 2 * 60 * 1000;
+const AUTH_THROTTLE_MAX_ATTEMPTS = 5;
+
+function readAuthThrottle() {
+  try { return JSON.parse(window.localStorage.getItem(AUTH_THROTTLE_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function writeAuthThrottle(state) {
+  try { window.localStorage.setItem(AUTH_THROTTLE_KEY, JSON.stringify(state)); }
+  catch { /* localStorage pode estar indisponível em modo privado/restrito. */ }
+}
+
+function clearAuthThrottle() {
+  try { window.localStorage.removeItem(AUTH_THROTTLE_KEY); }
+  catch { /* noop */ }
+}
+
+function authThrottleError(lockedUntil) {
+  const seconds = Math.max(1, Math.ceil((lockedUntil - Date.now()) / 1000));
+  return Object.assign(new Error('Muitas tentativas de login em sequência.'), {
+    code: 'auth/client-rate-limited',
+    retryAfterSeconds: seconds,
+  });
+}
+
+function assertAuthAttemptAllowed() {
+  const now = Date.now();
+  const state = readAuthThrottle();
+  if (Number(state.lockedUntil || 0) > now) throw authThrottleError(Number(state.lockedUntil));
+}
+
+function recordAuthAttemptFailure(error) {
+  if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') return;
+  const now = Date.now();
+  const state = readAuthThrottle();
+  const firstAttemptAt = Number(state.firstAttemptAt || now);
+  const withinWindow = now - firstAttemptAt <= AUTH_THROTTLE_WINDOW_MS;
+  const attempts = withinWindow ? Number(state.attempts || 0) + 1 : 1;
+  const nextState = { firstAttemptAt: withinWindow ? firstAttemptAt : now, attempts };
+  if (attempts >= AUTH_THROTTLE_MAX_ATTEMPTS) nextState.lockedUntil = now + AUTH_THROTTLE_LOCK_MS;
+  writeAuthThrottle(nextState);
+}
+
 /**
  * Abre o popup de login do Google e autentica o usuário.
  * Se for o primeiro acesso, cria o documento do usuário no Firestore
@@ -30,12 +76,20 @@ import { auth, db, googleProvider } from "../config/firebase-config.js";
  * @returns {Promise<import("firebase/auth").User>}
  */
 export async function loginWithGoogle() {
-  const result = await signInWithPopup(auth, googleProvider);
-  return result.user;
+  assertAuthAttemptAllowed();
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    clearAuthThrottle();
+    return result.user;
+  } catch (error) {
+    recordAuthAttemptFailure(error);
+    throw error;
+  }
 }
 
 /** Usa navegação completa quando o navegador bloqueia popups. */
 export function loginWithGoogleRedirect() {
+  assertAuthAttemptAllowed();
   return signInWithRedirect(auth, googleProvider);
 }
 

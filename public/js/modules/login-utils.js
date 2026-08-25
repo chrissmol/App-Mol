@@ -6,6 +6,7 @@ export function authErrorMessage(error) {
     'auth/popup-blocked': 'Seu navegador bloqueou a janela de login.',
     'auth/unauthorized-domain': 'Este endereço ainda não está autorizado para login.',
     'auth/too-many-requests': 'Muitas tentativas foram feitas. Aguarde alguns minutos e tente novamente.',
+    'auth/client-rate-limited': `Muitas tentativas seguidas. Aguarde ${Math.max(1, Math.ceil(Number(error?.retryAfterSeconds || 60) / 60))} min e tente novamente.`,
     'auth/account-exists-with-different-credential': 'Já existe uma conta com este e-mail usando outra forma de acesso.',
     'auth/operation-not-allowed': 'O login com Google não está disponível no momento.'
   };

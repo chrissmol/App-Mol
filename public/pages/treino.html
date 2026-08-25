@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
   <title>Mol</title>
   <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
   <meta name="theme-color" content="#070a08">
@@ -12,7 +16,6 @@
   <link rel="stylesheet" href="../css/style.css">
   <style>
     html, body { font-family: 'Inter', sans-serif; color: white; }
-    ::-webkit-scrollbar { display: none; }
 
     /* Remove as setinhas dos inputs de número */
     input[type="number"]::-webkit-inner-spin-button,
@@ -122,18 +125,19 @@
         <div class="w-10"></div>
       </div>
 
-      <div class="bg-card-dark flex items-center px-4 py-3 rounded-xl mb-6 border border-white/10 focus-within:border-[#1E7349] transition-colors">
+      <div id="busca-exercicios" class="bg-card-dark flex items-center px-4 py-3 rounded-xl mb-6 border border-white/10 focus-within:border-[#1E7349] transition-colors">
         <i data-lucide="search" class="w-5 h-5 text-gray-500 mr-3"></i>
         <label for="input-busca-exercicio" class="sr-only">Buscar exercício</label><input type="search" id="input-busca-exercicio" autocomplete="off" placeholder="Buscar exercício…" class="bg-transparent w-full text-sm outline-none">
       </div>
 
       <div id="exercise-filters" class="-mt-2 mb-5 flex gap-2 overflow-x-auto pb-2"><button type="button" data-exercise-filter="" class="exercise-filter rounded-full bg-neon px-4 py-2 text-xs font-bold text-black">Todos</button><button type="button" data-exercise-filter="Peito" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Peito</button><button type="button" data-exercise-filter="Costas" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Costas</button><button type="button" data-exercise-filter="Quadríceps" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Quadríceps</button><button type="button" data-exercise-filter="Posterior" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Posterior</button><button type="button" data-exercise-filter="Glúteos" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Glúteos</button><button type="button" data-exercise-filter="Ombros" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Ombros</button><button type="button" data-exercise-filter="Braços" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Braços</button><button type="button" data-exercise-filter="Abdômen" class="exercise-filter rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Abdômen</button></div>
+      <div id="library-results-summary" class="mb-3 flex items-center justify-between gap-3 text-xs text-gray-500" aria-live="polite"></div>
       <div id="biblioteca-list" class="space-y-2"></div>
     </div>
 
   </div>
 
-  <div id="rest-timer" role="timer" aria-label="Cronômetro de descanso" class="fixed bottom-24 left-1/2 z-[60] hidden w-[calc(100%-2.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-neon/30 bg-[#151b17]/95 p-4 shadow-2xl backdrop-blur-xl">
+  <div id="rest-timer" role="timer" aria-label="Cronômetro de descanso" class="rest-timer-panel hidden rounded-2xl border border-neon/30 bg-[#151b17]/95 p-4 shadow-2xl backdrop-blur-xl">
     <div class="flex items-center justify-between"><div class="flex items-center gap-2 text-sm font-bold"><i data-lucide="timer-reset" class="h-4 w-4 text-neon"></i> Descanso</div><button type="button" id="btn-skip-rest" class="text-xs font-bold text-gray-400">Pular</button></div>
     <div class="mt-3 flex items-end justify-between"><span id="rest-time" class="text-3xl font-extrabold tabular-nums text-white">01:30</span><button type="button" id="btn-add-rest" class="rounded-lg bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">+30 s</button></div>
     <div class="mt-3 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>

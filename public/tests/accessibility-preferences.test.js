@@ -16,7 +16,9 @@ describe('preferências universais de acessibilidade', () => {
     vi.stubGlobal('localStorage', dom.window.localStorage);
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn() })));
     applyAccessibilityPreferences({ theme: 'light', contrast: true, largeText: true });
+    expect(dom.window.document.documentElement.dataset.theme).toBe('light');
     expect(dom.window.document.body.dataset).toMatchObject({ theme: 'light', highContrast: 'true' });
+    expect(dom.window.document.documentElement.style.colorScheme).toBe('light');
     expect(dom.window.document.documentElement.dataset.largeText).toBe('true');
     expect(dom.window.document.querySelector('meta[name="theme-color"]').content).toBe('#f4f7f5');
     expect(JSON.parse(dom.window.localStorage.getItem('mol-accessibility'))).toEqual({ theme: 'light', contrast: true, largeText: true });

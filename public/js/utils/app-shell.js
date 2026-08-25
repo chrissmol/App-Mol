@@ -1,12 +1,12 @@
-import { startReminderMonitor } from './reminders.js';
 import { enhanceSelects } from './ui.js';
 import { initializeAccessibility } from './accessibility.js';
 import { renderIcons } from './icons.js';
+import { setupMobileAppMode } from './mobile-app.js';
 
 export function setupAppShell() {
   document.title = 'Mol';
+  setupMobileAppMode();
   initializeAccessibility();
-  startReminderMonitor();
   enhanceSelects();
   const inPages = location.pathname.includes('/pages/');
   const faviconHref = `${inPages ? '../' : './'}assets/mol-mark.svg?v=2`;
@@ -18,16 +18,7 @@ export function setupAppShell() {
     document.head.appendChild(favicon);
   }
   favicon.href = faviconHref;
-  try { document.documentElement.lang = localStorage.getItem('mol-language') || 'pt-BR'; }
-  catch { document.documentElement.lang = 'pt-BR'; }
-  if (!window.__molPwaPromptListener) {
-    window.__molPwaPromptListener = true;
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      window.__molInstallPrompt = event;
-      window.dispatchEvent(new Event('mol-install-available'));
-    });
-  }
+  document.documentElement.lang = 'pt-BR';
   // Folha compilada comum: mantém o mesmo tema também nas páginas legadas.
   if (!document.querySelector('link[data-mol-tailwind]')) {
     const css = document.createElement('link');

@@ -117,6 +117,7 @@ const btnSalvarNova = document.getElementById('btn-salvar-nova');
 const btnAddExercicio = document.getElementById('btn-add-exercicio');
 const inputBuscaExercicio = document.getElementById('input-busca-exercicio');
 const inputBuscaRotina = document.getElementById('input-busca-rotina');
+const libraryResultsSummary = document.getElementById('library-results-summary');
 const restTimer = document.getElementById('rest-timer');
 const restTime = document.getElementById('rest-time');
 const restProgress = document.getElementById('rest-progress');
@@ -225,6 +226,12 @@ btnVoltarNova.addEventListener('click', () => { esconderTudo(); viewRotinas.clas
 btnVoltarExplorar.addEventListener('click', () => { esconderTudo(); viewRotinas.classList.remove('hidden'); });
 btnVoltarBiblioteca.addEventListener('click', () => { esconderTudo(); viewDetalhe.classList.remove('hidden'); });
 
+function resetarScrollBiblioteca() {
+  viewBiblioteca?.scrollTo?.(0, 0);
+  document.querySelector('.app-surface main')?.scrollTo?.(0, 0);
+  window.scrollTo(0, 0);
+}
+
 function atualizarDescanso() {
   if (descansoTerminaEm) descansoSegundos = Math.max(0, Math.ceil((descansoTerminaEm - Date.now()) / 1000));
   const minutos = Math.floor(descansoSegundos / 60);
@@ -238,6 +245,7 @@ function pararDescanso() {
   descansoInterval = null;
   descansoTerminaEm = null;
   restTimer.classList.add('hidden');
+  document.body.classList.remove('rest-active');
 }
 
 function iniciarDescanso(indexExercicio) {
@@ -245,7 +253,9 @@ function iniciarDescanso(indexExercicio) {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   const exercise = rotina?.exercicios?.[indexExercicio] || rotina?.exercicios?.find(ex => ex.series?.some(s => s.concluida));
   descansoSegundos = exercise?.descansoSegundos || 90; descansoTotal = descansoSegundos; descansoTerminaEm = Date.now() + descansoSegundos * 1000;
-  restTimer.classList.remove('hidden'); atualizarDescanso();
+  restTimer.classList.remove('hidden');
+  document.body.classList.add('rest-active');
+  atualizarDescanso();
   descansoInterval = setInterval(() => {
     atualizarDescanso();
     if (descansoSegundos <= 0) { pararDescanso(); showToast('Descanso concluído. Vamos para a próxima!', 'success'); }
@@ -368,10 +378,10 @@ function renderRotinas() {
     return;
   }
   rotinasList.innerHTML = rotinasFiltradas.map(rotina => `
-    <div class="bg-card-dark rounded-2xl p-5 border border-white/5 relative mb-4">
-      <div class="flex items-start justify-between mb-2">
-        <div>
-          <h3 class="font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
+    <article class="routine-card bg-card-dark rounded-2xl p-5 border border-white/5 relative">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
           <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercícios</p>
         </div>
         <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="text-gray-500 hover:text-red-400 transition-colors p-1" aria-label="Excluir ${escapeHTML(rotina.nome)}">
@@ -384,7 +394,7 @@ function renderRotinas() {
         <button type="button" data-routine-action="edit" data-routine-id="${escapeHTML(rotina.id)}" class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-bold text-gray-200 active:bg-white/5"><i data-lucide="pencil" class="h-4 w-4"></i> Editar</button>
       </div>
       <button type="button" data-routine-action="duplicate" data-routine-id="${escapeHTML(rotina.id)}" class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-300 active:bg-white/5"><i data-lucide="copy" class="h-4 w-4"></i> Duplicar rotina</button>
-    </div>
+    </article>
   `).join('');
   const actions = {
     delete: window.deletarRotina,
@@ -542,6 +552,22 @@ window.escolherExercicio = async (nomeExercicio) => {
 // RENDERIZAR BIBLIOTECA DE EXERCÍCIOS (COM BUSCA AO DIGITAR)
 // ---------------------------------------------
 let filtroMuscular = '';
+
+function atualizarEstadoFiltrosBiblioteca() {
+  document.querySelectorAll('[data-exercise-filter]').forEach(item => {
+    const ativo = (item.dataset.exerciseFilter || '') === filtroMuscular;
+    item.classList.toggle('bg-neon', ativo); item.classList.toggle('text-black', ativo);
+    item.classList.toggle('bg-white/5', !ativo); item.classList.toggle('text-gray-300', !ativo);
+    item.setAttribute('aria-pressed', String(ativo));
+  });
+  document.querySelectorAll('[data-library-filter]').forEach(item => {
+    const ativo = item.dataset.libraryFilter === filtroMuscular;
+    item.classList.toggle('bg-neon', ativo); item.classList.toggle('text-black', ativo);
+    item.classList.toggle('bg-white/5', !ativo); item.classList.toggle('text-gray-300', !ativo);
+    item.setAttribute('aria-pressed', String(ativo));
+  });
+}
+
 function grupoDetalhado(exercicio) {
   const nome = exercicio.nome.toLowerCase();
   if (exercicio.grupo === 'Peito' || exercicio.grupo === 'Costas' || exercicio.grupo === 'Ombros' || exercicio.grupo === 'Abdômen') return exercicio.grupo;
@@ -597,23 +623,41 @@ function renderizarBiblioteca(filtro = '') {
     (!filtroMuscular || (filtroMuscular === 'Favoritos' ? favoritosExercicios.includes(ex.nome) : filtroMuscular === 'Recentes' ? recentesExercicios.includes(ex.nome) : grupoDetalhado(ex) === filtroMuscular || equipamentoDo(ex) === filtroMuscular))
   );
 
+  if (libraryResultsSummary) {
+    const contexto = filtroMuscular || (termo ? `Busca: ${filtro}` : 'Todos os exercícios');
+    libraryResultsSummary.innerHTML = `<span>${exerciciosFiltrados.length} ${exerciciosFiltrados.length === 1 ? 'exercício' : 'exercícios'}</span><span class="rounded-full bg-white/5 px-2 py-1 font-bold text-gray-400">${escapeHTML(contexto)}</span>`;
+  }
+
   if (exerciciosFiltrados.length === 0) {
-    bibliotecaList.innerHTML = '<p class="text-center text-gray-500 my-10 text-sm">Nenhum exercício encontrado.</p>';
+    bibliotecaList.innerHTML = '<div class="my-10 rounded-3xl border border-white/10 bg-white/[.03] p-6 text-center"><p class="text-sm font-bold">Nenhum exercício encontrado.</p><p class="mt-1 text-xs text-gray-500">Tente outro nome, grupo muscular ou crie um exercício personalizado.</p></div>';
     return;
   }
 
   bibliotecaList.innerHTML = exerciciosFiltrados.map((ex, index) => `
-    <div class="flex items-center justify-between bg-card-dark p-3 rounded-xl border border-white/5 active:bg-white/5 transition-colors mb-2">
-      <img src="${exerciseFigure}" alt="" class="mr-3 h-12 w-10 shrink-0 rounded-lg bg-white/5 p-1">
-      <div class="min-w-0 flex-1 text-left">
-        <p class="font-bold text-sm text-white">${escapeHTML(ex.nome)}</p>
-        <p class="text-xs text-gray-500">${escapeHTML(grupoDetalhado(ex))} · ${escapeHTML(ex.grupo)}</p>
-        ${ultimaPerformance.has(ex.nome) ? `<p class="mt-1 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="mt-1 text-xs text-gray-600">Sem histórico ainda</p>'}
+    <article class="exercise-library-card rounded-2xl border border-white/5 bg-card-dark p-3 transition-colors active:bg-white/5">
+      <div class="flex items-start gap-3">
+        <img src="${exerciseFigure}" alt="" class="h-14 w-12 shrink-0 rounded-xl bg-white/5 p-1.5">
+        <div class="min-w-0 flex-1 text-left">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="line-clamp-2 text-sm font-extrabold leading-snug text-white">${escapeHTML(ex.nome)}</p>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <span class="rounded-full bg-neon/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neon">${escapeHTML(grupoDetalhado(ex))}</span>
+                <span class="rounded-full bg-white/5 px-2 py-1 text-[10px] font-semibold text-gray-400">${escapeHTML(equipamentoDo(ex))}</span>
+              </div>
+            </div>
+            <div class="flex shrink-0 gap-1">
+              <button type="button" data-exercise-action="favorite" data-exercise-index="${index}" aria-label="Favoritar ${escapeHTML(ex.nome)}" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 active:bg-white/10 ${favoritosExercicios.includes(ex.nome) ? 'text-neon' : 'text-gray-500'}"><i data-lucide="star" class="h-5 w-5 ${favoritosExercicios.includes(ex.nome) ? 'fill-current' : ''}"></i></button>
+              <button type="button" data-exercise-action="detail" data-exercise-index="${index}" aria-label="Ver detalhes de ${escapeHTML(ex.nome)}" class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-gray-400 active:bg-white/10"><i data-lucide="info" class="h-5 w-5"></i></button>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center justify-between gap-3">
+            ${ultimaPerformance.has(ex.nome) ? `<p class="min-w-0 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="min-w-0 text-xs text-gray-600">Sem histórico ainda</p>'}
+            <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neon px-3 text-xs font-extrabold text-black active:scale-[.98]"><i data-lucide="plus" class="h-4 w-4"></i><span>Adicionar</span></button>
+          </div>
+        </div>
       </div>
-      <button type="button" data-exercise-action="favorite" data-exercise-index="${index}" aria-label="Favoritar ${escapeHTML(ex.nome)}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 active:bg-white/10 ${favoritosExercicios.includes(ex.nome) ? 'text-neon' : 'text-gray-500'}"><i data-lucide="star" class="h-5 w-5 ${favoritosExercicios.includes(ex.nome) ? 'fill-current' : ''}"></i></button>
-      <button type="button" data-exercise-action="detail" data-exercise-index="${index}" aria-label="Ver detalhes de ${escapeHTML(ex.nome)}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-400 active:bg-white/10"><i data-lucide="info" class="h-5 w-5"></i></button>
-      <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neon/15 text-neon active:bg-neon active:text-black"><i data-lucide="plus" class="h-5 w-5"></i></button>
-    </div>
+    </article>
   `).join('');
   bibliotecaList.querySelectorAll('[data-exercise-action]').forEach(button => button.onclick = () => {
     const exercise = exerciciosFiltrados[Number(button.dataset.exerciseIndex)];
@@ -635,18 +679,20 @@ if (inputBuscaExercicio) {
 
 document.querySelectorAll('[data-exercise-filter]').forEach(button => button.addEventListener('click', () => {
   filtroMuscular = button.dataset.exerciseFilter || '';
-  document.querySelectorAll('[data-exercise-filter]').forEach(item => {
-    const ativo = item === button;
-    item.classList.toggle('bg-neon', ativo); item.classList.toggle('text-black', ativo);
-    item.classList.toggle('bg-white/5', !ativo); item.classList.toggle('text-gray-300', !ativo);
-  });
+  atualizarEstadoFiltrosBiblioteca();
   renderizarBiblioteca(inputBuscaExercicio?.value || '');
+  resetarScrollBiblioteca();
 }));
 
 function prepararAtalhosBiblioteca() {
   if (document.getElementById('library-shortcuts')) return;
-  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button type="button" data-library-filter="Favoritos" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button type="button" data-library-filter="Recentes" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button type="button" data-library-filter="Máquina" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button type="button" data-library-filter="Polia" class="rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button type="button" id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
-  document.querySelectorAll('[data-library-filter]').forEach(button => button.onclick = () => { filtroMuscular = button.dataset.libraryFilter; renderizarBiblioteca(inputBuscaExercicio?.value || ''); });
+  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button type="button" data-library-filter="Favoritos" aria-pressed="false" class="library-filter-chip rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button type="button" data-library-filter="Recentes" aria-pressed="false" class="library-filter-chip rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button type="button" data-library-filter="Máquina" aria-pressed="false" class="library-filter-chip rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button type="button" data-library-filter="Polia" aria-pressed="false" class="library-filter-chip rounded-full bg-white/5 px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button type="button" id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
+  document.querySelectorAll('[data-library-filter]').forEach(button => button.onclick = () => {
+    filtroMuscular = filtroMuscular === button.dataset.libraryFilter ? '' : button.dataset.libraryFilter;
+    atualizarEstadoFiltrosBiblioteca();
+    renderizarBiblioteca(inputBuscaExercicio?.value || '');
+    resetarScrollBiblioteca();
+  });
   document.getElementById('create-custom-exercise').onclick = abrirCriadorExercicio;
 }
 
@@ -679,8 +725,10 @@ if (btnAddExercicio) {
     esconderTudo();
     prepararAtalhosBiblioteca();
     if (inputBuscaExercicio) inputBuscaExercicio.value = '';
+    atualizarEstadoFiltrosBiblioteca();
     renderizarBiblioteca('');
     viewBiblioteca.classList.remove('hidden');
+    resetarScrollBiblioteca();
     renderIcons();
   });
 }

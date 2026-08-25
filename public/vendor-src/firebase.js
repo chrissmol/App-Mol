@@ -5,7 +5,6 @@ export {
   signInWithPopup, signInWithRedirect, signOut
 } from 'firebase/auth';
 export {
-  addDoc, collection, deleteDoc, doc, getDoc, getDocs, initializeFirestore,
-  persistentLocalCache, persistentMultipleTabManager, query, serverTimestamp,
+  addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, query, serverTimestamp,
   setDoc, Timestamp, updateDoc, where, writeBatch
 } from 'firebase/firestore';

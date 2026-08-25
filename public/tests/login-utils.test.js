@@ -5,6 +5,7 @@ describe('login', () => {
   it('traduz erros conhecidos e preserva um fallback seguro', () => {
     expect(authErrorMessage({ code: 'auth/popup-blocked' })).toContain('bloqueou');
     expect(authErrorMessage({ code: 'auth/unauthorized-domain' })).toContain('autorizado');
+    expect(authErrorMessage({ code: 'auth/client-rate-limited', retryAfterSeconds: 90 })).toContain('2 min');
     expect(authErrorMessage({ code: 'desconhecido' })).toContain('Não foi possível');
   });
 
