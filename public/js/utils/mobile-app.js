@@ -56,8 +56,7 @@ export function setupMobileAppMode() {
 
   document.addEventListener('dblclick', preventZoomGesture, { passive: false });
 
-  window.visualViewport?.addEventListener('resize', () => {
-    const keyboardLikelyOpen = window.visualViewport.height < window.innerHeight * 0.78;
-    document.body.classList.toggle('mol-keyboard-open', keyboardLikelyOpen);
-  });
+  // A altura do viewport também muda quando as barras do Safari aparecem ou
+  // somem. Não movemos a navegação fixa: isso evitava um salto perceptível ao
+  // abrir Treino e podia deixar a barra fora da tela sem teclado aberto.
 }

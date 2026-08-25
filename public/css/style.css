@@ -335,13 +335,9 @@ body[data-theme="light"].dashboard-surface .mol-bottom-nav .mol-nav-item.text-ne
 
 #back:active { color: #2fbf78 !important; }
 
-.mol-keyboard-open .mol-bottom-nav {
-  transform: translateY(120%);
-  pointer-events: none;
-}
-
 .mol-bottom-nav {
-  transition: transform .2s ease, background-color .2s ease, border-color .2s ease;
+  transform: translateZ(0);
+  transition: background-color .2s ease, border-color .2s ease;
 }
 
 .overflow-x-auto {
@@ -362,6 +358,7 @@ body[data-theme="light"].dashboard-surface .mol-bottom-nav .mol-nav-item.text-ne
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
   }
+  .app-surface main { padding-top: max(1rem, env(safe-area-inset-top)); }
 }
 
 /* Regra global de cabeçalho: retorno interno e marca nunca aparecem juntos. */
