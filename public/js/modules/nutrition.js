@@ -6,7 +6,27 @@ export const FOOD_CATALOG = [
   ['Leite integral', 61, 2.9, 4.5, 3.2], ['Iogurte natural integral', 51, 4.1, 1.9, 3],
   ['Pão francês', 300, 8, 58.6, 3.1], ['Queijo muçarela', 330, 22.6, 3, 25.2],
   ['Azeite de oliva', 884, 0, 0, 100], ['Brócolis cozido', 25, 2.1, 4.4, 0.5],
-  ['Whey protein', 400, 80, 10, 6]
+  ['Whey protein', 400, 80, 10, 6],
+  ['Café coado sem açúcar', 2, 0.1, 0, 0], ['Pão integral', 253, 9.4, 44.1, 3.4],
+  ['Tapioca pronta', 130, 0.2, 32, 0], ['Cuscuz de milho cozido', 113, 2.2, 25.3, 0.7],
+  ['Queijo cottage', 98, 11, 3.4, 4.3], ['Requeijão light', 174, 9, 5, 12],
+  ['Peito de peru', 94, 17, 2, 2], ['Atum em água', 116, 26, 0, 1],
+  ['Salmão grelhado', 208, 20, 0, 13], ['Tilápia grelhada', 128, 26, 0, 2.7],
+  ['Patinho moído refogado', 219, 35.9, 0, 7.3], ['Carne suína magra grelhada', 242, 27, 0, 14],
+  ['Macarrão cozido', 158, 5.8, 30.9, 0.9], ['Pão de forma', 253, 9.4, 44.1, 3.4],
+  ['Mandioca cozida', 125, 0.6, 30.1, 0.3], ['Batata inglesa cozida', 52, 1.2, 11.9, 0],
+  ['Abóbora cozida', 48, 1.4, 10.8, 0.7], ['Milho cozido', 98, 3.2, 17.1, 2.4],
+  ['Lentilha cozida', 93, 6.3, 16.3, 0.4], ['Grão-de-bico cozido', 164, 8.9, 27.4, 2.6],
+  ['Tofu', 76, 8.1, 1.9, 4.8], ['Leite desnatado', 35, 3.4, 5, 0.1],
+  ['Iogurte grego natural', 97, 9, 4, 5], ['Kefir natural', 63, 3.5, 4.8, 3.5],
+  ['Maçã', 52, 0.3, 13.8, 0.2], ['Mamão', 43, 0.5, 10.8, 0.3],
+  ['Morango', 32, 0.7, 7.7, 0.3], ['Uva', 69, 0.7, 18.1, 0.2],
+  ['Abacate', 160, 2, 8.5, 14.7], ['Pasta de amendoim', 588, 25, 20, 50],
+  ['Amendoim torrado', 567, 25.8, 16.1, 49.2], ['Castanha-do-pará', 643, 14.5, 15.1, 63.5],
+  ['Chia', 486, 16.5, 42.1, 30.7], ['Granola', 471, 10, 64, 20],
+  ['Tomate', 18, 0.9, 3.9, 0.2], ['Alface', 15, 1.4, 2.9, 0.2],
+  ['Cenoura cozida', 30, 0.8, 6.7, 0.2], ['Abobrinha cozida', 15, 1.1, 3.1, 0.4],
+  ['Creatina monohidratada', 0, 0, 0, 0]
 ].map(([nome, kcal100, proteina100, carbo100, gordura100]) => ({ nome, kcal100, proteina100, carbo100, gordura100 }));
 
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;

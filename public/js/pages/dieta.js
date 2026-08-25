@@ -19,6 +19,16 @@ const goalValue = (value, fallback, max) => {
 };
 let modalOpener = null;
 let mealClock = null;
+const MEAL_NAMES = ['Café da manhã', 'Lanche da manhã', 'Almoço', 'Pré-treino', 'Pós-treino', 'Lanche da tarde', 'Jantar', 'Ceia'];
+const MEAL_COMBINATIONS = [
+  { label: 'Ovos + café', foods: [['Ovo cozido', 100], ['Café coado sem açúcar', 200]] },
+  { label: 'Pão + carne', foods: [['Pão francês', 50], ['Carne bovina magra grelhada', 100]] },
+  { label: 'Iogurte + aveia + banana', foods: [['Iogurte natural integral', 170], ['Aveia em flocos', 40], ['Banana', 100]] },
+  { label: 'Arroz + feijão + frango', foods: [['Arroz branco cozido', 150], ['Feijão carioca cozido', 100], ['Peito de frango grelhado', 150]] },
+  { label: 'Tapioca + ovos', foods: [['Tapioca pronta', 100], ['Ovo cozido', 100]] },
+  { label: 'Whey + banana', foods: [['Whey protein', 30], ['Banana', 100]] }
+];
+const catalogFood = name => FOOD_CATALOG.find(food => food.nome === name);
 
 async function persist(nextMeals) {
   try {
@@ -66,8 +76,9 @@ function render() {
 function openMealForm(mealId = null) {
   const existing = meals.find(item => item.id === mealId);
   const value = existing || { id: newId(), nome: '', hora: '12:00', alimentos: [] };
-  modal(existing ? 'Editar refeição' : 'Nova refeição', `<label class="block text-xs font-bold text-gray-400">Nome<input id="meal-name" maxlength="60" autocomplete="off" value="${escapeHTML(value.nome)}" class="mt-2 min-h-12 w-full rounded-xl bg-card-dark-2 px-4 text-white" placeholder="Ex.: Almoço"></label><label class="mt-4 block text-xs font-bold text-gray-400">Horário<input id="meal-time" type="time" value="${escapeHTML(value.hora)}" class="mt-2 min-h-12 w-full rounded-xl bg-card-dark-2 px-4 text-white"></label><button id="save-meal" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar refeição</button>`);
+  modal(existing ? 'Editar refeição' : 'Nova refeição', `<p class="text-xs font-bold uppercase tracking-wider text-neon">Escolha um momento do dia ou personalize</p><div id="meal-name-options" class="mt-3 flex gap-2 overflow-x-auto pb-2">${MEAL_NAMES.map(name => `<button type="button" data-meal-name="${escapeHTML(name)}" class="shrink-0 rounded-full bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">${escapeHTML(name)}</button>`).join('')}</div><label class="mt-3 block text-xs font-bold text-gray-400">Nome<input id="meal-name" maxlength="60" autocomplete="off" value="${escapeHTML(value.nome)}" class="mt-2 min-h-12 w-full rounded-xl bg-card-dark-2 px-4 text-white" placeholder="Ex.: Café da manhã"></label><label class="mt-4 block text-xs font-bold text-gray-400">Horário<input id="meal-time" type="time" value="${escapeHTML(value.hora)}" class="mt-2 min-h-12 w-full rounded-xl bg-card-dark-2 px-4 text-white"></label><button id="save-meal" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar refeição</button>`);
   $('meal-name').focus();
+  $('meal-name-options').querySelectorAll('[data-meal-name]').forEach(button => button.onclick = () => { $('meal-name').value = button.dataset.mealName; });
   $('save-meal').onclick = async () => {
     const updated = { ...value, nome: $('meal-name').value.trim(), hora: $('meal-time').value };
     const error = validateMeal(updated); if (error) return showToast(error);
@@ -80,9 +91,17 @@ function openMealForm(mealId = null) {
 function openMeal(mealId) {
   const meal = meals.find(item => item.id === mealId); if (!meal) return;
   const total = nutritionTotals([{ alimentos: meal.alimentos }]);
-  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl bg-white/5 p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl bg-white/5 p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl bg-white/5 p-2">G ${rounded(total.fat)} g</span></div><button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><div id="meal-foods" class="mt-4 space-y-2"></div><div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl bg-white/5 text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>`);
+  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl bg-white/5 p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl bg-white/5 p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl bg-white/5 p-2">G ${rounded(total.fat)} g</span></div><button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Combinações rápidas</p><div id="meal-combinations" class="mt-2 flex gap-2 overflow-x-auto pb-1">${MEAL_COMBINATIONS.map((item, index) => `<button type="button" data-combination="${index}" class="shrink-0 rounded-xl bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">+ ${item.label}</button>`).join('')}</div></section><div id="meal-foods" class="mt-4 space-y-2"></div><div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl bg-white/5 text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>`);
   $('meal-foods').innerHTML = meal.alimentos.length ? meal.alimentos.map(food => { const nutrients = foodNutrients(food); return `<article class="rounded-2xl bg-white/5 p-4"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm">${escapeHTML(food.nome)}</strong><p class="mt-1 text-xs text-gray-500">${food.gramas} g · ${rounded(nutrients.kcal)} kcal · P ${rounded(nutrients.protein)} · C ${rounded(nutrients.carbs)} · G ${rounded(nutrients.fat)}</p></div><button type="button" data-remove-food="${escapeHTML(food.id)}" class="min-h-10 text-xs font-bold text-red-300">Remover</button></div></article>`; }).join('') : '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento nesta refeição.</p>';
   $('add-food').onclick = () => openFoodSearch(meal.id); $('edit-meal').onclick = () => openMealForm(meal.id);
+  $('meal-combinations').querySelectorAll('[data-combination]').forEach(button => button.onclick = async () => {
+    const combination = MEAL_COMBINATIONS[Number(button.dataset.combination)]; const next = clone(meals); const target = next.find(item => item.id === meal.id);
+    if (!combination || !target) return;
+    const foods = combination.foods.map(([name, grams]) => { const food = catalogFood(name); return food ? { id: newId(), ...food, gramas: grams } : null; }).filter(Boolean);
+    if (target.alimentos.length + foods.length > 50) return showToast('Essa refeição atingiu o limite de 50 alimentos.');
+    target.alimentos.push(...foods);
+    if (await persist(next)) { closeModal(); openMeal(meal.id); showToast(`${combination.label} adicionados à refeição.`, 'success'); }
+  });
   $('delete-meal').onclick = async () => { if (!await confirmAction({ title: 'Excluir refeição?', message: `${meal.nome} e seus alimentos serão removidos.`, confirmText: 'Excluir', danger: true })) return; const next = meals.filter(item => item.id !== meal.id); if (await persist(next)) { closeModal(); showToast('Refeição excluída.', 'success'); } };
   $('meal-foods').querySelectorAll('[data-remove-food]').forEach(button => button.onclick = async () => { const next = clone(meals); const target = next.find(item => item.id === meal.id); target.alimentos = target.alimentos.filter(food => food.id !== button.dataset.removeFood); if (await persist(next)) { closeModal(); openMeal(meal.id); showToast('Alimento removido.', 'success'); } });
   $('add-food').focus();
