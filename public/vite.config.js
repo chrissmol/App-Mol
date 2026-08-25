@@ -23,8 +23,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,woff2}'],
+        navigateFallback: null,
+        globPatterns: ['**/*.{js,css,svg,png,jpg,webp,woff2}'],
         runtimeCaching: []
       }
     })
