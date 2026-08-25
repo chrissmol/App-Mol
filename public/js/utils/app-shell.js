@@ -1,4 +1,3 @@
-import { startReminderMonitor } from './reminders.js';
 import { enhanceSelects } from './ui.js';
 import { initializeAccessibility } from './accessibility.js';
 import { renderIcons } from './icons.js';
@@ -8,7 +7,6 @@ export function setupAppShell() {
   document.title = 'Mol';
   setupMobileAppMode();
   initializeAccessibility();
-  startReminderMonitor();
   enhanceSelects();
   const inPages = location.pathname.includes('/pages/');
   const faviconHref = `${inPages ? '../' : './'}assets/mol-mark.svg?v=2`;
