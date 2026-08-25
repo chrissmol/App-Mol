@@ -14,6 +14,13 @@ const ORIGINAL_BTN_HTML = googleBtn.innerHTML;
 let loginInProgress = false;
 let navigating = false;
 
+function prefersRedirectLogin() {
+  const standalone = window.navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches;
+  const mobilePointer = window.matchMedia?.('(pointer: coarse)').matches;
+  const appleMobile = /iPad|iPhone|iPod/.test(window.navigator.userAgent) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+  return Boolean(standalone || appleMobile || mobilePointer);
+}
+
 function navigateHome() {
   if (navigating) return;
   navigating = true;
@@ -42,13 +49,18 @@ googleBtn.addEventListener('click', async () => {
   googleBtn.setAttribute('aria-busy', 'true');
 
   try {
+    if (prefersRedirectLogin()) {
+      showError('Vamos abrir o login do Google com segurança nesta mesma janela.');
+      await loginWithGoogleRedirect();
+      return;
+    }
     const user = await withTimeout(loginWithGoogle());
     try { await withTimeout(ensureUserProfile(user), 8000); }
     catch (profileError) { console.warn('Perfil inicial será preparado novamente no próximo acesso:', profileError.message); }
     navigateHome();
   } catch (error) {
     console.error('[Mol] Erro no login com Google:', error);
-    if (error?.code === 'auth/popup-blocked') {
+    if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(error?.code)) {
       showError('A janela foi bloqueada. Continuaremos o login nesta mesma página.');
       try { await loginWithGoogleRedirect(); return; }
       catch (redirectError) { showError(authErrorMessage(redirectError)); }

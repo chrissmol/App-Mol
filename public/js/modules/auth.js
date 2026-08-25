@@ -57,7 +57,7 @@ function assertAuthAttemptAllowed() {
 }
 
 function recordAuthAttemptFailure(error) {
-  if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') return;
+  if (['auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/popup-blocked'].includes(error?.code)) return;
   const now = Date.now();
   const state = readAuthThrottle();
   const firstAttemptAt = Number(state.firstAttemptAt || now);
