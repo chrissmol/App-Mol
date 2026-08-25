@@ -3,7 +3,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { avatarTier, formatTrainingTime, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
+import { avatarTier, formatTrainingTime, profileAchievements, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
@@ -37,6 +37,10 @@ function renderStats(stats) {
   $('consistency-title').textContent = `${stats.weekly} de ${stats.goal} treino${stats.goal === 1 ? '' : 's'} nesta semana`;
   $('consistency-progress').style.width = `${stats.percent}%`;
   $('consistency-message').textContent = stats.weekly >= stats.goal ? `Meta semanal concluída. ${profileMilestone(stats.workouts)}` : `${stats.goal - stats.weekly} treino${stats.goal - stats.weekly === 1 ? '' : 's'} para concluir a meta. ${profileMilestone(stats.workouts)}`;
+  const achievements = profileAchievements(stats);
+  const unlocked = achievements.filter(achievement => achievement.unlocked);
+  $('achievement-count').textContent = `${unlocked.length} de ${achievements.length} desbloqueadas`;
+  $('achievements-list').innerHTML = achievements.map(achievement => `<article class="rounded-2xl border p-3 ${achievement.unlocked ? 'border-neon/25 bg-neon/10' : 'border-white/5 bg-white/[.03] opacity-55'}"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${achievement.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${achievement.unlocked ? achievement.icon : 'lock'}" class="h-4 w-4"></i></span><span><strong class="block text-sm">${achievement.title}</strong><small class="mt-0.5 block text-xs text-gray-500">${achievement.description}</small></span></div></article>`).join('');
   $('profile-content').classList.remove('hidden');
   renderIcons();
 }

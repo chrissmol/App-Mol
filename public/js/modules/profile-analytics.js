@@ -71,6 +71,25 @@ export function avatarTier(workouts) {
   return { id: 'plastic', label: 'Plástico', next: 5 };
 }
 
+export function profileAchievements(stats) {
+  const value = key => Math.max(0, Number(stats?.[key]) || 0);
+  const workouts = value('workouts'); const sets = value('sets'); const volume = value('volume'); const seconds = value('seconds');
+  const weeklyGoalReached = value('weekly') >= Math.max(1, value('goal'));
+  return [
+    { id: 'first-step', icon: 'footprints', title: 'Primeiro passo', description: 'Conclua seu primeiro treino.', unlocked: workouts >= 1 },
+    { id: 'five-alive', icon: 'flame', title: 'Em movimento', description: 'Complete 5 treinos.', unlocked: workouts >= 5 },
+    { id: 'tenacious', icon: 'dumbbell', title: 'Dez na conta', description: 'Complete 10 treinos.', unlocked: workouts >= 10 },
+    { id: 'routine-builder', icon: 'calendar-check-2', title: 'Rotina firmada', description: 'Complete 25 treinos.', unlocked: workouts >= 25 },
+    { id: 'half-century', icon: 'medal', title: 'Meio século', description: 'Complete 50 treinos.', unlocked: workouts >= 50 },
+    { id: 'centurion', icon: 'crown', title: 'Centurião Mol', description: 'Complete 100 treinos.', unlocked: workouts >= 100 },
+    { id: 'set-starter', icon: 'layers-3', title: 'Séries iniciais', description: 'Registre 50 séries concluídas.', unlocked: sets >= 50 },
+    { id: 'volume-builder', icon: 'weight', title: 'Construtor de força', description: 'Some 10 mil kg de volume.', unlocked: volume >= 10000 },
+    { id: 'iron-freight', icon: 'truck', title: 'Carga pesada', description: 'Some 50 mil kg de volume.', unlocked: volume >= 50000 },
+    { id: 'time-invested', icon: 'clock-3', title: 'Tempo investido', description: 'Treine por 10 horas no total.', unlocked: seconds >= 36000 },
+    { id: 'weekly-focus', icon: 'target', title: 'Meta batida', description: 'Conclua sua meta semanal atual.', unlocked: weeklyGoalReached }
+  ];
+}
+
 export function readProfileCache(raw, now = Date.now(), maxAge = 5 * 60 * 1000) {
   try {
     const cache = JSON.parse(raw || 'null');

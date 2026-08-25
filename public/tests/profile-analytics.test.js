@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTrainingTime, profileMilestone, profileStats, readProfileCache } from '../js/modules/profile-analytics.js';
+import { formatTrainingTime, profileAchievements, profileMilestone, profileStats, readProfileCache } from '../js/modules/profile-analytics.js';
 
 describe('perfil', () => {
   it('calcula a semana de segunda-feira sem sessões futuras', () => {
@@ -31,6 +31,13 @@ describe('perfil', () => {
   it('gera progressão de marcos', () => {
     expect(profileMilestone(9)).toContain('Falta 1 treino');
     expect(profileMilestone(26)).toContain('25 treinos');
+  });
+
+  it('desbloqueia conquistas somente pelos dados reais da jornada', () => {
+    const achievements = profileAchievements({ workouts: 10, sets: 52, volume: 12000, seconds: 36001, weekly: 3, goal: 3 });
+    expect(achievements.find(item => item.id === 'tenacious').unlocked).toBe(true);
+    expect(achievements.find(item => item.id === 'volume-builder').unlocked).toBe(true);
+    expect(achievements.find(item => item.id === 'centurion').unlocked).toBe(false);
   });
 
   it('descarta cache inválido ou vencido', () => {
