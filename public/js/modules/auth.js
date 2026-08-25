@@ -105,6 +105,9 @@ export async function getGoogleRedirectUser() {
     clearAuthThrottle();
     return result.user;
   } catch (error) {
+    // Uma tentativa antiga por popup pode ficar registrada no navegador. Isso
+    // não é falha do fluxo atual por redirecionamento e não deve bloquear login.
+    if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') return null;
     recordAuthAttemptFailure(error);
     throw error;
   }
