@@ -1,4 +1,4 @@
-import { ensureUserProfile, loginWithGoogle, loginWithGoogleRedirect, watchAuthState } from '../modules/auth.js';
+import { ensureUserProfile, getGoogleRedirectUser, loginWithGoogleRedirect, watchAuthState } from '../modules/auth.js';
 import { authErrorMessage, LEGAL_DOCUMENTS, withTimeout } from '../modules/login-utils.js';
 import { setButtonLoading } from '../utils/ui.js';
 import { initializeAccessibility } from '../utils/accessibility.js';
@@ -13,13 +13,6 @@ const errorEl = document.getElementById('loginError');
 const ORIGINAL_BTN_HTML = googleBtn.innerHTML;
 let loginInProgress = false;
 let navigating = false;
-
-function prefersRedirectLogin() {
-  const standalone = window.navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches;
-  const mobilePointer = window.matchMedia?.('(pointer: coarse)').matches;
-  const appleMobile = /iPad|iPhone|iPod/.test(window.navigator.userAgent) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
-  return Boolean(standalone || appleMobile || mobilePointer);
-}
 
 function navigateHome() {
   if (navigating) return;
@@ -41,6 +34,21 @@ watchAuthState(async user => {
   }
 });
 
+async function finishRedirectLogin() {
+  try {
+    const user = await withTimeout(getGoogleRedirectUser(), 12000);
+    if (!user) return;
+    try { await withTimeout(ensureUserProfile(user), 8000); }
+    catch (profileError) { console.warn('Perfil inicial será preparado novamente no próximo acesso:', profileError.message); }
+    navigateHome();
+  } catch (error) {
+    console.error('[Mol] Erro no retorno do login com Google:', error);
+    showError(authErrorMessage(error));
+  }
+}
+
+finishRedirectLogin();
+
 googleBtn.addEventListener('click', async () => {
   if (loginInProgress) return;
   loginInProgress = true;
@@ -49,24 +57,10 @@ googleBtn.addEventListener('click', async () => {
   googleBtn.setAttribute('aria-busy', 'true');
 
   try {
-    if (prefersRedirectLogin()) {
-      showError('Vamos abrir o login do Google com segurança nesta mesma janela.');
-      await loginWithGoogleRedirect();
-      return;
-    }
-    const user = await withTimeout(loginWithGoogle());
-    try { await withTimeout(ensureUserProfile(user), 8000); }
-    catch (profileError) { console.warn('Perfil inicial será preparado novamente no próximo acesso:', profileError.message); }
-    navigateHome();
+    await loginWithGoogleRedirect();
   } catch (error) {
     console.error('[Mol] Erro no login com Google:', error);
-    if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(error?.code)) {
-      showError('A janela foi bloqueada. Continuaremos o login nesta mesma página.');
-      try { await loginWithGoogleRedirect(); return; }
-      catch (redirectError) { showError(authErrorMessage(redirectError)); }
-    } else {
-      showError(error?.code === 'auth/timeout' ? 'O login demorou demais. Confira sua conexão e tente novamente.' : authErrorMessage(error));
-    }
+    showError(error?.code === 'auth/timeout' ? 'O login demorou demais. Confira sua conexão e tente novamente.' : authErrorMessage(error));
   } finally {
     if (!navigating) {
       loginInProgress = false;

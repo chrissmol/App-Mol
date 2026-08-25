@@ -9,6 +9,7 @@
  */
 
 import {
+  getRedirectResult,
   signInWithPopup,
   signInWithRedirect,
   signOut,
@@ -91,6 +92,20 @@ export async function loginWithGoogle() {
 export function loginWithGoogleRedirect() {
   assertAuthAttemptAllowed();
   return signInWithRedirect(auth, googleProvider);
+}
+
+/** Finaliza o retorno do login por redirecionamento, quando existir. */
+export async function getGoogleRedirectUser() {
+  assertAuthAttemptAllowed();
+  try {
+    const result = await getRedirectResult(auth);
+    if (!result?.user) return null;
+    clearAuthThrottle();
+    return result.user;
+  } catch (error) {
+    recordAuthAttemptFailure(error);
+    throw error;
+  }
 }
 
 /** Cria somente os dados ausentes do perfil; uma falha aqui não desfaz o login. */
