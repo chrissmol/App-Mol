@@ -17,7 +17,9 @@ import { getFirestore } from 'firebase/firestore';
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
 const firebaseConfig = {
   apiKey: "AIzaSyAZqEpfSjqpnZiWG7qw0uolu5d5DgQMoJ4",
-  authDomain: "app-mol-5f3dc.firebaseapp.com",
+  // Mantém o helper OAuth na mesma origem do app. Isso é necessário para
+  // signInWithRedirect em Safari/iOS e navegadores com storage particionado.
+  authDomain: "app-mol-5f3dc.web.app",
   projectId: "app-mol-5f3dc",
   storageBucket: "app-mol-5f3dc.firebasestorage.app",
   messagingSenderId: "906902254628",
