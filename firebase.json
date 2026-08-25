@@ -33,7 +33,7 @@
         ]
       },
       {
-        "source": "/@(sw.js|registerSW.js|manifest.webmanifest)",
+        "source": "/@(sw.js|registerSW.js|notification-sw.js|manifest.webmanifest)",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache" }
         ]

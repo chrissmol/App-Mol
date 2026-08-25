@@ -1,41 +1,99 @@
-# Mol
+<p align="center">
+  <img src="public/assets/mol-mark.svg" width="72" alt="Mol">
+</p>
 
-Aplicativo web responsivo para organizar rotinas de treino, registrar sessões, acompanhar evolução corporal, planejar refeições e manter os dados sincronizados com a conta Google.
+<h1 align="center">Mol</h1>
 
-## Funcionalidades
+<p align="center">
+  Uma plataforma PWA para treino, dieta e acompanhamento de evolu&ccedil;&atilde;o pessoal.
+</p>
 
-- Dashboard com treino do dia, sequência semanal, última sessão, peso e próxima refeição.
-- Biblioteca de exercícios, rotinas editáveis, check-in, cronômetro, descanso e recuperação de treino em andamento.
-- Histórico, progresso por grupo muscular, recordes estimados e evolução corporal.
-- Dieta com refeições, alimentos, porções, calorias e macronutrientes.
-- Perfil, dados pessoais, backup/restauração e exclusão completa da conta.
-- Tema claro/escuro, contraste elevado e texto ampliado sincronizados com o perfil.
-- PWA instalável e lembretes locais enquanto o Mol estiver aberto.
+<p align="center">
+  <a href="#recursos">Recursos</a> &middot;
+  <a href="#tecnologia">Tecnologia</a> &middot;
+  <a href="#rodar-localmente">Rodar localmente</a> &middot;
+  <a href="#publica%C3%A7%C3%A3o">Publica&ccedil;&atilde;o</a>
+</p>
 
-## Desenvolvimento local
+## Sobre o projeto
 
-Requisitos: Node.js e npm.
+O Mol foi pensado primeiro para celular: uma experi&ecirc;ncia leve, direta e segura para quem treina. Ele organiza rotinas, registra s&eacute;ries e cargas, acompanha consist&ecirc;ncia, dieta, peso e medidas corporais em uma &uacute;nica conta privada.
+
+O projeto usa somente servi&ccedil;os com camada gratuita e uma arquitetura est&aacute;tica, mantendo o custo de opera&ccedil;&atilde;o pr&oacute;ximo de zero.
+
+## Recursos
+
+- Rotinas de treino edit&aacute;veis, biblioteca de exerc&iacute;cios, favoritos e filtros por grupo muscular.
+- Registro de s&eacute;ries, carga, repeti&ccedil;&otilde;es, RIR, descanso e hist&oacute;rico de sess&otilde;es.
+- Metas semanais, streaks, badges e calend&aacute;rio de consist&ecirc;ncia.
+- Comparativo de peso, meta, IMC e medidas corporais.
+- Dietas e refei&ccedil;&otilde;es planejadas pelo pr&oacute;prio usu&aacute;rio.
+- Fotos de progresso comprimidas e privadas.
+- Backup e restaura&ccedil;&atilde;o de dados, unidades, acessibilidade, tema e prefer&ecirc;ncias.
+- Lembretes locais e instala&ccedil;&atilde;o como PWA.
+- Login Google, regras de acesso por usu&aacute;rio e exclus&atilde;o de conta protegida.
+
+## Tecnologia
+
+| Camada | Escolha |
+| --- | --- |
+| Interface | HTML, JavaScript modular e Tailwind CSS |
+| Dados e autentica&ccedil;&atilde;o | Firebase Authentication e Cloud Firestore |
+| Build | Vite, PostCSS e Tailwind CLI |
+| PWA | vite-plugin-pwa e Workbox |
+| Testes | Vitest |
+| Hospedagem | Firebase Hosting |
+
+## Rodar localmente
+
+**Pr&eacute;-requisitos:** Node.js 20+ e um projeto Firebase configurado.
 
 ```bash
+git clone https://github.com/chrissmol/App-Mol.git
+cd App-Mol/public
 npm install
 npm run dev
 ```
 
-O Vite informa o endereço local. Não abra os arquivos HTML diretamente por `file://`, pois o app usa módulos ES.
-
-## Qualidade e produção
+Para gerar a vers&atilde;o de produ&ccedil;&atilde;o:
 
 ```bash
-npm run check
-npm audit --omit=dev
+npm run test
+npm run build
 ```
 
-`npm run check` executa lint, testes de lógica, acessibilidade estrutural, validação HTML e o build. A produção é gerada em `dist/`; os arquivos-fonte ficam em `index.html`, `pages/`, `js/`, `css/` e `assets/`.
+> O Firebase usa as configura&ccedil;&otilde;es em `public/js/config/firebase-config.js`. As regras de seguran&ccedil;a ficam em `public/firestore.rules`.
 
-Com Firebase CLI e Java instalados, `npm run check:rules` valida localmente o isolamento entre contas e os limites das regras do Firestore.
+## Publica&ccedil;&atilde;o
 
-## Firebase
+Com o Firebase CLI autenticado:
 
-O projeto usa Firebase Authentication e Cloud Firestore. As instruções de ambiente e publicação estão em `FIREBASE_SETUP.md`; as regras versionadas ficam em `firestore.rules`.
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only hosting
+```
 
-Antes de publicar, execute `npm run check`, confirme os domínios autorizados no Firebase Authentication e implante as regras junto com o site. O deploy pode ser iniciado nesta pasta ou na raiz do repositório; ambas as configurações publicam o mesmo conteúdo de `dist/`.
+O build de produ&ccedil;&atilde;o &eacute; gerado em `public/dist/` e n&atilde;o &eacute; versionado.
+
+## Privacidade
+
+Cada documento do Firestore &eacute; associado ao `userId` do usu&aacute;rio autenticado. As regras bloqueiam leitura e escrita entre contas diferentes. Fotos de progresso s&atilde;o comprimidas no dispositivo e armazenadas apenas no documento privado do perfil.
+
+Lembretes s&atilde;o locais ao dispositivo. Sem um servidor de push, navegadores n&atilde;o garantem alertas quando o aplicativo est&aacute; totalmente encerrado.
+
+## Estrutura
+
+```text
+public/
+├── assets/        # marca e ilustra&ccedil;&otilde;es
+├── css/           # estilos globais e Tailwind
+├── js/            # configura&ccedil;&atilde;o Firebase, p&aacute;ginas e utilit&aacute;rios
+├── pages/         # telas do aplicativo
+├── tests/         # testes unit&aacute;rios
+├── firestore.rules
+└── vite.config.js
+```
+
+## Status
+
+Em desenvolvimento ativo. A prioridade &eacute; oferecer uma experi&ecirc;ncia profissional de treino no celular, com boa performance, privacidade e baixo custo de opera&ccedil;&atilde;o.

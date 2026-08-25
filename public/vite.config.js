@@ -23,8 +23,9 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        importScripts: ['/notification-sw.js'],
         navigateFallback: null,
-        globPatterns: ['**/*.{js,css,svg,png,jpg,webp,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,woff2}'],
         runtimeCaching: []
       }
     })
