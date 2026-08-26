@@ -4,6 +4,7 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimes
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
 import { dateFrom, monthCalendar, workoutStats } from '../modules/evolution-analytics.js';
+import { profileAchievements } from '../modules/profile-analytics.js';
 import { removeSessionItems } from '../utils/storage.js';
 
 setupAppShell();
@@ -66,15 +67,11 @@ function renderCalendar() {
 }
 
 function renderBadges(stats) {
-  const badges = [
-    ['Primeiro passo', 'Conclua 1 treino', stats.sessions >= 1],
-    ['Ritmo criado', 'Conclua 10 treinos', stats.sessions >= 10],
-    ['Volume de base', 'Registre 50 séries', stats.series >= 50],
-    ['Consistência', 'Atinja a meta por 4 semanas', stats.streak >= 4],
-    ['10 toneladas', 'Some 10.000 kg de volume', stats.volume >= 10000],
-    ['Calendário vivo', 'Treine em 12 dias', stats.activeDays.size >= 12]
-  ];
-  $('badges').innerHTML = badges.map(([title, detail, earned]) => `<article class="rounded-2xl border p-3 ${earned ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="text-lg">${earned ? '✓' : '○'}</span><strong class="mt-1 block text-sm">${title}</strong><p class="mt-1 text-xs text-gray-500">${detail}</p></article>`).join('');
+  const badges = profileAchievements({ workouts: stats.sessions, sets: stats.series, volume: stats.volume, seconds: stats.seconds, weekly: stats.weekly, goal: currentGoal, streak: stats.streak, activeDays: stats.activeDays.size });
+  const unlocked = badges.filter(badge => badge.unlocked);
+  $('badges-count').textContent = `${unlocked.length} de ${badges.length} desbloqueadas`;
+  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.unlocked ? badge.icon : 'lock'}" class="h-4 w-4"></i></span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.description}</p></article>`).join('');
+  window.lucide?.createIcons();
 }
 
 function sortedWeights() {

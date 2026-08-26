@@ -86,7 +86,9 @@ export function profileAchievements(stats) {
     { id: 'volume-builder', icon: 'weight', title: 'Construtor de força', description: 'Some 10 mil kg de volume.', unlocked: volume >= 10000 },
     { id: 'iron-freight', icon: 'truck', title: 'Carga pesada', description: 'Some 50 mil kg de volume.', unlocked: volume >= 50000 },
     { id: 'time-invested', icon: 'clock-3', title: 'Tempo investido', description: 'Treine por 10 horas no total.', unlocked: seconds >= 36000 },
-    { id: 'weekly-focus', icon: 'target', title: 'Meta batida', description: 'Conclua sua meta semanal atual.', unlocked: weeklyGoalReached }
+    { id: 'weekly-focus', icon: 'target', title: 'Meta batida', description: 'Conclua sua meta semanal atual.', unlocked: weeklyGoalReached },
+    { id: 'consistency-master', icon: 'calendar-check-2', title: 'Consistência de aço', description: 'Complete 4 semanas seguidas na meta.', unlocked: value('streak') >= 4 },
+    { id: 'calendar-alive', icon: 'calendar-days', title: 'Calendário vivo', description: 'Treine em 12 dias diferentes.', unlocked: value('activeDays') >= 12 }
   ];
 }
 
