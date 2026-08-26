@@ -38,7 +38,10 @@ export function setupAppShell() {
   const nav = document.querySelector('nav.fixed');
   if (nav) {
     document.body.classList.add('has-bottom-nav');
-    nav.classList.add('mol-bottom-nav');
+    // Algumas páginas antigas traziam utilitários próprios (inclusive
+    // backdrop-filter) na barra. Em iOS instalado isso criava outro plano de
+    // composição e fazia o rodapé terminar acima da área segura.
+    nav.className = 'fixed bottom-0 left-0 right-0 z-50 mol-bottom-nav';
     const prefix = inPages ? '.' : './pages';
     nav.innerHTML = `<div class="mol-nav-inner">
       <a href="${inPages ? '../index.html' : './index.html'}" data-page="index.html"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
