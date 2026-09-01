@@ -6,7 +6,7 @@ const key = uid => `mol-onboarding-${version}-${uid}`;
 const pendingKey = uid => `mol-onboarding-pending-${uid}`;
 const steps = [
   { title: 'Bem-vindo ao Mol', text: 'Um guia rápido para você aproveitar treino, dieta, evolução e seu perfil.', target: null, route: 'index.html' },
-  { title: 'Seu treino', text: 'Acesse suas rotinas, registre séries e acompanhe seu progresso de carga.', target: '#view-rotinas', route: 'pages/treino.html' },
+  { title: 'Seu treino', text: 'Acesse suas rotinas, registre séries e acompanhe seu progresso de carga.', target: '#btn-nova-rotina', route: 'pages/treino.html' },
   { title: 'Sua dieta', text: 'Planeje refeições, consulte nutrientes e configure sua janela de jejum.', target: '#food-search', route: 'pages/dieta.html' },
   { title: 'Seu perfil', text: 'Veja conquistas, medidas, fotos de evolução e preferências do app.', target: '#avatar-frame', route: 'pages/perfil.html' },
   { title: 'Personalize o início', text: 'No botão Editar painel, escolha os cards e a ordem que fazem sentido para você.', target: '#btn-edit-dashboard', route: 'index.html' }
@@ -48,8 +48,8 @@ function openTour(uid, force = false, initialIndex = 0) {
     window.requestAnimationFrame(positionCard);
     overlay.querySelector('[data-next]').focus();
   };
-  const finish = () => { localStorage.setItem(key(uid), 'done'); sessionStorage.removeItem(pendingKey(uid)); document.querySelectorAll('.mol-tour-target').forEach(el => el.classList.remove('mol-tour-target')); overlay.remove(); active = null; };
-  active = overlay; document.body.appendChild(overlay); render();
+  const finish = () => { localStorage.setItem(key(uid), 'done'); sessionStorage.removeItem(pendingKey(uid)); document.querySelectorAll('.mol-tour-target').forEach(el => el.classList.remove('mol-tour-target')); document.body.classList.remove('mol-tour-active'); overlay.remove(); active = null; };
+  active = overlay; document.body.classList.add('mol-tour-active'); document.body.appendChild(overlay); render();
 }
 export function setupOnboarding() {
   if (window.__molOnboarding) return;
