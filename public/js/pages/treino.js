@@ -114,7 +114,17 @@ async function liberarTelaAtiva() {
 }
 
 document.addEventListener('visibilitychange', () => {
+  if (treinoIniciado) salvarRascunho({ force: true });
   if (document.visibilityState === 'visible' && treinoIniciado) void manterTelaAtiva();
+});
+
+// Evita perder séries preenchidas ao trocar de página ou fechar o app.
+window.addEventListener('pagehide', () => salvarRascunho({ force: true }));
+window.addEventListener('beforeunload', event => {
+  if (!treinoIniciado) return;
+  salvarRascunho({ force: true });
+  event.preventDefault();
+  event.returnValue = '';
 });
 
 window.alternarModoCompacto = () => {

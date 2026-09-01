@@ -250,6 +250,7 @@ html[data-large-text="true"] { font-size: 112.5%; }
 
 body { padding-bottom: var(--mol-bottom-nav-safe-area); }
 body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
+html { scrollbar-gutter: stable; }
 nav.fixed { padding-bottom: 0; }
 input, textarea, select { font-size: max(16px, 1em); }
 
@@ -496,6 +497,8 @@ html[data-theme="light"] body.dashboard-surface .mol-bottom-nav .mol-nav-item.te
   position: fixed !important;
   right: 0;
   bottom: 0 !important;
+  transform: translateZ(0);
+  will-change: auto;
   left: 0;
   height: var(--mol-bottom-nav-height);
   padding-bottom: var(--mol-bottom-nav-safe-area);

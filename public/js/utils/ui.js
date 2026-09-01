@@ -203,7 +203,7 @@ export function activateDialog(modal, { initialFocus, onCancel } = {}) {
   return close;
 }
 
-export function confirmAction({ title, message, confirmText = "Confirmar", danger = false }) {
+export function confirmAction({ title, message, confirmText = "Confirmar", cancelText = "Cancelar", danger = false }) {
   return new Promise((resolve) => {
     const opener = document.activeElement;
     document.getElementById("mol-confirm")?.remove();
@@ -213,7 +213,7 @@ export function confirmAction({ title, message, confirmText = "Confirmar", dange
     modal.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="mol-confirm-title" aria-describedby="mol-confirm-message" class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl animate-slide-up">
       <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${danger ? "bg-red-500/15 text-red-400" : "bg-neon/15 text-neon"}"><i data-lucide="${danger ? "triangle-alert" : "circle-help"}" class="h-5 w-5"></i></div>
       <h2 id="mol-confirm-title" data-title class="text-lg font-bold text-white"></h2><p id="mol-confirm-message" data-message class="mt-2 text-sm leading-relaxed text-gray-400"></p>
-      <div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-confirm class="rounded-xl py-3 text-sm font-bold ${danger ? "bg-red-500 text-white" : "bg-neon text-black"}">${confirmText}</button></div>
+      <div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold text-gray-300">${escapeHTML(cancelText)}</button><button type="button" data-confirm class="rounded-xl py-3 text-sm font-bold ${danger ? "bg-red-500 text-white" : "bg-neon text-black"}">${escapeHTML(confirmText)}</button></div>
     </section>`;
     modal.querySelector('[data-title]').textContent = title;
     modal.querySelector('[data-message]').textContent = message;
