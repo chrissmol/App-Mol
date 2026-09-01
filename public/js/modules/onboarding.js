@@ -20,7 +20,7 @@ function openTour(uid, force = false) {
     document.querySelectorAll('.mol-tour-target').forEach(el => el.classList.remove('mol-tour-target'));
     const step = steps[index]; const target = step.target ? document.querySelector(step.target) : null;
     if (target) { target.classList.add('mol-tour-target'); target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-    overlay.innerHTML = `<section class="mol-tour-card"><div class="flex items-center justify-between gap-3"><span class="text-xs font-bold uppercase tracking-wider text-neon">Guia Mol · ${index + 1}/${steps.length}</span><button type="button" data-skip class="text-xs font-bold text-gray-400">Pular</button></div><h2 id="mol-tour-title" class="mt-3 text-xl font-extrabold">${step.title}</h2><p class="mt-2 text-sm leading-relaxed text-gray-400">${step.text}</p><div class="mt-5 flex items-center justify-between gap-3">${index ? '<button type="button" data-back class="min-h-11 rounded-xl mol-soft px-4 text-sm font-bold">Voltar</button>' : '<span></span>'}<button type="button" data-next class="min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-white">${index === steps.length - 1 ? 'Começar' : 'Continuar'}</button></div></section>`;
+    overlay.innerHTML = `<section class="mol-tour-card"><div class="flex items-center justify-between gap-3"><span class="text-xs font-bold uppercase tracking-wider text-neon">Guia Mol · ${index + 1}/${steps.length}</span><button type="button" data-skip class="text-xs font-bold text-gray-400">Pular</button></div><div class="mt-3 flex gap-1.5" aria-label="Progresso do tutorial">${steps.map((_, stepIndex) => `<span class="h-1.5 flex-1 rounded-full ${stepIndex <= index ? 'bg-neon' : 'bg-white/10'}"></span>`).join('')}</div><h2 id="mol-tour-title" class="mt-4 text-xl font-extrabold">${step.title}</h2><p class="mt-2 text-sm leading-relaxed text-gray-400">${step.text}</p><div class="mt-5 flex items-center justify-between gap-3">${index ? '<button type="button" data-back class="min-h-11 rounded-xl mol-soft px-4 text-sm font-bold">Voltar</button>' : '<span></span>'}<button type="button" data-next class="min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-white">${index === steps.length - 1 ? 'Começar' : 'Continuar'}</button></div></section>`;
     overlay.querySelector('[data-skip]').onclick = finish;
     overlay.querySelector('[data-back]')?.addEventListener('click', () => { index -= 1; render(); });
     overlay.querySelector('[data-next]').onclick = () => { if (index === steps.length - 1) finish(); else { index += 1; render(); } };
@@ -29,7 +29,9 @@ function openTour(uid, force = false) {
       if (!card) return;
       const margin = 16; const rect = target?.getBoundingClientRect(); const width = Math.min(card.offsetWidth || 448, window.innerWidth - margin * 2); const height = card.offsetHeight || 220;
       let left = (window.innerWidth - width) / 2; let top = (window.innerHeight - height) / 2;
-      if (rect) { left = Math.max(margin, Math.min(window.innerWidth - width - margin, rect.left + rect.width / 2 - width / 2)); top = rect.bottom + 18; if (top + height > window.innerHeight - margin) top = Math.max(margin, rect.top - height - 18); }
+      const below = !rect || rect.bottom + height + 18 <= window.innerHeight - margin;
+      if (rect) { left = Math.max(margin, Math.min(window.innerWidth - width - margin, rect.left + rect.width / 2 - width / 2)); top = below ? rect.bottom + 18 : Math.max(margin, rect.top - height - 18); }
+      card.classList.toggle('is-below', below && !!rect); card.classList.toggle('is-above', !below && !!rect);
       card.style.width = `${width}px`; card.style.left = `${left}px`; card.style.top = `${top}px`;
     };
     positionCard();

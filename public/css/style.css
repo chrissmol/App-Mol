@@ -124,7 +124,10 @@ body {
 .set-type-badge.is-normal { color: var(--mol-brand-text); }
 
 .mol-tour-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(2, 7, 4, .78); padding: 1rem; pointer-events: auto; }
-.mol-tour-card { position: fixed; border: 1px solid rgba(52, 211, 153, .45); border-radius: 1.5rem; background: var(--mol-surface); color: var(--mol-text); padding: 1.25rem; box-shadow: 0 20px 70px rgba(0,0,0,.5); animation: mol-tour-in .2s ease-out; pointer-events: auto; }
+.mol-tour-card { position: fixed; border: 1px solid rgba(52, 211, 153, .45); border-radius: 1.5rem; background: var(--mol-surface); color: var(--mol-text); padding: 1.25rem; box-shadow: 0 20px 70px rgba(0,0,0,.5); animation: mol-tour-in .2s ease-out; transition: top .25s ease, left .25s ease; pointer-events: auto; }
+.mol-tour-card::after { content: ''; position: absolute; left: 50%; width: 14px; height: 14px; background: var(--mol-surface); border: 1px solid rgba(52, 211, 153, .45); transform: translateX(-50%) rotate(45deg); }
+.mol-tour-card.is-below::after { top: -8px; border-right: 0; border-bottom: 0; }
+.mol-tour-card.is-above::after { bottom: -8px; border-left: 0; border-top: 0; }
 .mol-tour-target { position: relative !important; z-index: 950 !important; pointer-events: none !important; border-radius: .9rem; box-shadow: 0 0 0 4px var(--mol-bg), 0 0 0 7px var(--mol-brand-green), 0 0 28px rgba(52, 211, 153, .45) !important; }
 @keyframes mol-tour-in { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
 @media (min-width: 640px) { .mol-tour-overlay { align-items: center; } }
