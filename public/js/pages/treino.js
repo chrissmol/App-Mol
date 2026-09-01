@@ -943,7 +943,7 @@ function abrirRotina(id) {
             <div class="relative flex items-center gap-1 mb-1">
               <div class="workout-set-grid flex-1 ${bgLinha} grid items-center grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 py-1.5 px-1 rounded transition-colors">
                 
-                <div class="w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold cursor-pointer transition-colors ${corFundo}" 
+                <div class="set-type-badge is-editable mx-auto cursor-pointer text-xs font-bold transition-colors ${corFundo}"
                      onclick="abrirModalTipoSerie(${indexEx}, ${indexSerie})">
                   ${label}
                 </div>

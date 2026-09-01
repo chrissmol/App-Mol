@@ -83,7 +83,7 @@ function setDetailsHTML(session) {
       const rawType = String(set.tipo || 'N').toUpperCase();
       const type = ['N', 'W', 'D', 'F'].includes(rawType) ? rawType : 'N';
       const setLabel = type === 'N' ? ++normalSetNumber : escapeHTML(type);
-      return `<li class="grid grid-cols-[2rem_1fr_auto] items-center gap-2 rounded-xl bg-white/[.04] px-3 py-2 text-xs"><span class="font-bold text-neon">${setLabel}</span><span class="text-gray-300">${load} × ${reps}${rir}</span><span class="${set.concluida ? 'text-neon' : 'text-gray-600'}">${set.concluida ? 'Feita' : 'Não realizada'}</span></li>`;
+      return `<li class="grid grid-cols-[2.25rem_1fr_auto] items-center gap-2 rounded-xl bg-white/[.04] px-3 py-2 text-xs"><span class="set-type-badge ${type === 'N' ? 'is-normal' : `is-${type.toLowerCase()}`}" aria-label="${type === 'N' ? `Série ${setLabel}` : `Série ${type}`}"${type === 'N' ? '' : ` title="Série ${type}"`}>${setLabel}</span><span class="text-gray-300">${load} × ${reps}${rir}</span><span class="${set.concluida ? 'text-neon' : 'text-gray-600'}">${set.concluida ? 'Feita' : 'Não realizada'}</span></li>`;
     }).join('');
     return `<section><h4 class="text-sm font-bold">${escapeHTML(exercise.nome || 'Exercício')}</h4><p class="mt-1 text-[10px] uppercase text-gray-500">${escapeHTML(exercise.grupo || 'Outros')}</p><ul class="mt-2 space-y-1">${sets || '<li class="text-xs text-gray-500">Sem séries registradas.</li>'}</ul></section>`;
   }).join('');

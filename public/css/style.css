@@ -86,6 +86,30 @@ body {
   opacity: 1;
 }
 
+.fasting-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.set-type-badge {
+  display: inline-flex;
+  width: 2.25rem;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: .65rem;
+  background: var(--mol-surface-2);
+  color: var(--mol-muted-strong);
+  line-height: 1;
+}
+.set-type-badge.is-editable { cursor: pointer; }
+.set-type-badge.is-w { background: rgba(251,146,60,.12); color: #fb923c; }
+.set-type-badge.is-f { background: rgba(248,113,113,.12); color: #f87171; }
+.set-type-badge.is-d { background: rgba(96,165,250,.12); color: #60a5fa; }
+.set-type-badge.is-normal { color: var(--mol-brand-text); }
+
 .mol-btn {
   display: inline-flex;
   min-height: 2.75rem;
