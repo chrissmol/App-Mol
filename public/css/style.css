@@ -252,6 +252,10 @@ body { padding-bottom: var(--mol-bottom-nav-safe-area); }
 body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
 html { scrollbar-gutter: stable; }
 nav.fixed { padding-bottom: 0; }
+/* Cards de treino não devem criar uma segunda rolagem horizontal no celular. */
+.workout-page main { min-width: 0; max-width: 100%; overflow-x: hidden; }
+.workout-exercise-card { min-width: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
+.workout-exercise-card > * { min-width: 0; max-width: 100%; }
 input, textarea, select { font-size: max(16px, 1em); }
 
 button,

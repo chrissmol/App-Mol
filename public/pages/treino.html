@@ -27,7 +27,8 @@
     input[type="number"] { -moz-appearance: textfield; }
     .workout-page button, .workout-page a, .workout-page input, .workout-page summary { touch-action: manipulation; }
     .workout-page button:focus-visible, .workout-page a:focus-visible, .workout-page input:focus-visible, .workout-page summary:focus-visible { outline: 2px solid #57d493; outline-offset: 2px; }
-    .workout-exercise-card { overflow-x: clip; }
+    .workout-exercise-card { width: 100%; min-width: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
+    .workout-exercise-card > * { min-width: 0; max-width: 100%; }
     .workout-set-grid {
       min-width: 0;
       grid-template-columns: 1.8rem minmax(3rem, 1.3fr) repeat(3, minmax(2.35rem, .9fr)) 2.5rem;
@@ -44,7 +45,7 @@
     }
     @media (min-width: 768px) {
       .workout-page > div, .workout-page nav > div { max-width: 48rem; }
-      .workout-exercise-card { overflow-x: visible; }
+      .workout-exercise-card { overflow-x: hidden; }
       .workout-set-grid, .workout-set-header { min-width: 0; }
     }
     @media (prefers-reduced-motion: reduce) {
