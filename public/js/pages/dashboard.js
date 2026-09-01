@@ -38,6 +38,8 @@ let profileData = {};
 let mealRefreshTimer = null;
 const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), timeout))]);
 const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
+const profileCacheKey = uid => `mol-profile-dashboard-${uid}`;
+const mealCacheKey = uid => `mol-meal-dashboard-${uid}`;
 const cacheFresh = value => value?.savedAt && Date.now() - value.savedAt < 1000 * 60 * 60 * 6;
 const writeDashboardDataCache = (uid, patch) => {
   const current = safeJSON(getSessionItem(dashboardCacheKey(uid)), {}) || {};
@@ -143,10 +145,18 @@ function setFastingCard(settings) {
 }
 
 async function loadNextMeal(userId) {
+  const cached = safeJSON(getSessionItem(mealCacheKey(userId)), null);
+  if (cached && Array.isArray(cached.meals)) {
+    setNextMeal(cached.meals);
+    setFastingCard(cached.fasting);
+  }
   try {
     const snapshot = await withTimeout(getDoc(doc(db, 'dietas', userId)), 'A dieta');
-    setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []);
-    setFastingCard(snapshot.exists() ? snapshot.data().jejum : null);
+    const meals = snapshot.exists() ? (snapshot.data().refeicoes || []) : [];
+    const fasting = snapshot.exists() ? snapshot.data().jejum : null;
+    setSessionItem(mealCacheKey(userId), JSON.stringify({ meals, fasting, savedAt: Date.now() }));
+    setNextMeal(meals);
+    setFastingCard(fasting);
     clearInterval(mealRefreshTimer);
     mealRefreshTimer = setInterval(() => setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []), 60000);
   } catch (error) {
@@ -268,10 +278,20 @@ watchProtectedPage(async user => {
   const localRaw = safeJSON(getLocalItem(`mol-dashboard-${user.uid}`), null);
   const localPrefs = Array.isArray(localRaw) ? { cards: localRaw, updatedAt: '' } : (localRaw || {});
   dashboardCards = normalizeCards(localPrefs.cards);
+  const cachedProfile = safeJSON(getSessionItem(profileCacheKey(user.uid)), null);
+  if (cachedProfile && typeof cachedProfile === 'object') {
+    profileData = cachedProfile;
+    const cachedName = String(profileData.name || profileData.nome || '').trim().split(/\s+/)[0];
+    if (cachedName) $('user-name').textContent = cachedName.slice(0, 40);
+  }
+  // Libera a estrutura do painel antes das consultas remotas terminarem.
+  // Os cards começam com cache/dados vazios e são preenchidos individualmente.
+  applyDashboardCards();
   try {
     const profile = await withTimeout(getDoc(doc(db, 'users', user.uid)), 'O perfil');
     if (profile.exists()) {
       profileData = profile.data();
+      setSessionItem(profileCacheKey(user.uid), JSON.stringify(profileData));
       const remoteDate = dateOf(profileData.dashboardCardsUpdatedAt)?.getTime() || 0;
       const localDate = dateOf(localPrefs.updatedAt)?.getTime() || 0;
       if (profileData.dashboardCards && remoteDate >= localDate) dashboardCards = normalizeCards(profileData.dashboardCards);
