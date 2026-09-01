@@ -70,7 +70,7 @@ function renderBadges(stats) {
   const badges = profileAchievements({ workouts: stats.sessions, sets: stats.series, volume: stats.volume, seconds: stats.seconds, weekly: stats.weekly, goal: currentGoal, streak: stats.streak, activeDays: stats.activeDays.size });
   const unlocked = badges.filter(badge => badge.unlocked);
   $('badges-count').textContent = `${unlocked.length} de ${badges.length} desbloqueadas`;
-  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.unlocked ? badge.icon : 'lock'}" class="h-4 w-4"></i></span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.description}</p></article>`).join('');
+  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.unlocked ? badge.icon : 'lock-keyhole'}" class="h-4 w-4"></i></span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.description}</p></article>`).join('');
   window.lucide?.createIcons();
 }
 

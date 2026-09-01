@@ -195,9 +195,15 @@ html[data-large-text="true"] { font-size: 112.5%; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
 
 /* Mobile first: evita que a barra fixa e o notch cubram conteúdo ou controles. */
-body { padding-bottom: env(safe-area-inset-bottom); }
-body.has-bottom-nav { padding-bottom: max(7rem, calc(5.5rem + env(safe-area-inset-bottom))); }
-nav.fixed { padding-bottom: env(safe-area-inset-bottom); }
+:root {
+  --mol-bottom-nav-content-height: 4.75rem;
+  --mol-bottom-nav-safe-area: env(safe-area-inset-bottom, 0px);
+  --mol-bottom-nav-height: calc(var(--mol-bottom-nav-content-height) + var(--mol-bottom-nav-safe-area));
+}
+
+body { padding-bottom: var(--mol-bottom-nav-safe-area); }
+body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
+nav.fixed { padding-bottom: 0; }
 input, textarea, select { font-size: max(16px, 1em); }
 
 button,
@@ -377,7 +383,8 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
 .mol-bottom-nav { background: rgba(16, 20, 17, .94) !important; border-color: rgba(255,255,255,.1) !important; backdrop-filter: blur(18px); }
 .mol-bottom-nav > div {
   width: min(100%, 32rem);
-  min-height: 4.75rem;
+  height: var(--mol-bottom-nav-content-height);
+  min-height: var(--mol-bottom-nav-content-height);
   margin: 0 auto;
   padding-left: 1rem;
   padding-right: 1rem;
@@ -443,6 +450,9 @@ html[data-theme="light"] body.dashboard-surface .mol-bottom-nav .mol-nav-item.te
   right: 0;
   bottom: 0 !important;
   left: 0;
+  height: var(--mol-bottom-nav-height);
+  padding-bottom: var(--mol-bottom-nav-safe-area);
+  box-sizing: border-box;
   transform: none !important;
   -webkit-transform: none !important;
   will-change: auto;
@@ -623,7 +633,7 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 .rest-timer-panel {
   position: fixed;
   right: max(1rem, env(safe-area-inset-right));
-  bottom: max(6rem, calc(5rem + env(safe-area-inset-bottom)));
+  bottom: calc(var(--mol-bottom-nav-height) + 1rem);
   left: max(1rem, env(safe-area-inset-left));
   z-index: 90;
   width: auto;
@@ -811,7 +821,7 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 /* Tablets: mantém a leitura em uma largura confortável e aproveita espaço para listas. */
 @media (min-width: 768px) {
   .max-w-md { max-width: 32rem; }
-  body.has-bottom-nav { padding-bottom: max(7.5rem, calc(6rem + env(safe-area-inset-bottom))); }
+  body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
   /* Nunca cria cards estreitos: só abre uma nova coluna com ao menos 22rem livres. */
   #rotinas-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; }
   #rotinas-list > * { margin-top: 0 !important; margin-bottom: 0 !important; }
@@ -828,9 +838,10 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 
 /* Celular horizontal: reduz respiros verticais e preserva controles acima da navegação. */
 @media (orientation: landscape) and (max-height: 600px) {
-  body.has-bottom-nav { padding-bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
+  :root { --mol-bottom-nav-content-height: 4.25rem; }
+  body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + .75rem); }
   .app-surface main { max-width: 42rem; }
-  .mol-bottom-nav > div { min-height: 4.25rem; max-width: 42rem; }
+  .mol-bottom-nav > div { height: var(--mol-bottom-nav-content-height); min-height: var(--mol-bottom-nav-content-height); max-width: 42rem; }
   .mol-nav-item { min-height: 2.75rem; }
   .pt-8 { padding-top: 1.25rem; }
   .pb-6, .pb-7 { padding-bottom: 1rem; }

@@ -62,6 +62,7 @@ export const updateDoc = async () => {};
 export const deleteDoc = async () => {};
 export const addDoc = async () => ({ id: 'e2e-document' });
 export const serverTimestamp = () => new Date();
+export const Timestamp = { now: () => new Date(), fromDate: date => date };
 export const writeBatch = () => ({ delete() {}, set() {}, update() {}, commit: async () => {} });
 export const waitForPendingWrites = async () => {};
 export const terminate = async () => {};
