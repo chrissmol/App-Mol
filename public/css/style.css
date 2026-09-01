@@ -882,6 +882,9 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 
 /* Tablets: mantém a leitura em uma largura confortável e aproveita espaço para listas. */
 @media (min-width: 768px) {
+  .app-surface main { max-width: 52rem; padding-left: 2rem; padding-right: 2rem; }
+  .app-surface main > section,
+  .app-surface main > article { min-width: 0; }
   .max-w-md { max-width: 32rem; }
   body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
   /* Nunca cria cards estreitos: só abre uma nova coluna com ao menos 22rem livres. */
@@ -893,9 +896,21 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 
 /* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */
 @media (min-width: 1024px) {
-  .max-w-md { max-width: 32rem; }
+  .app-surface main { max-width: 64rem; padding-left: 2.5rem; padding-right: 2.5rem; }
+  .dashboard-surface main { max-width: 72rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-content: start; }
+  .dashboard-surface main > header { grid-column: 1 / -1; }
+  .dashboard-surface main > section { min-width: 0; margin-bottom: 0 !important; }
+  .dashboard-surface main > section:last-child { grid-column: 1 / -1; }
+  .dashboard-surface .glass-card { box-shadow: 0 18px 48px rgba(0, 0, 0, .18); }
+  .max-w-md { max-width: 42rem; }
   #view-detalhe { max-width: 52rem; }
   #exercicios-list { max-width: 52rem; }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-surface main { max-width: 84rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dashboard-surface main > section:last-child { grid-column: auto; }
+  .app-surface main { padding-left: 3rem; padding-right: 3rem; }
 }
 
 /* Celular horizontal: reduz respiros verticais e preserva controles acima da navegação. */
