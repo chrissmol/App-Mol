@@ -5,48 +5,51 @@
 <h1 align="center">Mol</h1>
 
 <p align="center">
-  Uma plataforma PWA para treino, dieta e acompanhamento de evolu&ccedil;&atilde;o pessoal.
+  PWA mobile-first para treino, dieta e evolução corporal, criado para funcionar como app instalado na tela inicial.
 </p>
 
 <p align="center">
-  <a href="#recursos">Recursos</a> &middot;
-  <a href="#tecnologia">Tecnologia</a> &middot;
-  <a href="#rodar-localmente">Rodar localmente</a> &middot;
-  <a href="#publica%C3%A7%C3%A3o">Publica&ccedil;&atilde;o</a>
+  <a href="https://app-mol-5f3dc.web.app">Demo</a> ·
+  <a href="public/docs/PRODUTO.md">Produto</a> ·
+  <a href="public/docs/COMERCIAL.md">Comercial</a> ·
+  <a href="public/docs/PRECIFICACAO.md">Preços</a> ·
+  <a href="public/docs/PITCH.md">Pitch</a> ·
+  <a href="public/docs/SEGURANCA.md">Segurança</a>
 </p>
 
-## Sobre o projeto
+## Visão geral
 
-O Mol foi pensado primeiro para celular: uma experi&ecirc;ncia leve, direta e segura para quem treina. Ele organiza rotinas, registra s&eacute;ries e cargas, acompanha consist&ecirc;ncia, dieta, peso e medidas corporais em uma &uacute;nica conta privada.
+O Mol é uma plataforma fitness pensada primeiro para celular. A proposta é entregar uma experiência simples, bonita e útil para quem treina musculação, organiza dieta e acompanha evolução física sem precisar instalar um app nativo.
 
-O projeto usa somente servi&ccedil;os com camada gratuita e uma arquitetura est&aacute;tica, mantendo o custo de opera&ccedil;&atilde;o pr&oacute;ximo de zero.
+O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase Hosting, e foi desenhado para manter custo operacional baixo usando camadas gratuitas enquanto o produto ainda está em validação.
 
-## Recursos
+## Principais recursos
 
-- Rotinas de treino edit&aacute;veis, biblioteca de exerc&iacute;cios, favoritos e filtros por grupo muscular.
-- Registro de s&eacute;ries, carga, repeti&ccedil;&otilde;es, RIR, descanso e hist&oacute;rico de sess&otilde;es.
-- Metas semanais, streaks, badges e calend&aacute;rio de consist&ecirc;ncia.
-- Comparativo de peso, meta, IMC e medidas corporais.
-- Dietas e refei&ccedil;&otilde;es planejadas pelo pr&oacute;prio usu&aacute;rio.
-- Fotos de progresso comprimidas e privadas.
-- Backup e restaura&ccedil;&atilde;o de dados, unidades, acessibilidade, tema e prefer&ecirc;ncias.
-- Lembretes locais e instala&ccedil;&atilde;o como PWA.
-- Login Google, regras de acesso por usu&aacute;rio e exclus&atilde;o de conta protegida.
+- Rotinas de treino editáveis, duplicáveis e reutilizáveis.
+- Biblioteca de exercícios com filtros, favoritos e detalhes técnicos.
+- Registro de séries, carga, repetições, RIR, descanso e histórico.
+- Métricas de volume, séries, sessões concluídas, consistência e evolução.
+- Dieta por refeições, horários, alimentos e totais nutricionais.
+- Perfil com peso, altura, objetivo, unidades, progresso corporal e backup.
+- Tema claro, escuro e opção de seguir o sistema do aparelho.
+- Experiência mobile/PWA com bloqueio de zoom, safe-area e navegação inferior.
+- Testes unitários, testes E2E mobile, validação HTML, build e checks de segurança.
 
-## Tecnologia
+## Stack
 
-| Camada | Escolha |
+| Camada | Tecnologia |
 | --- | --- |
-| Interface | HTML, JavaScript modular e Tailwind CSS |
-| Dados e autentica&ccedil;&atilde;o | Firebase Authentication e Cloud Firestore |
-| Build | Vite, PostCSS e Tailwind CLI |
-| PWA | vite-plugin-pwa e Workbox |
-| Testes | Vitest |
+| Front-end | HTML, CSS e JavaScript modular |
+| UI | Tailwind CSS + design system próprio |
+| Build | Vite |
+| PWA | vite-plugin-pwa + Workbox |
+| Autenticação | Firebase Authentication |
+| Banco | Cloud Firestore |
 | Hospedagem | Firebase Hosting |
+| Testes | Vitest, Playwright, html-validate |
+| Segurança | Firestore Rules, npm audit, scan local |
 
 ## Rodar localmente
-
-**Pr&eacute;-requisitos:** Node.js 20+ e um projeto Firebase configurado.
 
 ```bash
 git clone https://github.com/chrissmol/App-Mol.git
@@ -55,45 +58,33 @@ npm install
 npm run dev
 ```
 
-Para gerar a vers&atilde;o de produ&ccedil;&atilde;o:
+## Validação
 
 ```bash
-npm run test
-npm run build
+npm run check:full
 ```
 
-> O Firebase usa as configura&ccedil;&otilde;es em `public/js/config/firebase-config.js`. As regras de seguran&ccedil;a ficam em `public/firestore.rules`.
+Esse comando executa lint, testes unitários, validação HTML, build, auditoria de dependências, scan de segurança e testes E2E mobile/tablet.
 
-## Publica&ccedil;&atilde;o
-
-Com o Firebase CLI autenticado:
+## Deploy
 
 ```bash
 firebase deploy --only firestore:rules
 firebase deploy --only hosting
 ```
 
-O build de produ&ccedil;&atilde;o &eacute; gerado em `public/dist/` e n&atilde;o &eacute; versionado.
+## Documentação
 
-## Privacidade
-
-Cada documento do Firestore &eacute; associado ao `userId` do usu&aacute;rio autenticado. As regras bloqueiam leitura e escrita entre contas diferentes. Fotos de progresso s&atilde;o comprimidas no dispositivo e armazenadas apenas no documento privado do perfil.
-
-Lembretes s&atilde;o locais ao dispositivo. Sem um servidor de push, navegadores n&atilde;o garantem alertas quando o aplicativo est&aacute; totalmente encerrado.
-
-## Estrutura
-
-```text
-public/
-├── assets/        # marca e ilustra&ccedil;&otilde;es
-├── css/           # estilos globais e Tailwind
-├── js/            # configura&ccedil;&atilde;o Firebase, p&aacute;ginas e utilit&aacute;rios
-├── pages/         # telas do aplicativo
-├── tests/         # testes unit&aacute;rios
-├── firestore.rules
-└── vite.config.js
-```
+- [Produto](public/docs/PRODUTO.md)
+- [Comercial](public/docs/COMERCIAL.md)
+- [Precificação](public/docs/PRECIFICACAO.md)
+- [Pitch](public/docs/PITCH.md)
+- [Instalação e operação](public/docs/INSTALACAO.md)
+- [Segurança](public/docs/SEGURANCA.md)
+- [Roadmap](public/docs/ROADMAP.md)
+- [Privacidade](public/docs/PRIVACIDADE.md)
+- [Termos de uso](public/docs/TERMOS.md)
 
 ## Status
 
-Em desenvolvimento ativo. A prioridade &eacute; oferecer uma experi&ecirc;ncia profissional de treino no celular, com boa performance, privacidade e baixo custo de opera&ccedil;&atilde;o.
+Produto em desenvolvimento ativo. O foco atual é estabilidade mobile, confiabilidade do login, qualidade visual, dados privados por usuário e fluxo profissional para treino e dieta.
