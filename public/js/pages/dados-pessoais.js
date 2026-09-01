@@ -1,5 +1,5 @@
-import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
+import { watchAuthState } from '../modules/auth.js';
 import { Timestamp, collection, doc, getDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -262,7 +262,7 @@ $('restore').onclick = async () => {
   }
 };
 
-onAuthStateChanged(auth, user => {
+watchAuthState( user => {
   if (!user) { location.href = './login.html'; return; }
   currentUser = user;
   loadProfile();

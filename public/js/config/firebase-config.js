@@ -8,11 +8,15 @@
 import { initializeApp } from 'firebase/app';
 import {
   browserLocalPersistence,
-  getAuth,
+  browserPopupRedirectResolver,
+  browserSessionPersistence,
   GoogleAuthProvider,
-  setPersistence,
+  indexedDBLocalPersistence,
+  inMemoryPersistence,
+  initializeAuth,
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { isTrustedDevice } from '../utils/offline.js';
 
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
 const firebaseConfig = {
@@ -30,9 +34,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Exporta instâncias prontas para uso em outros arquivos
-export const auth = getAuth(app);
-export const authReady = setPersistence(auth, browserLocalPersistence).catch(error => {
-  console.warn('[Mol] Persistência local do login indisponível; usando padrão do navegador:', error.message);
+const browserAuthDependencies = typeof window === 'undefined'
+  ? { persistence: inMemoryPersistence }
+  : {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver
+    };
+export const auth = initializeAuth(app, browserAuthDependencies);
+export const authReady = auth.authStateReady().catch(error => {
+  console.warn('[Mol] Estado inicial da autenticação não pôde ser restaurado:', error.message);
 });
-export const db = getFirestore(app);
+export const offlinePersistenceEnabled = isTrustedDevice();
+export const db = offlinePersistenceEnabled
+  ? initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) })
+  : getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();

@@ -1,4 +1,4 @@
-import { onAuthStateChanged } from 'firebase/auth';
+import { watchAuthState } from '../modules/auth.js';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase-config.js';
 
@@ -56,8 +56,12 @@ export async function saveAccessibilityPreferences(value, user = auth.currentUse
   return preferences;
 }
 
+function reapplyStoredAccessibilityPreferences() {
+  return applyAccessibilityPreferences(getAccessibilityPreferences(), { cache: false });
+}
+
 export function initializeAccessibility() {
-  applyAccessibilityPreferences(getAccessibilityPreferences());
+  reapplyStoredAccessibilityPreferences();
   if (!window.__molAccessibilityMediaListener) {
     window.__molAccessibilityMediaListener = true;
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
@@ -65,9 +69,22 @@ export function initializeAccessibility() {
       if (preferences.theme === 'system') applyAccessibilityPreferences(preferences, { cache: false });
     });
   }
+  if (!window.__molAccessibilityLifecycleListener) {
+    window.__molAccessibilityLifecycleListener = true;
+    // O Safari restaura páginas pelo BFCache ao voltar com o gesto lateral.
+    // Nessa restauração os módulos não executam novamente, então o tema salvo
+    // precisa ser reaplicado quando a página volta a ficar visível.
+    window.addEventListener('pageshow', reapplyStoredAccessibilityPreferences);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) reapplyStoredAccessibilityPreferences();
+    });
+    window.addEventListener('storage', event => {
+      if (event.key === STORAGE_KEY) reapplyStoredAccessibilityPreferences();
+    });
+  }
   if (!window.__molAccessibilityAuthListener) {
     window.__molAccessibilityAuthListener = true;
-    onAuthStateChanged(auth, user => {
+    watchAuthState( user => {
       if (user) syncAccessibilityForUser(user).catch(error => console.warn('Preferências de acessibilidade não sincronizadas:', error.message));
     });
   }

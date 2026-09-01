@@ -2,11 +2,53 @@ import { enhanceSelects } from './ui.js';
 import { initializeAccessibility } from './accessibility.js';
 import { renderIcons } from './icons.js';
 import { setupMobileAppMode } from './mobile-app.js';
+import { connectivityState, isTrustedDevice } from './offline.js';
+import { startReminderMonitor } from './reminders.js';
+
+function setupConnectivityIndicator() {
+  let indicator = document.getElementById('mol-connectivity');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'mol-connectivity';
+    indicator.className = 'mol-connectivity hidden';
+    indicator.setAttribute('role', 'status');
+    indicator.setAttribute('aria-live', 'polite');
+    document.body.appendChild(indicator);
+  }
+  let wasOffline = !navigator.onLine;
+  let hideTimer = 0;
+  const render = () => {
+    window.clearTimeout(hideTimer);
+    const state = connectivityState(navigator.onLine);
+    indicator.classList.toggle('is-offline', !state.online);
+    if (!state.online) {
+      indicator.innerHTML = `<span aria-hidden="true"></span><strong>Offline</strong><small>${isTrustedDevice() ? 'Alterações aguardando sincronização' : 'Dados disponíveis até fechar o app'}</small>`;
+      indicator.classList.remove('hidden');
+      wasOffline = true;
+      return;
+    }
+    if (wasOffline) {
+      indicator.innerHTML = '<span aria-hidden="true"></span><strong>Online novamente</strong><small>Sincronizando alterações</small>';
+      indicator.classList.remove('hidden');
+      hideTimer = window.setTimeout(() => indicator.classList.add('hidden'), 2800);
+    } else indicator.classList.add('hidden');
+    wasOffline = false;
+  };
+  if (!window.__molConnectivityListener) {
+    window.__molConnectivityListener = true;
+    window.addEventListener('online', render);
+    window.addEventListener('offline', render);
+    window.addEventListener('pageshow', render);
+  }
+  render();
+}
 
 export function setupAppShell() {
   document.title = 'Mol';
   setupMobileAppMode();
   initializeAccessibility();
+  setupConnectivityIndicator();
+  startReminderMonitor();
   enhanceSelects();
   const inPages = location.pathname.includes('/pages/');
   const faviconHref = `${inPages ? '../' : './'}assets/mol-mark.svg?v=2`;

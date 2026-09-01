@@ -22,6 +22,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { auth, authReady, db, googleProvider } from "../config/firebase-config.js";
+import { subscribeAfterAuthReady } from '../utils/auth-state.js';
 
 const AUTH_THROTTLE_KEY = 'mol-auth-throttle-v1';
 const AUTH_THROTTLE_WINDOW_MS = 10 * 60 * 1000;
@@ -151,7 +152,7 @@ export function logout() {
  * @param {(user: import("firebase/auth").User | null) => void} callback
  */
 export function watchAuthState(callback) {
-  onAuthStateChanged(auth, callback);
+  return subscribeAfterAuthReady(authReady, listener => onAuthStateChanged(auth, listener), callback);
 }
 
 /**

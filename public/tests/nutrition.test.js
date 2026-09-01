@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foodNutrients, nextMeal, normalizeDietMeals, nutritionTotals, validateFood, validateMeal } from '../js/modules/nutrition.js';
+import { FOOD_CATALOG, foodNutrients, nextMeal, normalizeDietMeals, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../js/modules/nutrition.js';
 
 describe('nutrição', () => {
   it('calcula nutrientes pela porção em gramas', () => {
@@ -38,5 +38,10 @@ describe('nutrição', () => {
     expect(validateFood({ nome: 'Arroz', gramas: 0 })).toBeTruthy();
     expect(validateFood({ nome: 'Inválido', gramas: 100, kcal100: 200, proteina100: 120 })).toBeTruthy();
     expect(validateFood({ nome: 'Arroz', gramas: 100, kcal100: 128, proteina100: 2, carbo100: 28, gordura100: 0 })).toBe('');
+  });
+  it('busca alimentos locais sem depender de acentos ou ordem exata', () => {
+    expect(searchFoodCatalog('feijao carioca')[0].nome).toBe('Feijão carioca cozido');
+    expect(searchFoodCatalog('frango grelhado').some(food => food.nome === 'Peito de frango grelhado')).toBe(true);
+    expect(FOOD_CATALOG.length).toBeGreaterThan(70);
   });
 });

@@ -106,7 +106,8 @@ service cloud.firestore {
     }
 
     match /dietas/{dietaId} {
-      allow read, delete: if ownsExisting() && dietaId == request.auth.uid;
+      allow read: if signedIn() && dietaId == request.auth.uid;
+      allow delete: if ownsExisting() && dietaId == request.auth.uid;
       allow create: if ownsNew() && dietaId == request.auth.uid && validDiet();
       allow update: if ownsExisting() && ownsNew() && dietaId == request.auth.uid && validDiet();
     }

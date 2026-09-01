@@ -55,6 +55,80 @@ body {
   --mol-brand-text: #17623e;
 }
 
+.mol-card {
+  background: linear-gradient(145deg, rgba(28, 32, 29, 0.94), rgba(15, 18, 16, 0.94));
+  border: 1px solid var(--mol-border);
+  color: var(--mol-text);
+  box-shadow: 0 14px 34px rgba(0,0,0,.18);
+}
+
+.mol-panel {
+  background: var(--mol-surface);
+  border: 1px solid var(--mol-border);
+  color: var(--mol-text);
+}
+
+.mol-soft {
+  background: var(--mol-surface-soft);
+  color: var(--mol-text);
+}
+
+.mol-field {
+  min-height: 3rem;
+  border: 1px solid var(--mol-border);
+  border-radius: .9rem;
+  background: var(--mol-surface-2);
+  color: var(--mol-text);
+}
+
+.mol-field::placeholder {
+  color: var(--mol-muted);
+  opacity: 1;
+}
+
+.mol-btn {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  border-radius: .9rem;
+  border: 1px solid transparent;
+  padding: .7rem 1rem;
+  font-size: .875rem;
+  font-weight: 800;
+  transition: transform .15s ease, background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.mol-btn-primary {
+  background: var(--mol-brand-green);
+  color: #fff;
+}
+
+.mol-btn-secondary {
+  background: var(--mol-surface-soft);
+  border-color: var(--mol-border);
+  color: var(--mol-text);
+}
+
+.mol-btn-danger {
+  background: rgba(185, 28, 28, .12);
+  border-color: rgba(248, 113, 113, .35);
+  color: #fca5a5;
+}
+
+.mol-dialog-surface {
+  background: var(--mol-surface);
+  border: 1px solid var(--mol-border);
+  color: var(--mol-text);
+  box-shadow: 0 22px 54px rgba(0,0,0,.34);
+}
+
+html[data-theme="light"] .mol-card,
+body[data-theme="light"] .mol-card {
+  background: linear-gradient(145deg, var(--mol-surface), #f8fbf9);
+  box-shadow: 0 8px 24px rgba(18,45,29,.05);
+}
 body[data-theme="light"] { background: var(--mol-bg); color: var(--mol-text); }
 body[data-theme="light"].app-surface { background: radial-gradient(ellipse 90% 42% at 50% -10%, rgba(30,115,73,.12), transparent 65%), var(--mol-bg); color: var(--mol-text); }
 /* Também usa o atributo do HTML: garante o tema durante a troca de página,
@@ -315,12 +389,39 @@ body[data-theme="light"].app-surface .text-gray-600 { color: #52645a !important;
   gap: .25rem;
 }
 .mol-nav-item { min-width: 3.5rem; min-height: 3.1rem; display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; transition: color .2s ease, transform .15s ease; }
-.mol-nav-item svg { width: 1.25rem; height: 1.25rem; stroke-width: 2; }
+.mol-nav-item svg,
+.mol-nav-item [data-lucide] { width: 1.25rem; height: 1.25rem; flex: 0 0 1.25rem; }
+.mol-nav-item svg { stroke-width: 2; }
 .mol-nav-item span { font-size: .625rem; line-height: 1rem; font-weight: 600; }
 .mol-nav-item[aria-current="page"] span { font-weight: 800; }
 .mol-bottom-nav .mol-nav-item.text-neon { color: #57d493 !important; }
 .dashboard-surface .mol-bottom-nav .mol-nav-item.text-neon { color: #57d493 !important; }
 body[data-theme="light"].dashboard-surface .mol-bottom-nav .mol-nav-item.text-neon { color: #17623e !important; }
+
+.mol-connectivity {
+  position: fixed;
+  top: max(.75rem, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 230;
+  display: grid;
+  grid-template-columns: .55rem auto;
+  align-items: center;
+  column-gap: .5rem;
+  max-width: calc(100% - 2rem);
+  padding: .55rem .8rem;
+  border: 1px solid var(--mol-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mol-surface) 94%, transparent);
+  color: var(--mol-text);
+  box-shadow: 0 10px 28px rgba(0,0,0,.18);
+  backdrop-filter: blur(16px);
+  transform: translateX(-50%);
+}
+.mol-connectivity.hidden { display: none; }
+.mol-connectivity > span { grid-row: 1 / span 2; width: .55rem; height: .55rem; border-radius: 50%; background: #2fbf78; }
+.mol-connectivity.is-offline > span { background: #f59e0b; }
+.mol-connectivity strong { font-size: .7rem; line-height: .85rem; }
+.mol-connectivity small { font-size: .6rem; line-height: .75rem; color: var(--mol-muted); }
 
 /* Retornos internos usam o mesmo tom neutro e área de toque do restante do app. */
 #back {
@@ -553,6 +654,30 @@ body[data-theme="light"] [data-template-name] {
   background-color: var(--mol-surface) !important;
   border-color: var(--mol-border) !important;
   color: var(--mol-text) !important;
+}
+
+.workout-compact .workout-exercise-card:not(.is-current) { display: none; }
+.workout-compact .workout-exercise-card.is-current { border-color: rgba(47,191,120,.35) !important; box-shadow: 0 12px 32px rgba(30,115,73,.12); }
+.workout-compact #btn-add-exercicio { display: none; }
+
+/* Ficha de treino clara: cartões brancos, linhas discretas e campos legíveis. */
+body[data-theme="light"] .workout-exercise-card {
+  box-shadow: 0 8px 24px rgba(18, 45, 29, .055);
+}
+body[data-theme="light"] .workout-exercise-card > details {
+  background-color: #f7f9f7 !important;
+}
+body[data-theme="light"] .workout-set-grid.mol-soft {
+  background-color: #f4f7f5 !important;
+}
+body[data-theme="light"] .workout-set-grid input.mol-field,
+body[data-theme="light"] .workout-target-grid input.mol-field {
+  background-color: #fff !important;
+  border-color: #d7e1da !important;
+  box-shadow: 0 1px 2px rgba(18, 45, 29, .035);
+}
+body[data-theme="light"] .workout-set-grid button {
+  color: var(--mol-muted-strong);
 }
 
 /* Ações dinâmicas precisam manter hierarquia visual nos dois temas. */

@@ -1,10 +1,13 @@
 import { setupAppShell } from '../utils/app-shell.js';
-import { auth, db, googleProvider } from '../config/firebase-config.js';
-import { EmailAuthProvider, deleteUser, onAuthStateChanged, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
+import { auth, db, googleProvider, offlinePersistenceEnabled } from '../config/firebase-config.js';
+import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
+import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { removeLocalItemsWithPrefix } from '../utils/storage.js';
+import { setTrustedDevice } from '../utils/offline.js';
+import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
+import { watchAuthState } from '../modules/auth.js';
 
 setupAppShell();
 
@@ -52,6 +55,64 @@ $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; pe
 $('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
 
 
+const reminderPreferences = getReminderPreferences();
+$('trusted-device').checked = offlinePersistenceEnabled;
+$('reminders-enabled').checked = reminderPreferences.enabled;
+$('workout-time').value = reminderPreferences.workoutTime;
+$('meal-time').value = reminderPreferences.mealTime;
+
+function persistReminderControls() {
+  saveReminderPreferences({
+    enabled: $('reminders-enabled').checked,
+    workoutTime: $('workout-time').value,
+    mealTime: $('meal-time').value
+  });
+}
+
+$('trusted-device').onchange = async () => {
+  const enabled = $('trusted-device').checked;
+  $('trusted-device').disabled = true;
+  try {
+    if (enabled) {
+      if (!setTrustedDevice(true)) throw new Error('Armazenamento local indisponível.');
+      $('device-status').textContent = 'Modo offline ativado. Reiniciando o Mol…';
+      window.setTimeout(() => location.reload(), 500);
+      return;
+    }
+    if (!navigator.onLine) throw new Error('Conecte-se à internet antes de remover os dados offline deste aparelho.');
+    await waitForPendingWrites(db);
+    await terminate(db);
+    await clearIndexedDbPersistence(db);
+    setTrustedDevice(false);
+    $('device-status').textContent = 'Dados offline removidos deste aparelho. Reiniciando…';
+    window.setTimeout(() => location.reload(), 500);
+  } catch (error) {
+    $('trusted-device').checked = offlinePersistenceEnabled;
+    $('trusted-device').disabled = false;
+    $('device-status').textContent = error.message || 'Não foi possível alterar o modo offline.';
+    showToast(error.message || 'Não foi possível alterar o modo offline.');
+  }
+};
+
+$('reminders-enabled').onchange = async () => {
+  try {
+    if ($('reminders-enabled').checked) await requestReminderPermission();
+    persistReminderControls();
+    $('device-status').textContent = $('reminders-enabled').checked
+      ? 'Lembretes ativados neste aparelho.'
+      : 'Lembretes desativados neste aparelho.';
+  } catch (error) {
+    $('reminders-enabled').checked = false;
+    persistReminderControls();
+    showToast(error.message || 'Não foi possível ativar os lembretes.');
+  }
+};
+$('workout-time').onchange = persistReminderControls;
+$('meal-time').onchange = persistReminderControls;
+$('test-reminder').onclick = async () => {
+  try { await sendTestReminder(); showToast('Lembrete enviado.', 'success'); }
+  catch (error) { showToast(error.message || 'Não foi possível enviar o lembrete.'); }
+};
 async function deleteUserData(user) {
   const names = ['treinos', 'sessoes', 'pesos'];
   const dietReference = doc(db, 'dietas', user.uid);
@@ -79,7 +140,7 @@ function requestPassword() {
     modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('aria-labelledby', 'password-dialog-title');
     modal.setAttribute('aria-describedby', 'password-dialog-description');
-    modal.innerHTML = '<section class="w-full max-w-sm rounded-3xl border border-white/10 bg-[#161a17] p-6 shadow-2xl"><h2 id="password-dialog-title" class="text-lg font-bold">Confirme sua senha</h2><p id="password-dialog-description" class="mt-2 text-sm text-gray-400">Precisamos confirmar sua identidade antes da exclusão.</p><label class="mt-5 block text-xs font-bold text-gray-400">Senha<input data-password type="password" autocomplete="current-password" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-white"></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl bg-white/5 py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-red-500 py-3 text-sm font-bold text-white">Continuar</button></div></section>';
+    modal.innerHTML = '<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl"><h2 id="password-dialog-title" class="text-lg font-bold">Confirme sua senha</h2><p id="password-dialog-description" class="mt-2 text-sm text-gray-400">Precisamos confirmar sua identidade antes da exclusão.</p><label class="mt-5 block text-xs font-bold text-gray-400">Senha<input data-password type="password" autocomplete="current-password" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-white"></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-red-500 py-3 text-sm font-bold text-white">Continuar</button></div></section>';
     document.body.appendChild(modal);
     const input = modal.querySelector('[data-password]');
     let closeDialog;
@@ -114,7 +175,7 @@ function authErrorMessage(error, fallback) {
   return error?.message || fallback;
 }
 
-onAuthStateChanged(auth, async user => {
+watchAuthState( async user => {
   if (!user) {
     location.href = './login.html';
     return;

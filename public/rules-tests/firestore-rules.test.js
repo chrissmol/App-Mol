@@ -63,6 +63,7 @@ describe('regras do Firestore', () => {
   it('protege a dieta pelo ID da conta e limita sua estrutura', async () => {
     const owner = user('user-a');
     const reference = doc(owner, 'dietas', 'user-a');
+    await assertSucceeds(getDoc(reference));
     await assertSucceeds(setDoc(reference, { userId: 'user-a', refeicoes: [], atualizadoEm: 'agora' }));
     await assertFails(setDoc(doc(owner, 'dietas', 'outro-id'), { userId: 'user-a', refeicoes: [], atualizadoEm: 'agora' }));
     await assertFails(setDoc(reference, { userId: 'user-a', refeicoes: [], atualizadoEm: 'agora', campoExtra: true }));

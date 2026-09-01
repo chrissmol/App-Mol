@@ -1,5 +1,5 @@
-import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
+import { watchAuthState } from '../modules/auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
@@ -301,7 +301,7 @@ function requestWeight(title, initial = '') {
     modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('aria-labelledby', 'weight-dialog-title');
     modal.setAttribute('aria-describedby', 'weight-dialog-description');
-    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl border border-white/10 bg-[#161a17] p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe um valor entre 20 e 400 kg.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl bg-black/20 px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl bg-white/5 py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
+    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe um valor entre 20 e 400 kg.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl mol-field px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
     document.body.appendChild(modal);
     const input = modal.querySelector('[data-value]');
     input.value = initial;
@@ -315,7 +315,7 @@ function requestWeight(title, initial = '') {
   });
 }
 
-onAuthStateChanged(auth, user => {
+watchAuthState( user => {
   if (!user) { location.href = './login.html'; return; }
   currentUser = user;
   load();

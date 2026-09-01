@@ -1,0 +1,42 @@
+rules:
+  - id: mol.no-eval
+    message: Execução dinâmica de código permite injeção e não é aceita no Mol.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+
+  - id: mol.no-document-write
+    message: document.write pode permitir injeção de conteúdo e bloquear a página.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: document.write(...)
+
+  - id: mol.no-wildcard-postmessage
+    message: postMessage deve restringir explicitamente a origem de destino.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: $TARGET.postMessage($DATA, "*")
+
+  - id: mol.no-insecure-http-request
+    message: Requisições do aplicativo devem usar HTTPS.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: fetch("http://...", ...)
+      - pattern: fetch(`http://...`, ...)
+
+  - id: mol.no-private-key-material
+    message: Possível chave privada ou segredo de servidor versionado no cliente.
+    severity: ERROR
+    languages: [generic]
+    paths:
+      include:
+        - "js/**"
+        - "pages/**"
+        - "*.html"
+      exclude:
+        - "dist/**"
+        - "vendor/**"
+    pattern-regex: '(?i)(private[_-]?key|client[_-]?secret|service[_-]?account|sk-[a-z0-9_-]{20,})\s*[:=]'

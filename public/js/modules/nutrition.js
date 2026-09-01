@@ -26,6 +26,20 @@ export const FOOD_CATALOG = [
   ['Chia', 486, 16.5, 42.1, 30.7], ['Granola', 471, 10, 64, 20],
   ['Tomate', 18, 0.9, 3.9, 0.2], ['Alface', 15, 1.4, 2.9, 0.2],
   ['Cenoura cozida', 30, 0.8, 6.7, 0.2], ['Abobrinha cozida', 15, 1.1, 3.1, 0.4],
+  ['Arroz integral cozido', 124, 2.6, 25.8, 1], ['Feijão preto cozido', 77, 4.5, 14, 0.5],
+  ['Feijão-fradinho cozido', 78, 5.1, 13.5, 0.6], ['Ervilha cozida', 84, 5.4, 15, 0.2],
+  ['Quinoa cozida', 120, 4.4, 21.3, 1.9], ['Farofa de mandioca', 365, 2.1, 80, 4.2],
+  ['Polenta cozida', 70, 1.5, 15.7, 0.3], ['Inhame cozido', 116, 1.5, 27.5, 0.1],
+  ['Acém bovino cozido', 215, 27.3, 0, 11.2], ['Coxão mole grelhado', 219, 32.4, 0, 9],
+  ['Filé de frango grelhado', 159, 32, 0, 2.5], ['Coxa de frango assada sem pele', 209, 28.5, 0, 9.7],
+  ['Sardinha assada', 164, 32.2, 0, 3.5], ['Merluza assada', 122, 26.6, 0, 1.2],
+  ['Ovo mexido', 212, 13.8, 1.6, 16.2], ['Clara de ovo cozida', 59, 13.4, 0, 0.1],
+  ['Ricota', 140, 12.6, 3.8, 8.1], ['Queijo minas frescal', 264, 17.4, 3.2, 20.2],
+  ['Leite sem lactose integral', 61, 3, 4.7, 3.2], ['Bebida de soja sem açúcar', 33, 3.3, 1.8, 1.6],
+  ['Laranja', 47, 0.9, 11.8, 0.1], ['Manga', 60, 0.8, 15, 0.4],
+  ['Melancia', 30, 0.6, 7.6, 0.2], ['Pera', 57, 0.4, 15.2, 0.1],
+  ['Beterraba cozida', 32, 1.3, 7.2, 0.1], ['Couve refogada', 90, 1.7, 8.7, 6.6],
+  ['Espinafre cozido', 23, 3, 3.8, 0.3], ['Pepino', 15, 0.7, 3.6, 0.1],
   ['Creatina monohidratada', 0, 0, 0, 0]
 ].map(([nome, kcal100, proteina100, carbo100, gordura100]) => ({ nome, kcal100, proteina100, carbo100, gordura100 }));
 
@@ -84,4 +98,18 @@ export function validateFood(food) {
 export function nextMeal(meals, time) {
   const ordered = [...(Array.isArray(meals) ? meals : [])].filter(meal => meal && typeof meal.hora === 'string').sort((a, b) => a.hora.localeCompare(b.hora));
   return { meal: ordered.find(meal => meal.hora >= time) || ordered[0] || null, tomorrow: !!ordered.length && !ordered.some(meal => meal.hora >= time) };
+}
+
+const normalizedFoodText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g, ' ').trim();
+
+export function searchFoodCatalog(query, catalog = FOOD_CATALOG, limit = 50) {
+  const term = normalizedFoodText(query);
+  const tokens = term.split(' ').filter(Boolean);
+  const source = Array.isArray(catalog) ? catalog : [];
+  return source.map(food => {
+    const name = normalizedFoodText(food?.nome);
+    const matches = !tokens.length || tokens.every(token => name.includes(token));
+    const score = !term ? 0 : name === term ? 3 : name.startsWith(term) ? 2 : matches ? 1 : -1;
+    return { food, score };
+  }).filter(item => item.score >= 0).sort((a, b) => b.score - a.score || String(a.food.nome).localeCompare(String(b.food.nome), 'pt-BR')).slice(0, Math.max(1, Number(limit) || 50)).map(item => item.food);
 }
