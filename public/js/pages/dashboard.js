@@ -4,7 +4,7 @@ import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { dateOf, estimatedWorkoutMinutes, monday, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../modules/dashboard-analytics.js';
 import { avatarTier, profileStats } from '../modules/profile-analytics.js';
-import { foodNutrients, nextMeal, normalizeDietMeals } from '../modules/nutrition.js';
+import { fastingStatus, foodNutrients, nextMeal, normalizeDietMeals, normalizeFastingSettings } from '../modules/nutrition.js';
 import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -26,6 +26,7 @@ const dayLabel = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const defaultCards = [
   { id: 'today-card', label: 'Treino de hoje', visible: true },
   { id: 'next-meal-card', label: 'Próxima refeição', visible: true },
+  { id: 'fasting-card', label: 'Jejum', visible: true },
   { id: 'weekly-card', label: 'Progresso semanal', visible: true },
   { id: 'last-session-card', label: 'Última sessão', visible: true },
   { id: 'weight-card', label: 'Evolução de peso', visible: true },
@@ -121,10 +122,31 @@ function setNextMeal(meals) {
   card.classList.remove('hidden');
 }
 
+function setFastingCard(settings) {
+  const card = $('fasting-card');
+  if (!card) return;
+  const fasting = normalizeFastingSettings(settings);
+  if (!fasting.ativo) { card.classList.add('hidden'); return; }
+  const status = fastingStatus(fasting);
+  card.classList.remove('hidden');
+  $('fasting-eyebrow').textContent = status.active ? (status.eating ? 'Janela alimentar aberta' : `Em jejum há ${Math.floor(status.elapsedFastMinutes / 60)}h`) : (status.offDay ? 'Jejum programado' : 'Jejum pausado hoje');
+  $('fasting-title').textContent = status.active ? (status.eating ? `Jejum começa às ${fasting.fimJanela}` : status.phase.title) : (status.offDay ? `Próximo jejum às ${fasting.fimJanela}` : 'Hoje sem cobrança');
+  $('fasting-meta').textContent = status.active ? (status.eating ? `Restam ${Math.round(status.remainingMinutes / 60)}h para iniciar.` : `Janela alimentar abre às ${status.nextTime}.`) : (status.offDay ? `${fasting.protocolo} · alimentação até ${fasting.fimJanela}` : 'Edite a configuração na Dieta para retomar.');
+  const actions = $('fasting-actions');
+  actions.querySelector('[data-fast-end]')?.remove();
+  if (status.active && !status.eating) {
+    const button = document.createElement('button'); button.type = 'button'; button.dataset.fastEnd = 'true'; button.className = 'mol-btn mol-btn-secondary min-h-9 rounded-xl px-3 text-xs'; button.textContent = 'Encerrar jejum';
+    button.onclick = async () => { button.disabled = true; button.textContent = 'Encerrando…'; try { await setDoc(doc(db, 'dietas', dashboardUser.uid), { jejum: { ...fasting, pausadoHoje: true } }, { merge: true }); setFastingCard({ ...fasting, pausadoHoje: true }); showToast('Jejum encerrado hoje.', 'success'); } catch { button.disabled = false; button.textContent = 'Encerrar jejum'; showToast('Não foi possível encerrar o jejum.'); } };
+    actions.prepend(button);
+  }
+  renderIcons();
+}
+
 async function loadNextMeal(userId) {
   try {
     const snapshot = await withTimeout(getDoc(doc(db, 'dietas', userId)), 'A dieta');
     setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []);
+    setFastingCard(snapshot.exists() ? snapshot.data().jejum : null);
     clearInterval(mealRefreshTimer);
     mealRefreshTimer = setInterval(() => setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []), 60000);
   } catch (error) {
@@ -155,6 +177,11 @@ function setupDashboardCards() {
     const card = document.createElement('section'); card.id = 'next-meal-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
     card.innerHTML = '<a href="./pages/dieta.html" class="flex items-start justify-between gap-4" aria-label="Abrir próxima refeição na dieta"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400" aria-live="polite"></p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></span></a>';
     document.getElementById('today-card').after(card);
+  }
+  if (!document.getElementById('fasting-card')) {
+    const card = document.createElement('section'); card.id = 'fasting-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
+    card.innerHTML = '<div class="flex items-start justify-between gap-4"><div class="min-w-0"><p id="fasting-eyebrow" class="text-xs font-semibold uppercase tracking-wider text-neon">Jejum</p><h2 id="fasting-title" class="mt-1 text-lg font-extrabold">Carregando jejum…</h2><p id="fasting-meta" class="mt-1 text-sm text-gray-400"></p></div><div id="fasting-actions" class="flex shrink-0 flex-col items-end gap-2"><a href="./pages/dieta.html" class="min-h-9 rounded-xl bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">Configurar</a></div></div>';
+    document.getElementById('next-meal-card').after(card);
   }
   if (!document.getElementById('weight-card')) {
     const card = document.createElement('section'); card.id = 'weight-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
