@@ -75,10 +75,24 @@ service cloud.firestore {
         && request.resource.data.pesoKg <= 400;
     }
 
+    function validFasting() {
+      return !('jejum' in request.resource.data)
+        || (request.resource.data.jejum is map
+          && request.resource.data.jejum.keys().hasOnly(['ativo', 'protocolo', 'inicioJanela', 'fimJanela', 'diasSemana', 'treino', 'pausadoHoje'])
+          && (!('ativo' in request.resource.data.jejum) || request.resource.data.jejum.ativo is bool)
+          && (!('protocolo' in request.resource.data.jejum) || request.resource.data.jejum.protocolo in ['12:12', '14:10', '16:8', '18:6', '20:4', 'custom'])
+          && (!('inicioJanela' in request.resource.data.jejum) || request.resource.data.jejum.inicioJanela is string)
+          && (!('fimJanela' in request.resource.data.jejum) || request.resource.data.jejum.fimJanela is string)
+          && (!('diasSemana' in request.resource.data.jejum) || (request.resource.data.jejum.diasSemana is list && request.resource.data.jejum.diasSemana.size() <= 7))
+          && (!('treino' in request.resource.data.jejum) || request.resource.data.jejum.treino in ['jejum', 'alimentado', 'flexivel'])
+          && (!('pausadoHoje' in request.resource.data.jejum) || request.resource.data.jejum.pausadoHoje is bool));
+    }
+
     function validDiet() {
-      return request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'atualizadoEm'])
+      return request.resource.data.keys().hasOnly(['userId', 'refeicoes', 'jejum', 'atualizadoEm'])
         && request.resource.data.refeicoes is list
-        && request.resource.data.refeicoes.size() <= 12;
+        && request.resource.data.refeicoes.size() <= 12
+        && validFasting();
     }
 
     match /users/{userId} {

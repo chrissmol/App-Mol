@@ -49,6 +49,92 @@ const bounded = (value, min, max, fallback = 0) => {
   return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
 };
 const validTime = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || '')) ? String(value) : '12:00';
+const timeToMinutes = value => {
+  const time = validTime(value);
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+const minutesToTime = value => {
+  const minutes = ((Math.round(Number(value) || 0) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+};
+
+export const FASTING_PROTOCOLS = [
+  { id: '12:12', label: '12:12', fastingHours: 12, eatingHours: 12 },
+  { id: '14:10', label: '14:10', fastingHours: 14, eatingHours: 10 },
+  { id: '16:8', label: '16:8', fastingHours: 16, eatingHours: 8 },
+  { id: '18:6', label: '18:6', fastingHours: 18, eatingHours: 6 },
+  { id: '20:4', label: '20:4', fastingHours: 20, eatingHours: 4 },
+  { id: 'custom', label: 'Personalizado', fastingHours: 16, eatingHours: 8 }
+];
+
+export function normalizeFastingSettings(settings = {}) {
+  const source = settings && typeof settings === 'object' ? settings : {};
+  const protocolo = FASTING_PROTOCOLS.some(item => item.id === source.protocolo) ? source.protocolo : '16:8';
+  const inicioJanela = validTime(source.inicioJanela || '12:00');
+  const selected = FASTING_PROTOCOLS.find(item => item.id === protocolo) || FASTING_PROTOCOLS[2];
+  const fimJanela = protocolo === 'custom' ? validTime(source.fimJanela || '20:00') : minutesToTime(timeToMinutes(inicioJanela) + selected.eatingHours * 60);
+  const diasSemana = Array.isArray(source.diasSemana)
+    ? [...new Set(source.diasSemana.map(Number).filter(day => Number.isInteger(day) && day >= 0 && day <= 6))].slice(0, 7)
+    : [0, 1, 2, 3, 4, 5, 6];
+  return {
+    ativo: Boolean(source.ativo),
+    protocolo,
+    inicioJanela,
+    fimJanela,
+    diasSemana,
+    treino: ['jejum', 'alimentado', 'flexivel'].includes(source.treino) ? source.treino : 'flexivel',
+    pausadoHoje: Boolean(source.pausadoHoje)
+  };
+}
+
+function minutesUntil(current, target) {
+  return (target - current + 1440) % 1440;
+}
+
+function isTimeInsideWindow(current, start, end) {
+  if (start === end) return true;
+  return start < end ? current >= start && current < end : current >= start || current < end;
+}
+
+export function fastingPhase(hours) {
+  const value = Math.max(0, Number(hours) || 0);
+  if (value < 4) return { id: 'post-meal', title: 'Pós-refeição', text: 'Seu corpo ainda tende a digerir e usar energia da última refeição.' };
+  if (value < 8) return { id: 'between-meals', title: 'Entre refeições', text: 'A glicose tende a estabilizar e o corpo usa reservas imediatas.' };
+  if (value < 12) return { id: 'early-fast', title: 'Início do jejum', text: 'O uso de glicogênio pode ganhar mais importância como fonte de energia.' };
+  if (value < 16) return { id: 'light-metabolic', title: 'Jejum metabólico leve', text: 'Para algumas pessoas, o uso de gordura como energia pode começar a aumentar.' };
+  if (value < 20) return { id: 'advanced-window', title: 'Janela avançada', text: 'Seu corpo pode estar mais adaptado ao jejum, mas a resposta varia bastante.' };
+  return { id: 'long-fast', title: 'Jejum prolongado', text: 'Exige mais atenção. Hidrate-se e evite exageros sem orientação profissional.' };
+}
+
+export function fastingStatus(settings, now = new Date()) {
+  const config = normalizeFastingSettings(settings);
+  if (!config.ativo || config.pausadoHoje) return { active: false, config };
+  const day = now.getDay();
+  if (!config.diasSemana.includes(day)) return { active: false, config, offDay: true };
+  const current = now.getHours() * 60 + now.getMinutes();
+  const start = timeToMinutes(config.inicioJanela);
+  const end = timeToMinutes(config.fimJanela);
+  const eating = isTimeInsideWindow(current, start, end);
+  const elapsedFastMinutes = eating ? 0 : minutesUntil(end, current);
+  const remainingMinutes = eating ? minutesUntil(current, end) : minutesUntil(current, start);
+  const phase = fastingPhase(elapsedFastMinutes / 60);
+  return {
+    active: true,
+    config,
+    eating,
+    phase,
+    elapsedFastMinutes,
+    remainingMinutes,
+    nextTime: eating ? config.fimJanela : config.inicioJanela
+  };
+}
+
+export function mealIsOutsideFastingWindow(meal, settings) {
+  const config = normalizeFastingSettings(settings);
+  if (!config.ativo || config.pausadoHoje) return false;
+  return !isTimeInsideWindow(timeToMinutes(meal?.hora), timeToMinutes(config.inicioJanela), timeToMinutes(config.fimJanela));
+}
 export function foodNutrients(food) {
   const factor = bounded(food?.gramas, 0, 5000) / 100;
   return {

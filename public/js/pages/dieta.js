@@ -1,7 +1,7 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { FOOD_CATALOG, foodNutrients, nextMeal, normalizeDietMeals, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
+import { FASTING_PROTOCOLS, FOOD_CATALOG, fastingStatus, foodNutrients, mealIsOutsideFastingWindow, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -11,6 +11,7 @@ const $ = id => document.getElementById(id);
 let user = null;
 let meals = [];
 let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };
+let fasting = normalizeFastingSettings();
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const rounded = value => Math.round(Number(value) || 0);
@@ -34,17 +35,17 @@ const dietCacheKey = uid => `mol-diet-cache-${uid}`;
 function readDietCache(uid) {
   try {
     const cached = JSON.parse(getSessionItem(dietCacheKey(uid)) || 'null');
-    return cached && Array.isArray(cached.meals) ? { meals: normalizeDietMeals(cached.meals), goals: cached.goals || null } : null;
+    return cached && Array.isArray(cached.meals) ? { meals: normalizeDietMeals(cached.meals), goals: cached.goals || null, fasting: normalizeFastingSettings(cached.fasting) } : null;
   } catch { return null; }
 }
 function writeDietCache() {
   if (!user) return;
-  setSessionItem(dietCacheKey(user.uid), JSON.stringify({ meals, goals, updatedAt: Date.now() }));
+  setSessionItem(dietCacheKey(user.uid), JSON.stringify({ meals, goals, fasting, updatedAt: Date.now() }));
 }
 
 async function persist(nextMeals) {
   try {
-    await setDoc(doc(db, 'dietas', user.uid), { userId: user.uid, refeicoes: normalizeDietMeals(nextMeals), atualizadoEm: serverTimestamp() });
+    await setDoc(doc(db, 'dietas', user.uid), { userId: user.uid, refeicoes: normalizeDietMeals(nextMeals), jejum: normalizeFastingSettings(fasting), atualizadoEm: serverTimestamp() });
     meals = nextMeals; writeDietCache(); render(); return true;
   } catch (error) { console.error('Dieta não salva:', error); showToast(error.code === 'permission-denied' ? 'A dieta excede os limites permitidos.' : 'Não foi possível salvar a dieta.'); return false; }
 }
@@ -66,7 +67,41 @@ function modal(title, content) {
   window.lucide?.createIcons();
 }
 
+function formatDuration(minutes) {
+  const total = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+  if (!hours) return `${mins} min`;
+  return `${hours}h${String(mins).padStart(2, '0')}`;
+}
+
+async function persistFasting(nextFasting) {
+  const previous = fasting;
+  fasting = normalizeFastingSettings(nextFasting);
+  const ok = await persist(meals);
+  if (!ok) fasting = previous;
+  return ok;
+}
+
+function renderFastingCard() {
+  const status = fastingStatus(fasting);
+  const activeDays = fasting.diasSemana.length === 7 ? 'Todos os dias' : `${fasting.diasSemana.length} dia(s) por semana`;
+  if (!fasting.ativo) {
+    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Jejum opcional</p><h2 class="mt-1 text-xl font-extrabold">Janela alimentar livre</h2><p class="mt-2 text-sm text-gray-500">Configure jejum apenas se fizer sentido para sua rotina.</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Configurar</button></div>`;
+  } else if (!status.active && status.offDay) {
+    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Jejum pausado hoje</p><h2 class="mt-1 text-xl font-extrabold">Dia fora do protocolo</h2><p class="mt-2 text-sm text-gray-500">${escapeHTML(activeDays)} · janela ${escapeHTML(fasting.inicioJanela)} às ${escapeHTML(fasting.fimJanela)}</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div>`;
+  } else if (!status.active) {
+    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Jejum pausado</p><h2 class="mt-1 text-xl font-extrabold">Hoje sem cobrança</h2><p class="mt-2 text-sm text-gray-500">A pausa vale só para o acompanhamento visual.</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div>`;
+  } else if (status.eating) {
+    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Janela alimentar aberta</p><h2 class="mt-1 text-xl font-extrabold">Fecha às ${escapeHTML(status.nextTime)}</h2><p class="mt-2 text-sm text-gray-500">Restam ${formatDuration(status.remainingMinutes)} para encerrar a janela.</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div><div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon" style="width:${Math.max(8, Math.min(100, 100 - (status.remainingMinutes / 1440) * 100))}%"></div></div>`;
+  } else {
+    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Em jejum há ${formatDuration(status.elapsedFastMinutes)}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(status.phase.title)}</h2><p class="mt-2 text-sm text-gray-500">${escapeHTML(status.phase.text)}</p><p class="mt-2 text-xs text-gray-500">Sua janela abre às ${escapeHTML(status.nextTime)} · restam ${formatDuration(status.remainingMinutes)}.</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div><div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon" style="width:${Math.max(8, Math.min(100, (status.elapsedFastMinutes / 1200) * 100))}%"></div></div>`;
+  }
+  $('fasting-settings').onclick = openFastingForm;
+}
+
 function render() {
+  renderFastingCard();
   const totals = nutritionTotals(meals);
   $('diet-total').textContent = `${rounded(totals.kcal).toLocaleString('pt-BR')} kcal`;
   $('calorie-goal').textContent = `Meta: ${goals.kcal.toLocaleString('pt-BR')} kcal`;
@@ -78,11 +113,28 @@ function render() {
   $('meal-count').textContent = `${meals.length}/12`;
   $('meal-list').innerHTML = meals.length ? [...meals].sort((a, b) => a.hora.localeCompare(b.hora)).map(meal => {
     const total = nutritionTotals([{ alimentos: meal.alimentos }]);
-    return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${meal.alimentos.length} alimento(s) · ${rounded(total.kcal)} kcal</p></div><i data-lucide="chevron-right" class="h-5 w-5 text-gray-500"></i></div></button></article>`;
+    const outsideWindow = mealIsOutsideFastingWindow(meal, fasting) ? ' · fora da janela' : '';
+    return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${meal.alimentos.length} alimento(s) · ${rounded(total.kcal)} kcal${outsideWindow}</p></div><i data-lucide="chevron-right" class="h-5 w-5 text-gray-500"></i></div></button></article>`;
   }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Sua agenda está vazia</p><p class="mt-2 text-sm text-gray-500">Adicione café da manhã, almoço, jantar ou seus próprios horários.</p><button type="button" data-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Adicionar refeição</button></div>';
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
   window.lucide?.createIcons();
+}
+
+function openFastingForm() {
+  const value = normalizeFastingSettings(fasting);
+  const dayLabels = [['0','Dom'], ['1','Seg'], ['2','Ter'], ['3','Qua'], ['4','Qui'], ['5','Sex'], ['6','Sáb']];
+  modal('Jejum intermitente', `<label class="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl mol-soft p-4"><span><strong class="block text-sm">Acompanhar jejum</strong><small class="mt-1 block text-xs text-gray-500">Mostra janela alimentar e fases estimadas.</small></span><span class="relative shrink-0"><input id="fasting-enabled" type="checkbox" class="peer sr-only" ${value.ativo ? 'checked' : ''}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label><label class="mt-4 block text-xs font-bold text-gray-400">Protocolo<select id="fasting-protocol" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4">${FASTING_PROTOCOLS.map(item => `<option value="${item.id}" ${item.id === value.protocolo ? 'selected' : ''}>${item.label}</option>`).join('')}</select></label><div class="mt-4 grid grid-cols-2 gap-3"><label class="text-xs font-bold text-gray-400">Começa a comer<input id="fasting-start" type="time" value="${escapeHTML(value.inicioJanela)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label><label class="text-xs font-bold text-gray-400">Para de comer<input id="fasting-end" type="time" value="${escapeHTML(value.fimJanela)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label></div><p class="mt-4 text-xs font-bold uppercase tracking-wider text-neon">Dias da semana</p><div class="mt-2 grid grid-cols-4 gap-2">${dayLabels.map(([day,label]) => `<label><input class="peer sr-only" type="checkbox" data-fasting-day="${day}" ${value.diasSemana.includes(Number(day)) ? 'checked' : ''}><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><label class="mt-4 block text-xs font-bold text-gray-400">Treino durante jejum<select id="fasting-training" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"><option value="flexivel" ${value.treino === 'flexivel' ? 'selected' : ''}>Depende do dia</option><option value="jejum" ${value.treino === 'jejum' ? 'selected' : ''}>Costumo treinar em jejum</option><option value="alimentado" ${value.treino === 'alimentado' ? 'selected' : ''}>Prefiro treinar alimentado</option></select></label><label class="mt-4 flex min-h-14 cursor-pointer items-center justify-between gap-4 rounded-2xl mol-soft p-4"><span><strong class="block text-sm">Pausar hoje</strong><small class="mt-1 block text-xs text-gray-500">Mantém a configuração, mas não cobra a janela hoje.</small></span><span class="relative shrink-0"><input id="fasting-paused" type="checkbox" class="peer sr-only" ${value.pausadoHoje ? 'checked' : ''}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label><p class="mt-4 text-xs leading-relaxed text-gray-500">As fases são estimativas educacionais, não orientação médica. Interrompa o jejum se passar mal.</p><button id="save-fasting" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar jejum</button>`);
+  $('fasting-protocol').onchange = () => { $('fasting-end').disabled = $('fasting-protocol').value !== 'custom'; };
+  $('fasting-protocol').onchange();
+  $('save-fasting').onclick = async () => {
+    const days = [...$('diet-modal').querySelectorAll('[data-fasting-day]:checked')].map(input => Number(input.dataset.fastingDay));
+    const next = normalizeFastingSettings({ ativo: $('fasting-enabled').checked, protocolo: $('fasting-protocol').value, inicioJanela: $('fasting-start').value, fimJanela: $('fasting-end').value, diasSemana: days, treino: $('fasting-training').value, pausadoHoje: $('fasting-paused').checked });
+    if (next.ativo && !next.diasSemana.length) return showToast('Escolha ao menos um dia da semana.');
+    $('save-fasting').disabled = true; $('save-fasting').textContent = 'Salvando…';
+    if (await persistFasting(next)) { closeModal(); showToast('Jejum atualizado.', 'success'); }
+    else { $('save-fasting').disabled = false; $('save-fasting').textContent = 'Salvar jejum'; }
+  };
 }
 
 function openMealForm(mealId = null) {
@@ -155,6 +207,7 @@ async function load() {
   if (cached) {
     meals = cached.meals;
     if (cached.goals) goals = cached.goals;
+    if (cached.fasting) fasting = cached.fasting;
     showDietContent();
   }
   try {
@@ -163,7 +216,9 @@ async function load() {
       getDoc(doc(db, 'users', user.uid))
     ]);
     if (dietResult.status === 'rejected') throw dietResult.reason;
-    meals = normalizeDietMeals(dietResult.value.data()?.refeicoes || []);
+    const dietData = dietResult.value.data() || {};
+    meals = normalizeDietMeals(dietData.refeicoes || []);
+    fasting = normalizeFastingSettings(dietData.jejum);
     if (profileResult.status === 'fulfilled') {
       const profile = profileResult.value.data() || {};
       goals = {
