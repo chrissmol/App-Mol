@@ -48,8 +48,8 @@ function openTour(uid, force = false, initialIndex = 0) {
     window.requestAnimationFrame(positionCard);
     overlay.querySelector('[data-next]').focus();
   };
-  const finish = () => { localStorage.setItem(key(uid), 'done'); sessionStorage.removeItem(pendingKey(uid)); document.querySelectorAll('.mol-tour-target').forEach(el => el.classList.remove('mol-tour-target')); document.body.classList.remove('mol-tour-active'); overlay.remove(); active = null; };
-  active = overlay; document.body.classList.add('mol-tour-active'); document.body.appendChild(overlay); render();
+  const finish = () => { localStorage.setItem(key(uid), 'done'); sessionStorage.removeItem(pendingKey(uid)); document.querySelectorAll('.mol-tour-target').forEach(el => el.classList.remove('mol-tour-target')); document.body.classList.remove('mol-tour-active'); document.documentElement.classList.remove('mol-tour-active'); overlay.remove(); active = null; };
+  active = overlay; document.body.classList.add('mol-tour-active'); document.documentElement.classList.add('mol-tour-active'); document.body.appendChild(overlay); render();
 }
 export function setupOnboarding() {
   if (window.__molOnboarding) return;
