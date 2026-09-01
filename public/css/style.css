@@ -699,6 +699,14 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
   contain: layout paint;
 }
 
+/* O cronômetro é flutuante, mas nunca deve cobrir as últimas opções da ficha. */
+body.rest-active .workout-page main {
+  padding-bottom: calc(var(--mol-bottom-nav-height) + 9rem);
+}
+body.rest-active .workout-page .workout-compact {
+  scroll-padding-bottom: calc(var(--mol-bottom-nav-height) + 9rem);
+}
+
 body.mol-keyboard-open #rest-timer {
   bottom: max(1rem, env(safe-area-inset-bottom));
 }
@@ -893,6 +901,7 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
   #rotinas-list > * { margin-top: 0 !important; margin-bottom: 0 !important; }
   #view-detalhe, #view-biblioteca, #view-explorar, #view-nova-rotina { max-width: 44rem; margin-left: auto; margin-right: auto; }
   #exercicios-list { max-width: 44rem; margin-left: auto; margin-right: auto; }
+  body.rest-active .workout-page main { padding-bottom: calc(var(--mol-bottom-nav-height) + 8rem); }
 }
 
 /* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */
