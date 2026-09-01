@@ -25,6 +25,8 @@ function renderIdentity(account, profile = {}) {
   avatar.alt = name ? `Foto de ${name}` : 'Foto do perfil';
   avatar.onerror = () => { avatar.classList.add('hidden'); fallback.classList.remove('hidden'); };
   if (photoURL) { avatar.src = photoURL; avatar.classList.remove('hidden'); fallback.classList.add('hidden'); }
+  $('admin-link')?.classList.toggle('hidden', String(account.email || '').toLowerCase() !== 'chrisouzamol@gmail.com');
+  $('admin-link')?.classList.toggle('flex', String(account.email || '').toLowerCase() === 'chrisouzamol@gmail.com');
 }
 
 function renderStats(stats) {

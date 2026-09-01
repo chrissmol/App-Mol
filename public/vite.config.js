@@ -65,6 +65,7 @@ export default defineConfig({
         configuracoes: resolve(import.meta.dirname, 'pages/configuracoes.html'),
         evolucao: resolve(import.meta.dirname, 'pages/evolucao.html'),
         dadosPessoais: resolve(import.meta.dirname, 'pages/dados-pessoais.html')
+        ,admin: resolve(import.meta.dirname, 'pages/admin.html')
       }
     }
   },
