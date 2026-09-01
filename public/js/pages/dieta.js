@@ -95,9 +95,16 @@ function renderFastingCard() {
   } else if (status.eating) {
     $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Janela alimentar aberta</p><h2 class="mt-1 text-xl font-extrabold">Fecha às ${escapeHTML(status.nextTime)}</h2><p class="mt-2 text-sm text-gray-500">Restam ${formatDuration(status.remainingMinutes)} para encerrar a janela.</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div><div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon" style="width:${Math.max(8, Math.min(100, 100 - (status.remainingMinutes / 1440) * 100))}%"></div></div>`;
   } else {
-    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Em jejum há ${formatDuration(status.elapsedFastMinutes)}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(status.phase.title)}</h2><p class="mt-2 text-sm text-gray-500">${escapeHTML(status.phase.text)}</p><p class="mt-2 text-xs text-gray-500">Sua janela abre às ${escapeHTML(status.nextTime)} · restam ${formatDuration(status.remainingMinutes)}.</p></div><button type="button" id="fasting-settings" class="min-h-10 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div><div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon" style="width:${Math.max(8, Math.min(100, (status.elapsedFastMinutes / 1200) * 100))}%"></div></div>`;
+    $('fasting-card').innerHTML = `<div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Em jejum há ${formatDuration(status.elapsedFastMinutes)}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(status.phase.title)}</h2><p class="mt-2 text-sm text-gray-500">${escapeHTML(status.phase.text)}</p><p class="mt-2 text-xs text-gray-500">Sua janela abre às ${escapeHTML(status.nextTime)} · restam ${formatDuration(status.remainingMinutes)}.</p></div><div class="flex shrink-0 flex-col items-end gap-2"><button type="button" id="fasting-end-now" class="mol-btn mol-btn-secondary min-h-10 rounded-xl px-3 text-xs">Encerrar jejum</button><button type="button" id="fasting-settings" class="min-h-9 rounded-xl bg-white/5 px-3 text-xs font-bold text-gray-300">Editar</button></div></div><div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon" style="width:${Math.max(8, Math.min(100, (status.elapsedFastMinutes / 1200) * 100))}%"></div></div>`;
   }
   $('fasting-settings').onclick = openFastingForm;
+  $('fasting-end-now')?.addEventListener('click', async () => {
+    const button = $('fasting-end-now');
+    button.disabled = true;
+    button.textContent = 'Encerrando…';
+    if (await persistFasting({ ...fasting, pausadoHoje: true })) showToast('Jejum encerrado hoje.', 'success');
+    else { button.disabled = false; button.textContent = 'Encerrar jejum'; }
+  });
 }
 
 function render() {
