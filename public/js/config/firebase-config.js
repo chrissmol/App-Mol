@@ -9,7 +9,6 @@ import { initializeApp } from 'firebase/app';
 import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
-  browserSessionPersistence,
   GoogleAuthProvider,
   indexedDBLocalPersistence,
   inMemoryPersistence,
@@ -37,7 +36,9 @@ const app = initializeApp(firebaseConfig);
 const browserAuthDependencies = typeof window === 'undefined'
   ? { persistence: inMemoryPersistence }
   : {
-      persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+      // Persistência compartilhada entre abas. Session storage foi removido
+      // porque cria sessões diferentes em cada aba/PWA e aparenta logout.
+      persistence: [browserLocalPersistence, indexedDBLocalPersistence],
       popupRedirectResolver: browserPopupRedirectResolver
     };
 export const auth = initializeAuth(app, browserAuthDependencies);

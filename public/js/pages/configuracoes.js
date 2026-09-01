@@ -7,7 +7,7 @@ import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessi
 import { removeLocalItemsWithPrefix } from '../utils/storage.js';
 import { setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 
 setupAppShell();
 
@@ -175,11 +175,7 @@ function authErrorMessage(error, fallback) {
   return error?.message || fallback;
 }
 
-watchAuthState( async user => {
-  if (!user) {
-    location.href = './login.html';
-    return;
-  }
+watchProtectedPage(async user => {
   try {
     appearance = await syncAccessibilityForUser(user);
     applyAppearance();

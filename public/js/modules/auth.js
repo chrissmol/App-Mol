@@ -156,6 +156,27 @@ export function watchAuthState(callback) {
 }
 
 /**
+ * Guard único para páginas privadas. Impede redirecionamentos repetidos e
+ * mantém o caminho atual para uma futura retomada após o login.
+ */
+export function watchProtectedPage(callback, redirectTo) {
+  let redirecting = false;
+  const loginPath = redirectTo || (location.pathname.includes('/pages/') ? './login.html' : './pages/login.html');
+  return watchAuthState(user => {
+    if (user) {
+      redirecting = false;
+      callback(user);
+      return;
+    }
+    if (redirecting) return;
+    redirecting = true;
+    try { sessionStorage.setItem('mol-return-to', location.pathname + location.search); }
+    catch { /* armazenamento de sessão pode estar indisponível */ }
+    location.replace(loginPath);
+  });
+}
+
+/**
  * Helper de "route guard": redireciona para login.html se não
  * houver usuário autenticado. Use no topo de páginas protegidas:
  *
@@ -163,7 +184,5 @@ export function watchAuthState(callback) {
  *   requireAuth();
  */
 export function requireAuth(redirectTo = "../pages/login.html") {
-  watchAuthState((user) => {
-    if (!user) window.location.href = redirectTo;
-  });
+  return watchProtectedPage(() => {}, redirectTo);
 }

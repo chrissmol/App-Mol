@@ -1,5 +1,5 @@
 import { db } from '../config/firebase-config.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { dateOf, estimatedWorkoutMinutes, monday, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../modules/dashboard-analytics.js';
@@ -210,8 +210,7 @@ function openDashboardEditor() {
   document.body.appendChild(panel); render();
 }
 
-watchAuthState(async user => {
-  if (!user) return window.location.href = './pages/login.html';
+watchProtectedPage(async user => {
   dashboardUser = user;
   // O esqueleto do Início não depende do banco: aparece assim que a sessão existe.
   $('app-body').classList.remove('opacity-0');

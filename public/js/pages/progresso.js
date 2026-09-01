@@ -1,5 +1,5 @@
 import { db } from '../config/firebase-config.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { exerciseTrends, personalRecords, trainingBalance, volumeByGroup } from '../modules/workout-analytics.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -116,4 +116,4 @@ async function loadProgress() {
 }
 
 document.querySelectorAll('[data-period]').forEach(button => button.addEventListener('click', () => { selectedDays = Number(button.dataset.period); renderProgress(); }));
-watchAuthState( user => { if (!user) { window.location.href = './login.html'; return; } currentUser = user; void loadProgress(); });
+watchProtectedPage(user => { currentUser = user; void loadProgress(); });

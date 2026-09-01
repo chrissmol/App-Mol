@@ -1,5 +1,5 @@
 import { db } from '../config/firebase-config.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { Timestamp, collection, doc, getDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -262,8 +262,7 @@ $('restore').onclick = async () => {
   }
 };
 
-watchAuthState( user => {
-  if (!user) { location.href = './login.html'; return; }
+watchProtectedPage(user => {
   currentUser = user;
   loadProfile();
 });

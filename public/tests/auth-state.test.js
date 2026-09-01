@@ -19,7 +19,10 @@ describe('restauração da sessão', () => {
     ready.resolve();
     await ready.promise;
     await Promise.resolve();
-    expect(subscribe).toHaveBeenCalledWith(callback);
+    expect(subscribe).toHaveBeenCalledOnce();
+    const listener = subscribe.mock.calls[0][0];
+    listener({ uid: 'user-1' });
+    expect(callback).toHaveBeenCalledWith({ uid: 'user-1' });
   });
 
   it('cancela com segurança antes ou depois da assinatura', async () => {
@@ -40,12 +43,32 @@ describe('restauração da sessão', () => {
     expect(firebaseUnsubscribe).toHaveBeenCalledOnce();
   });
 
+  it('ignora repetição e dá tolerância a um estado nulo transitório', async () => {
+    vi.useFakeTimers();
+    const callback = vi.fn();
+    let listener;
+    const subscribe = vi.fn(next => { listener = next; return vi.fn(); });
+    subscribeAfterAuthReady(Promise.resolve(), subscribe, callback, { transientNullGraceMs: 1000 });
+    await Promise.resolve();
+    await Promise.resolve();
+    listener({ uid: 'user-1' });
+    listener({ uid: 'user-1' });
+    listener(null);
+    expect(callback).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(999);
+    expect(callback).toHaveBeenCalledTimes(1);
+    listener({ uid: 'user-1' });
+    vi.advanceTimersByTime(1);
+    expect(callback).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it('inicializa a persistência antes de expor o estado do Auth', async () => {
     const source = await readFile(new URL('../js/config/firebase-config.js', import.meta.url), 'utf8');
     expect(source).toContain('initializeAuth(app');
     expect(source).toContain('indexedDBLocalPersistence');
     expect(source).toContain('browserLocalPersistence');
-    expect(source).toContain('browserSessionPersistence');
+    expect(source).not.toContain('browserSessionPersistence');
     expect(source).toContain('auth.authStateReady()');
     expect(source).not.toContain('setPersistence(');
   });});

@@ -1,12 +1,14 @@
 // js/pages/treino.js
 document.title = 'Mol';
 import { db } from '../config/firebase-config.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { activateDialog, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
 import { matchesExerciseSearch, progressionAdvice, rankExerciseSubstitutes } from '../modules/workout-coach.js';
+import { detailedExerciseGroup as grupoDetalhado, exerciseEquipment as equipamentoDo, exerciseGuidance as orientacaoDo } from '../modules/exercise-presentation.js';
+import { buildExercisePerformanceHistory, MAX_CUSTOM_EXERCISES, normalizeExerciseLibraryPreferences } from '../modules/exercise-library.js';
 import { getLocalItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
 setupAppShell();
 const renderIcons = (root = document) => window.lucide?.createIcons({ root });
@@ -52,29 +54,15 @@ const exerciseFigure = new URL('../../assets/exercise-figure.svg', import.meta.u
 let favoritosExercicios = [];
 let recentesExercicios = [];
 let exerciciosPersonalizados = [];
-const MAX_CUSTOM_EXERCISES = 100;
 const ultimaPerformance = new Map();
 const historicoPerformance = new Map();
 const bibliotecaKey = () => `mol-exercise-library-${usuarioAtual?.uid || 'guest'}`;
-function normalizedLibraryPreferences(value = {}) {
-  const textList = (list, limit) => [...new Set((Array.isArray(list) ? list : []).filter(item => typeof item === 'string').map(item => item.trim()).filter(Boolean))].slice(0, limit);
-  const names = new Set();
-  const custom = (Array.isArray(value.exerciciosPersonalizados) ? value.exerciciosPersonalizados : []).flatMap(item => {
-    const nome = typeof item?.nome === 'string' ? item.nome.trim().slice(0, 80) : '';
-    const grupo = typeof item?.grupo === 'string' ? item.grupo.trim().slice(0, 40) : '';
-    const key = nome.toLocaleLowerCase('pt-BR');
-    if (!nome || names.has(key)) return [];
-    names.add(key);
-    return [{ nome, grupo: grupo || 'Outros', personalizado: true }];
-  }).slice(0, MAX_CUSTOM_EXERCISES);
-  return { favoritosExercicios: textList(value.favoritosExercicios, 250), recentesExercicios: textList(value.recentesExercicios, 12), exerciciosPersonalizados: custom };
-}
 function applyLibraryPreferences(value) {
-  ({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados } = normalizedLibraryPreferences(value));
+  ({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados } = normalizeExerciseLibraryPreferences(value));
   exerciciosPersonalizados.forEach(ex => { if (!bibliotecaDeExercicios.some(item => item.nome.toLocaleLowerCase('pt-BR') === ex.nome.toLocaleLowerCase('pt-BR'))) bibliotecaDeExercicios.push(ex); });
 }
 function salvarPreferenciasBiblioteca() {
-  const preferences = normalizedLibraryPreferences({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados });
+  const preferences = normalizeExerciseLibraryPreferences({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados });
   ({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados } = preferences);
   setLocalItem(bibliotecaKey(), JSON.stringify(preferences));
   if (usuarioAtual) setDoc(doc(db, 'users', usuarioAtual.uid), { exerciseLibraryPreferences: preferences }, { merge: true }).catch(error => console.warn('Preferências locais não sincronizadas:', error.message));
@@ -93,8 +81,19 @@ async function carregarPreferenciasDaConta() {
     renderizarBiblioteca(inputBuscaExercicio?.value || '');
   } catch (error) { console.warn('Preferências da conta não carregadas:', error.message); }
 }
-async function carregarUltimasPerformances() { try { const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid))); const sessoes = snapshot.docs.map(item => item.data()).sort((a, b) => (b.concluidoEm?.seconds || 0) - (a.concluidoEm?.seconds || 0)); sessoes.forEach(sessao => (sessao.exercicios || []).forEach(exercicio => { const serie = [...(exercicio.series || [])].reverse().find(item => item.concluida && Number(item.kg) >= 0 && Number(item.reps) > 0); if (!serie) return; const registro = { kg: Number(serie.kg), reps: Number(serie.reps), rir: serie.rir === '' || serie.rir == null ? null : Number(serie.rir) }; const lista = historicoPerformance.get(exercicio.nome) || []; lista.push(registro); historicoPerformance.set(exercicio.nome, lista); if (!ultimaPerformance.has(exercicio.nome)) ultimaPerformance.set(exercicio.nome, registro); })); renderizarBiblioteca(inputBuscaExercicio?.value || ''); } catch (error) { console.warn('Últimas performances não carregadas:', error.message); } }
-function equipamentoDo(ex) { const nome = ex.nome.toLowerCase(); if (nome.includes('máquina') || nome.includes('cadeira') || nome.includes('smith') || nome.includes('hack')) return 'Máquina'; if (nome.includes('polia') || nome.includes('cabo')) return 'Polia'; if (nome.includes('halter')) return 'Halteres'; if (nome.includes('barra')) return 'Barra'; return 'Peso corporal'; }
+async function carregarUltimasPerformances() {
+  try {
+    const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid)));
+    const performance = buildExercisePerformanceHistory(snapshot.docs.map(item => item.data()));
+    ultimaPerformance.clear();
+    historicoPerformance.clear();
+    performance.latest.forEach((value, key) => ultimaPerformance.set(key, value));
+    performance.history.forEach((value, key) => historicoPerformance.set(key, value));
+    renderizarBiblioteca(inputBuscaExercicio?.value || '');
+  } catch (error) {
+    console.warn('Últimas performances não carregadas:', error.message);
+  }
+}
 function registrarRecente(nome) { recentesExercicios = [nome, ...recentesExercicios.filter(item => item !== nome)].slice(0, 12); salvarPreferenciasBiblioteca(); }
 
 async function manterTelaAtiva() {
@@ -154,9 +153,7 @@ const restTime = document.getElementById('rest-time');
 const restProgress = document.getElementById('rest-progress');
 document.getElementById('btn-concluir-treino')?.addEventListener('click', () => window.finalizarEConcluirTreino());
 
-watchAuthState( (user) => {
-  if (!user) window.location.href = './login.html';
-  else {
+watchProtectedPage(user => {
     usuarioAtual = user;
     carregarPreferenciasBiblioteca();
     void carregarPreferenciasDaConta();
@@ -165,7 +162,6 @@ watchAuthState( (user) => {
     renderizarBiblioteca();
     document.body.setAttribute('aria-busy', 'false');
     renderIcons();
-  }
 });
 
 async function carregarRotinasDoBanco() {
@@ -667,31 +663,6 @@ function atualizarEstadoFiltrosBiblioteca() {
     item.classList.toggle('bg-white/5', !ativo); item.classList.toggle('text-gray-300', !ativo);
     item.setAttribute('aria-pressed', String(ativo));
   });
-}
-
-function grupoDetalhado(exercicio) {
-  const nome = exercicio.nome.toLowerCase();
-  if (exercicio.grupo === 'Peito' || exercicio.grupo === 'Costas' || exercicio.grupo === 'Ombros' || exercicio.grupo === 'Abdômen') return exercicio.grupo;
-  if (exercicio.grupo === 'Bíceps' || exercicio.grupo === 'Tríceps' || exercicio.grupo === 'Antebraço') return 'Braços';
-  if (nome.includes('flexora') || nome.includes('stiff') || nome.includes('romeno') || nome.includes('nórdica') || nome.includes('good morning')) return 'Posterior';
-  if (nome.includes('glúteo') || nome.includes('pélvica') || nome.includes('abdutora') || nome.includes('abdução') || nome.includes('hip thrust')) return 'Glúteos';
-  if (exercicio.grupo === 'Pernas') return 'Quadríceps';
-  return exercicio.grupo;
-}
-
-function orientacaoDo(exercicio) {
-  const n = exercicio.nome.toLowerCase();
-  if (n.includes('supino') || n.includes('chest press')) return { execucao: 'Apoie escápulas no banco, mantenha os pés firmes e desça a carga até uma posição confortável no peito. Empurre sem perder a retração dos ombros.', erros: 'Cotovelo excessivamente aberto, quadril saindo do banco, barra quicando no peito e ombros projetados à frente.' };
-  if (n.includes('agachamento') || n.includes('leg press') || n.includes('hack')) return { execucao: 'Mantenha o pé inteiro apoiado, joelhos acompanhando a linha dos pés e tronco firme. Desça somente até onde mantém coluna neutra e controle.', erros: 'Joelhos cedendo para dentro, calcanhar levantando, encurtar amplitude por carga alta e perder a lombar no fundo.' };
-  if (n.includes('extensora')) return { execucao: 'Ajuste o eixo da máquina ao joelho, mantenha quadril no encosto e estenda com controle. Pause brevemente no topo sem chutar a carga.', erros: 'Tirar o quadril do banco, usar impulso, travar o joelho com força e deixar a carga despencar.' };
-  if (n.includes('flexora') || n.includes('stiff') || n.includes('romeno') || n.includes('good morning')) return { execucao: 'Inicie pelo quadril: mantenha a coluna neutra, leve o quadril para trás e sinta alongar o posterior. Suba contraindo glúteos, sem hiperestender a lombar.', erros: 'Arredondar a lombar, dobrar demais o joelho no stiff, transformar o movimento em agachamento e usar balanço.' };
-  if (n.includes('pélvica') || n.includes('hip thrust') || n.includes('glute bridge')) return { execucao: 'Mantenha costelas baixas, queixo levemente recolhido e empurre o chão pelos calcanhares. Termine com quadril neutro e glúteos contraídos.', erros: 'Hiperestender a lombar no topo, abrir os joelhos sem controle, pés muito distantes e descer rápido demais.' };
-  if (n.includes('puxada') || n.includes('pulldown') || n.includes('barra fixa')) return { execucao: 'Comece deprimindo as escápulas e puxe os cotovelos em direção às costelas. Mantenha peito alto sem jogar o tronco para trás.', erros: 'Puxar só com bíceps, elevar ombros, usar balanço do corpo e encurtar a volta da carga.' };
-  if (n.includes('remada')) return { execucao: 'Trave o tronco, inicie o movimento pelas escápulas e leve os cotovelos para trás. Pause perto do fim da puxada e retorne devagar.', erros: 'Balançar o tronco, encolher os ombros, puxar para o pescoço e perder a posição lombar.' };
-  if (n.includes('lateral') || n.includes('ombro') || n.includes('desenvolvimento')) return { execucao: 'Mantenha costelas controladas e suba a carga no plano da escápula. Use amplitude confortável e cadência constante.', erros: 'Roubar com lombar, encolher trapézio, usar impulso e descer sem controle.' };
-  if (n.includes('rosca')) return { execucao: 'Mantenha cotovelos estáveis e punhos neutros. Suba contraindo bíceps e desça em dois a três segundos.', erros: 'Balançar o tronco, levar cotovelos à frente demais, dobrar punhos e encurtar a descida.' };
-  if (n.includes('tríceps') || n.includes('francês') || n.includes('testa')) return { execucao: 'Estabilize ombros e cotovelos; mova somente o antebraço. Estenda até contrair o tríceps sem perder o controle.', erros: 'Abrir cotovelos, usar ombro para empurrar, compensar com lombar e travar articulações com força.' };
-  return { execucao: 'Ajuste o equipamento ao seu corpo, faça repetições lentas e mantenha amplitude que permita controle e postura estável.', erros: 'Aumentar a carga antes de dominar a técnica, usar impulso, encurtar a fase de retorno e ignorar desconforto articular.' };
 }
 
 window.abrirDetalheExercicio = (nome) => {

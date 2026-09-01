@@ -1,5 +1,5 @@
 import { db } from '../config/firebase-config.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { FOOD_CATALOG, foodNutrients, nextMeal, normalizeDietMeals, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
@@ -193,4 +193,4 @@ async function load() {
 }
 
 $('add-meal').onclick = () => openMealForm(); $('food-search').onclick = chooseMealForFood;
-watchAuthState( account => { if (!account) { location.href = './login.html'; return; } user = account; void load(); });
+watchProtectedPage(account => { user = account; void load(); });

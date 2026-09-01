@@ -1,6 +1,6 @@
 import { auth, db } from '../config/firebase-config.js';
 import { signOut } from 'firebase/auth';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -77,8 +77,7 @@ async function loadProfile(account) {
   else setReady();
 }
 
-watchAuthState( account => {
-  if (!account) { window.location.replace('./login.html'); return; }
+watchProtectedPage(account => {
   loadProfile(account).catch(error => {
     console.error('Perfil não carregado:', error);
     renderIdentity(account);

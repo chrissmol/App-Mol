@@ -1,5 +1,5 @@
 import { db } from '../config/firebase-config.js';
-import { watchAuthState } from '../modules/auth.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
@@ -315,8 +315,7 @@ function requestWeight(title, initial = '') {
   });
 }
 
-watchAuthState( user => {
-  if (!user) { location.href = './login.html'; return; }
+watchProtectedPage(user => {
   currentUser = user;
   load();
 });
