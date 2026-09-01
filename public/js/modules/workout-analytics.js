@@ -77,3 +77,47 @@ export function personalRecords(sessions, now = new Date()) {
     return { ...best, name: entries[0].name, previousE1rm: previousBest?.e1rm || null, improvement: previousBest ? Math.round(((best.e1rm - previousBest.e1rm) / previousBest.e1rm) * 1000) / 10 : null };
   }).sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0) || a.name.localeCompare(b.name, 'pt-BR'));
 }
+
+export function exerciseTrends(sessions, days = 90, now = new Date()) {
+  const end = now.getTime();
+  const period = Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 90;
+  const since = end - period * 24 * 60 * 60 * 1000;
+  const grouped = new Map();
+  (Array.isArray(sessions) ? sessions : []).forEach(session => {
+    const date = workoutDate(session);
+    if (!date || date.getTime() < since || date.getTime() > end) return;
+    const sessionBest = new Map();
+    completedSets(session).forEach(set => {
+      const name = String(set.exercicio || '').trim();
+      const key = normalizedExerciseName(name);
+      const e1rm = estimate1RM(set.kg, set.reps);
+      if (!key || !e1rm) return;
+      const current = sessionBest.get(key);
+      if (!current || e1rm > current.e1rm) sessionBest.set(key, { name, e1rm, date });
+    });
+    sessionBest.forEach((entry, key) => {
+      const list = grouped.get(key) || [];
+      list.push(entry);
+      grouped.set(key, list);
+    });
+  });
+
+  return [...grouped.values()].filter(entries => entries.length >= 2).map(entries => {
+    entries.sort((a, b) => a.date.getTime() - b.date.getTime());
+    const first = entries[0]; const latest = entries.at(-1);
+    const deltaPercent = Math.round(((latest.e1rm - first.e1rm) / first.e1rm) * 1000) / 10;
+    const state = deltaPercent > 2 ? 'improving' : deltaPercent < -2 ? 'declining' : 'stable';
+    return { name: latest.name, state, deltaPercent, recentE1rm: latest.e1rm, sessions: entries.length };
+  }).sort((a, b) => Math.abs(b.deltaPercent) - Math.abs(a.deltaPercent) || a.name.localeCompare(b.name, 'pt-BR'));
+}
+
+export function trainingBalance(volume = {}) {
+  const entries = Object.entries(volume).filter(([, sets]) => Number(sets) > 0).sort((a, b) => b[1] - a[1]);
+  const totalSets = entries.reduce((sum, [, sets]) => sum + Number(sets), 0);
+  if (!entries.length) return { state: 'empty', title: 'Sem leitura ainda', message: 'Conclua séries para receber uma leitura da distribuição do treino.' };
+  if (entries.length === 1) return { state: 'focused', title: `Foco em ${entries[0][0]}`, message: 'Só um grupo aparece neste período. Isso pode ser esperado pelo seu programa; confira os outros dias da semana.' };
+  const [topGroup, topSets] = entries[0];
+  const share = totalSets ? topSets / totalSets : 0;
+  if (share >= .5) return { state: 'concentrated', title: `Maior concentração em ${topGroup}`, message: `${Math.round(share * 100)}% das séries do período foram para esse grupo. Compare com o objetivo do seu programa.` };
+  return { state: 'distributed', title: 'Distribuição consistente', message: `${entries.length} grupos receberam estímulo no período, sem um único grupo concentrar metade das séries.` };
+}

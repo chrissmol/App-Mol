@@ -10,6 +10,7 @@
   <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
   <title>Mol</title>
   <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <script src="/theme-bootstrap.js"></script>
   <meta name="theme-color" content="#070a08">
   <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg?v=2">
   <link rel="stylesheet" href="../css/tailwind.css" data-mol-tailwind>
@@ -26,12 +27,19 @@
     input[type="number"] { -moz-appearance: textfield; }
     .workout-page button, .workout-page a, .workout-page input, .workout-page summary { touch-action: manipulation; }
     .workout-page button:focus-visible, .workout-page a:focus-visible, .workout-page input:focus-visible, .workout-page summary:focus-visible { outline: 2px solid #57d493; outline-offset: 2px; }
-    .workout-exercise-card { overflow-x: auto; overscroll-behavior-inline: contain; }
-    .workout-set-grid { min-width: 322px; }
-    .workout-set-header { min-width: 360px; }
+    .workout-exercise-card { overflow-x: clip; }
+    .workout-set-grid {
+      min-width: 0;
+      grid-template-columns: 1.8rem minmax(3rem, 1.3fr) repeat(3, minmax(2.35rem, .9fr)) 2.5rem;
+    }
+    .workout-set-header { min-width: 0; }
     @media (max-width: 370px) {
       .workout-page > div { padding-inline: 0.875rem; }
-      .workout-set-grid { min-width: 340px; }
+      .workout-exercise-card { padding-inline: .625rem; }
+      .workout-set-grid {
+        grid-template-columns: 1.8rem minmax(2.7rem, 1.2fr) repeat(3, minmax(2.25rem, .85fr)) 2.5rem;
+        gap: .125rem;
+      }
       #detalhe-titulo { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
     @media (min-width: 768px) {
@@ -44,7 +52,7 @@
     }
   </style>
 </head>
-<body class="app-surface workout-page pb-28 text-white" id="app-body" aria-busy="true">
+<body class="app-surface workout-page has-bottom-nav text-white" id="app-body" aria-busy="true">
 
   <main class="max-w-md mx-auto px-5">
 
@@ -58,54 +66,54 @@
       </header>
       <div class="mb-6 mt-6">
         <!-- Botão Principal: Verde Sólido -->
-        <button type="button" id="btn-nova-rotina" class="w-full bg-[#1E7349] hover:bg-[#278a59] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+        <button type="button" id="btn-nova-rotina" class="w-full bg-neon  text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
           <i data-lucide="file-plus-2" class="w-4 h-4"></i> Nova Rotina
         </button>
         <button type="button" id="btn-explorar" class="mt-3 w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-gray-300 active:scale-95">
           <i data-lucide="layout-template" class="mr-2 inline h-4 w-4"></i> Usar um modelo
         </button>
       </div>
-      <div id="busca-rotinas" class="mb-5"><label class="sr-only" for="input-busca-rotina">Buscar rotinas</label><div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-card-dark px-4 py-3"><i data-lucide="search" class="h-4 w-4 shrink-0 text-gray-500"></i><input id="input-busca-rotina" type="search" autocomplete="off" placeholder="Buscar nas minhas rotinas" class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-gray-500"></div></div>
+      <div id="busca-rotinas" class="mb-5"><label class="sr-only" for="input-busca-rotina">Buscar rotinas</label><div class="flex items-center gap-3 rounded-2xl border border-white/10 mol-panel px-4 py-3"><i data-lucide="search" class="h-4 w-4 shrink-0 text-gray-500"></i><input id="input-busca-rotina" type="search" autocomplete="off" placeholder="Buscar nas minhas rotinas" class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-gray-500"></div></div>
       <h2 class="text-sm font-semibold text-gray-400 mb-4 mt-8 uppercase tracking-wider">Minhas Rotinas</h2>
       <div id="rotinas-list" class="space-y-4" aria-live="polite"><p class="py-10 text-center text-sm text-gray-500">Carregando seus treinos…</p></div>
     </div>
 
     <!-- TELA 2: DETALHE DO TREINO -->
     <div id="view-detalhe" class="hidden pt-3">
-      <div class="sticky top-0 z-40 -mx-5 mb-4 flex items-center justify-between border-b border-white/10 bg-[#070a08]/95 px-5 py-3 backdrop-blur-xl">
-        <button type="button" id="btn-voltar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-[#1E7349] p-2 -ml-2 active:scale-95 transition-all">
+      <div class="sticky top-0 z-40 -mx-5 mb-4 flex items-center justify-between border-b border-white/10 mol-panel px-5 py-3 backdrop-blur-xl">
+        <button type="button" id="btn-voltar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
         <h1 id="detalhe-titulo" class="text-xl font-bold tracking-tight">Nome do Treino</h1>
 
         <!-- Botão Concluir -->
-        <button type="button" id="btn-concluir-treino" class="min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-[#1E7349]/50 text-[#1E7349] active:scale-95">
+        <button type="button" id="btn-concluir-treino" class="min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon active:scale-95">
           Concluir
         </button>
       </div>
 
       <div id="exercicios-list" class="space-y-6"></div>
 
-      <button type="button" id="btn-add-exercicio" class="w-full mt-6 bg-card-dark border border-[#1E7349]/50 text-[#1E7349] hover:bg-[#1E7349] hover:text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+      <button type="button" id="btn-add-exercicio" class="w-full mt-6 mol-panel border border-neon/50 text-neon hover:bg-neon hover:text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
         <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Exercício
       </button>
     </div>
 
     <div id="view-nova-rotina" class="hidden pt-8">
       <div class="flex items-center justify-between mb-6">
-        <button type="button" id="btn-voltar-nova" aria-label="Cancelar criação da rotina" class="text-gray-400 hover:text-[#1E7349] p-2 -ml-2 active:scale-95 transition-all">
+        <button type="button" id="btn-voltar-nova" aria-label="Cancelar criação da rotina" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
         <h1 class="text-xl font-bold tracking-tight">Criar Rotina</h1>
-        <button type="button" id="btn-salvar-nova" class="min-h-11 px-2 text-[#57d493] font-bold text-sm">Salvar</button>
+        <button type="button" id="btn-salvar-nova" class="min-h-11 px-2 text-neon font-bold text-sm">Salvar</button>
       </div>
-      <label for="input-nome-rotina" class="sr-only">Nome da rotina</label><input type="text" id="input-nome-rotina" maxlength="60" autocomplete="off" placeholder="Nome do treino (ex.: Upper A)" class="w-full bg-transparent border-b border-white/20 text-2xl font-bold py-2 outline-none focus:border-[#1E7349] mb-6 placeholder-gray-700 transition-colors">
-      <div class="rounded-2xl border border-white/10 bg-card-dark p-4"><p class="text-sm font-bold">Dias da semana <span class="font-normal text-gray-500">(opcional)</span></p><p class="mt-1 text-xs text-gray-500">Use apenas se quiser que esta rotina apareça como treino sugerido do dia.</p><div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" id="routine-days"><label><input class="peer sr-only" type="checkbox" value="1"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Segunda</span></label><label><input class="peer sr-only" type="checkbox" value="2"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Terça</span></label><label><input class="peer sr-only" type="checkbox" value="3"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Quarta</span></label><label><input class="peer sr-only" type="checkbox" value="4"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Quinta</span></label><label><input class="peer sr-only" type="checkbox" value="5"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Sexta</span></label><label><input class="peer sr-only" type="checkbox" value="6"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Sábado</span></label><label><input class="peer sr-only" type="checkbox" value="0"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Domingo</span></label></div></div>
+      <label for="input-nome-rotina" class="sr-only">Nome da rotina</label><input type="text" id="input-nome-rotina" maxlength="60" autocomplete="off" placeholder="Nome do treino (ex.: Upper A)" class="w-full bg-transparent border-b border-white/20 text-2xl font-bold py-2 outline-none focus:border-neon mb-6 placeholder-gray-700 transition-colors">
+      <div class="rounded-2xl border border-white/10 mol-panel p-4"><p class="text-sm font-bold">Dias da semana <span class="font-normal text-gray-500">(opcional)</span></p><p class="mt-1 text-xs text-gray-500">Use apenas se quiser que esta rotina apareça como treino sugerido do dia.</p><div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" id="routine-days"><label><input class="peer sr-only" type="checkbox" value="1"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Segunda</span></label><label><input class="peer sr-only" type="checkbox" value="2"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Terça</span></label><label><input class="peer sr-only" type="checkbox" value="3"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Quarta</span></label><label><input class="peer sr-only" type="checkbox" value="4"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Quinta</span></label><label><input class="peer sr-only" type="checkbox" value="5"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Sexta</span></label><label><input class="peer sr-only" type="checkbox" value="6"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Sábado</span></label><label><input class="peer sr-only" type="checkbox" value="0"><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">Domingo</span></label></div></div>
     </div>
 
     <div id="view-explorar" class="hidden pt-8">
       <div class="flex items-center justify-start mb-6">
-        <button type="button" id="btn-voltar-explorar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-[#1E7349] p-2 -ml-2 mr-2 active:scale-95 transition-all">
+        <button type="button" id="btn-voltar-explorar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-neon p-2 -ml-2 mr-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
         <h1 class="text-xl font-bold tracking-tight">Modelos de treino</h1>
@@ -118,14 +126,14 @@
 
     <div id="view-biblioteca" class="hidden pt-8">
       <div class="flex items-center justify-between mb-6">
-        <button type="button" id="btn-voltar-biblioteca" aria-label="Fechar biblioteca de exercícios" class="text-gray-400 hover:text-[#1E7349] p-2 -ml-2 active:scale-95 transition-all">
+        <button type="button" id="btn-voltar-biblioteca" aria-label="Fechar biblioteca de exercícios" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
         <h1 class="text-xl font-bold tracking-tight">Exercícios</h1>
         <div class="w-10"></div>
       </div>
 
-      <div id="busca-exercicios" class="bg-card-dark flex items-center px-4 py-3 rounded-xl mb-6 border border-white/10 focus-within:border-[#1E7349] transition-colors">
+      <div id="busca-exercicios" class="mol-panel flex items-center px-4 py-3 rounded-xl mb-6 border border-white/10 focus-within:border-neon transition-colors">
         <i data-lucide="search" class="w-5 h-5 text-gray-500 mr-3"></i>
         <label for="input-busca-exercicio" class="sr-only">Buscar exercício</label><input type="search" id="input-busca-exercicio" autocomplete="off" placeholder="Buscar exercício…" class="bg-transparent w-full text-sm outline-none">
       </div>
@@ -137,14 +145,14 @@
 
   </main>
 
-  <div id="rest-timer" role="timer" aria-label="Cronômetro de descanso" class="rest-timer-panel hidden rounded-2xl border border-neon/30 bg-[#151b17]/95 p-4 shadow-2xl backdrop-blur-xl">
+  <div id="rest-timer" role="timer" aria-label="Cronômetro de descanso" class="rest-timer-panel hidden rounded-2xl border border-neon/30 mol-dialog-surface p-4 shadow-2xl backdrop-blur-xl">
     <div class="flex items-center justify-between"><div class="flex items-center gap-2 text-sm font-bold"><i data-lucide="timer-reset" class="h-4 w-4 text-neon"></i> Descanso</div><button type="button" id="btn-skip-rest" class="text-xs font-bold text-gray-400">Pular</button></div>
     <div class="mt-3 flex items-end justify-between"><span id="rest-time" class="text-3xl font-extrabold tabular-nums text-white">01:30</span><button type="button" id="btn-add-rest" class="rounded-lg bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">+30 s</button></div>
     <div class="mt-3 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
   </div>
 
   <div id="modal-tipo-serie" role="dialog" aria-modal="true" aria-labelledby="modal-tipo-serie-title" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col justify-end transition-opacity opacity-0">
-      <div id="modal-tipo-serie-content" class="bg-card-dark rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300" tabindex="-1">
+      <div id="modal-tipo-serie-content" class="mol-panel rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300" tabindex="-1">
         <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
         <h3 id="modal-tipo-serie-title" class="text-center font-bold mb-6 text-lg tracking-tight">Selecionar tipo de série</h3>
 
@@ -179,31 +187,7 @@
       </div>
   </div>
 
-  <!-- Barra de Navegação Inferior: Cinza padrão que acende para verde no hover/seleção -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-card-dark/95 backdrop-blur-lg border-t border-white/10 z-50">
-    <div class="max-w-md mx-auto px-8 py-3 flex items-center justify-between">
-      <a href="../index.html" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
-        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Início</span>
-      </a>
-
-      <!-- Treino ativo nesta página (Fica verde) -->
-      <a href="./treino.html" aria-current="page" class="flex flex-col items-center gap-1 text-[#1E7349] transition-fluid">
-        <i data-lucide="dumbbell" class="w-5 h-5"></i>
-        <span class="text-[10px] font-semibold">Treino</span>
-      </a>
-
-      <a href="./dieta.html" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
-        <i data-lucide="apple" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Dieta</span>
-      </a>
-
-      <a href="./perfil.html" class="flex flex-col items-center gap-1 text-gray-500 hover:text-[#1E7349] transition-fluid">
-  <i data-lucide="user" class="w-5 h-5"></i>
-  <span class="text-[10px] font-medium">Perfil</span>
-</a>
-    </div>
-  </nav>
+  <nav class="fixed bottom-0 left-0 right-0 z-50 mol-bottom-nav" aria-label="Navegação principal"></nav>
 
   <script type="module" src="../js/pages/treino.js?v=8"></script>
 </body>

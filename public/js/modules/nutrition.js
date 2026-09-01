@@ -26,6 +26,20 @@ export const FOOD_CATALOG = [
   ['Chia', 486, 16.5, 42.1, 30.7], ['Granola', 471, 10, 64, 20],
   ['Tomate', 18, 0.9, 3.9, 0.2], ['Alface', 15, 1.4, 2.9, 0.2],
   ['Cenoura cozida', 30, 0.8, 6.7, 0.2], ['Abobrinha cozida', 15, 1.1, 3.1, 0.4],
+  ['Arroz integral cozido', 124, 2.6, 25.8, 1], ['Feijão preto cozido', 77, 4.5, 14, 0.5],
+  ['Feijão-fradinho cozido', 78, 5.1, 13.5, 0.6], ['Ervilha cozida', 84, 5.4, 15, 0.2],
+  ['Quinoa cozida', 120, 4.4, 21.3, 1.9], ['Farofa de mandioca', 365, 2.1, 80, 4.2],
+  ['Polenta cozida', 70, 1.5, 15.7, 0.3], ['Inhame cozido', 116, 1.5, 27.5, 0.1],
+  ['Acém bovino cozido', 215, 27.3, 0, 11.2], ['Coxão mole grelhado', 219, 32.4, 0, 9],
+  ['Filé de frango grelhado', 159, 32, 0, 2.5], ['Coxa de frango assada sem pele', 209, 28.5, 0, 9.7],
+  ['Sardinha assada', 164, 32.2, 0, 3.5], ['Merluza assada', 122, 26.6, 0, 1.2],
+  ['Ovo mexido', 212, 13.8, 1.6, 16.2], ['Clara de ovo cozida', 59, 13.4, 0, 0.1],
+  ['Ricota', 140, 12.6, 3.8, 8.1], ['Queijo minas frescal', 264, 17.4, 3.2, 20.2],
+  ['Leite sem lactose integral', 61, 3, 4.7, 3.2], ['Bebida de soja sem açúcar', 33, 3.3, 1.8, 1.6],
+  ['Laranja', 47, 0.9, 11.8, 0.1], ['Manga', 60, 0.8, 15, 0.4],
+  ['Melancia', 30, 0.6, 7.6, 0.2], ['Pera', 57, 0.4, 15.2, 0.1],
+  ['Beterraba cozida', 32, 1.3, 7.2, 0.1], ['Couve refogada', 90, 1.7, 8.7, 6.6],
+  ['Espinafre cozido', 23, 3, 3.8, 0.3], ['Pepino', 15, 0.7, 3.6, 0.1],
   ['Creatina monohidratada', 0, 0, 0, 0]
 ].map(([nome, kcal100, proteina100, carbo100, gordura100]) => ({ nome, kcal100, proteina100, carbo100, gordura100 }));
 
@@ -35,6 +49,92 @@ const bounded = (value, min, max, fallback = 0) => {
   return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
 };
 const validTime = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || '')) ? String(value) : '12:00';
+const timeToMinutes = value => {
+  const time = validTime(value);
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+const minutesToTime = value => {
+  const minutes = ((Math.round(Number(value) || 0) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+};
+
+export const FASTING_PROTOCOLS = [
+  { id: '12:12', label: '12:12', fastingHours: 12, eatingHours: 12 },
+  { id: '14:10', label: '14:10', fastingHours: 14, eatingHours: 10 },
+  { id: '16:8', label: '16:8', fastingHours: 16, eatingHours: 8 },
+  { id: '18:6', label: '18:6', fastingHours: 18, eatingHours: 6 },
+  { id: '20:4', label: '20:4', fastingHours: 20, eatingHours: 4 },
+  { id: 'custom', label: 'Personalizado', fastingHours: 16, eatingHours: 8 }
+];
+
+export function normalizeFastingSettings(settings = {}) {
+  const source = settings && typeof settings === 'object' ? settings : {};
+  const protocolo = FASTING_PROTOCOLS.some(item => item.id === source.protocolo) ? source.protocolo : '16:8';
+  const inicioJanela = validTime(source.inicioJanela || '12:00');
+  const selected = FASTING_PROTOCOLS.find(item => item.id === protocolo) || FASTING_PROTOCOLS[2];
+  const fimJanela = protocolo === 'custom' ? validTime(source.fimJanela || '20:00') : minutesToTime(timeToMinutes(inicioJanela) + selected.eatingHours * 60);
+  const diasSemana = Array.isArray(source.diasSemana)
+    ? [...new Set(source.diasSemana.map(Number).filter(day => Number.isInteger(day) && day >= 0 && day <= 6))].slice(0, 7)
+    : [0, 1, 2, 3, 4, 5, 6];
+  return {
+    ativo: Boolean(source.ativo),
+    protocolo,
+    inicioJanela,
+    fimJanela,
+    diasSemana,
+    treino: ['jejum', 'alimentado', 'flexivel'].includes(source.treino) ? source.treino : 'flexivel',
+    pausadoHoje: Boolean(source.pausadoHoje)
+  };
+}
+
+function minutesUntil(current, target) {
+  return (target - current + 1440) % 1440;
+}
+
+function isTimeInsideWindow(current, start, end) {
+  if (start === end) return true;
+  return start < end ? current >= start && current < end : current >= start || current < end;
+}
+
+export function fastingPhase(hours) {
+  const value = Math.max(0, Number(hours) || 0);
+  if (value < 4) return { id: 'post-meal', title: 'Pós-refeição', text: 'Seu corpo ainda tende a digerir e usar energia da última refeição.' };
+  if (value < 8) return { id: 'between-meals', title: 'Entre refeições', text: 'A glicose tende a estabilizar e o corpo usa reservas imediatas.' };
+  if (value < 12) return { id: 'early-fast', title: 'Início do jejum', text: 'O uso de glicogênio pode ganhar mais importância como fonte de energia.' };
+  if (value < 16) return { id: 'light-metabolic', title: 'Jejum metabólico leve', text: 'Para algumas pessoas, o uso de gordura como energia pode começar a aumentar.' };
+  if (value < 20) return { id: 'advanced-window', title: 'Janela avançada', text: 'Seu corpo pode estar mais adaptado ao jejum, mas a resposta varia bastante.' };
+  return { id: 'long-fast', title: 'Jejum prolongado', text: 'Exige mais atenção. Hidrate-se e evite exageros sem orientação profissional.' };
+}
+
+export function fastingStatus(settings, now = new Date()) {
+  const config = normalizeFastingSettings(settings);
+  if (!config.ativo || config.pausadoHoje) return { active: false, config };
+  const day = now.getDay();
+  if (!config.diasSemana.includes(day)) return { active: false, config, offDay: true };
+  const current = now.getHours() * 60 + now.getMinutes();
+  const start = timeToMinutes(config.inicioJanela);
+  const end = timeToMinutes(config.fimJanela);
+  const eating = isTimeInsideWindow(current, start, end);
+  const elapsedFastMinutes = eating ? 0 : minutesUntil(end, current);
+  const remainingMinutes = eating ? minutesUntil(current, end) : minutesUntil(current, start);
+  const phase = fastingPhase(elapsedFastMinutes / 60);
+  return {
+    active: true,
+    config,
+    eating,
+    phase,
+    elapsedFastMinutes,
+    remainingMinutes,
+    nextTime: eating ? config.fimJanela : config.inicioJanela
+  };
+}
+
+export function mealIsOutsideFastingWindow(meal, settings) {
+  const config = normalizeFastingSettings(settings);
+  if (!config.ativo || config.pausadoHoje) return false;
+  return !isTimeInsideWindow(timeToMinutes(meal?.hora), timeToMinutes(config.inicioJanela), timeToMinutes(config.fimJanela));
+}
 export function foodNutrients(food) {
   const factor = bounded(food?.gramas, 0, 5000) / 100;
   return {
@@ -84,4 +184,18 @@ export function validateFood(food) {
 export function nextMeal(meals, time) {
   const ordered = [...(Array.isArray(meals) ? meals : [])].filter(meal => meal && typeof meal.hora === 'string').sort((a, b) => a.hora.localeCompare(b.hora));
   return { meal: ordered.find(meal => meal.hora >= time) || ordered[0] || null, tomorrow: !!ordered.length && !ordered.some(meal => meal.hora >= time) };
+}
+
+const normalizedFoodText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g, ' ').trim();
+
+export function searchFoodCatalog(query, catalog = FOOD_CATALOG, limit = 50) {
+  const term = normalizedFoodText(query);
+  const tokens = term.split(' ').filter(Boolean);
+  const source = Array.isArray(catalog) ? catalog : [];
+  return source.map(food => {
+    const name = normalizedFoodText(food?.nome);
+    const matches = !tokens.length || tokens.every(token => name.includes(token));
+    const score = !term ? 0 : name === term ? 3 : name.startsWith(term) ? 2 : matches ? 1 : -1;
+    return { food, score };
+  }).filter(item => item.score >= 0).sort((a, b) => b.score - a.score || String(a.food.nome).localeCompare(String(b.food.nome), 'pt-BR')).slice(0, Math.max(1, Number(limit) || 50)).map(item => item.food);
 }

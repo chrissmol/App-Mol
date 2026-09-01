@@ -2,8 +2,19 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const firebaseBrowserMock = resolve(import.meta.dirname, 'e2e/firebase-browser-mock.js');
+
 export default defineConfig({
   publicDir: 'pwa',
+  resolve: {
+    alias: process.env.MOL_E2E === '1'
+      ? [
+          { find: 'firebase/app', replacement: firebaseBrowserMock },
+          { find: 'firebase/auth', replacement: firebaseBrowserMock },
+          { find: 'firebase/firestore', replacement: firebaseBrowserMock },
+        ]
+      : [],
+  },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

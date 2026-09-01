@@ -63,9 +63,12 @@ describe('regras do Firestore', () => {
   it('protege a dieta pelo ID da conta e limita sua estrutura', async () => {
     const owner = user('user-a');
     const reference = doc(owner, 'dietas', 'user-a');
+    await assertSucceeds(getDoc(reference));
     await assertSucceeds(setDoc(reference, { userId: 'user-a', refeicoes: [], atualizadoEm: 'agora' }));
+    await assertSucceeds(setDoc(reference, { userId: 'user-a', refeicoes: [], jejum: { ativo: true, protocolo: '16:8', inicioJanela: '12:00', fimJanela: '20:00', diasSemana: [1, 2, 3], treino: 'flexivel', pausadoHoje: false }, atualizadoEm: 'agora' }));
     await assertFails(setDoc(doc(owner, 'dietas', 'outro-id'), { userId: 'user-a', refeicoes: [], atualizadoEm: 'agora' }));
     await assertFails(setDoc(reference, { userId: 'user-a', refeicoes: [], atualizadoEm: 'agora', campoExtra: true }));
+    await assertFails(setDoc(reference, { userId: 'user-a', refeicoes: [], jejum: { ativo: true, role: 'admin' }, atualizadoEm: 'agora' }));
     await assertSucceeds(getDoc(reference));
     await assertFails(getDocs(query(collection(owner, 'dietas'), where('userId', '==', 'user-a'))));
     await assertFails(getDoc(doc(user('user-b'), 'dietas', 'user-a')));

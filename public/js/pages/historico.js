@@ -1,5 +1,5 @@
-import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { filterHistory, historySummary, sessionsByDay, sortSessionsNewest } from '../modules/history-analytics.js';
 import { sessionMetrics, workoutDate } from '../modules/workout-analytics.js';
@@ -157,4 +157,4 @@ $('clear-date-filter').addEventListener('click', () => { filterByMonth = false; 
 $('history-search').addEventListener('input', () => { visibleLimit = PAGE_SIZE; renderSessions(); });
 $('load-more-sessions').addEventListener('click', () => { visibleLimit += PAGE_SIZE; renderSessions(); });
 
-onAuthStateChanged(auth, user => { if (!user) { window.location.href = './login.html'; return; } currentUser = user; void loadHistory(); });
+watchProtectedPage(user => { currentUser = user; void loadHistory(); });

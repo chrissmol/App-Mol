@@ -1,5 +1,5 @@
-import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
@@ -70,7 +70,7 @@ function renderBadges(stats) {
   const badges = profileAchievements({ workouts: stats.sessions, sets: stats.series, volume: stats.volume, seconds: stats.seconds, weekly: stats.weekly, goal: currentGoal, streak: stats.streak, activeDays: stats.activeDays.size });
   const unlocked = badges.filter(badge => badge.unlocked);
   $('badges-count').textContent = `${unlocked.length} de ${badges.length} desbloqueadas`;
-  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.unlocked ? badge.icon : 'lock'}" class="h-4 w-4"></i></span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.description}</p></article>`).join('');
+  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.unlocked ? badge.icon : 'lock-keyhole'}" class="h-4 w-4"></i></span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.description}</p></article>`).join('');
   window.lucide?.createIcons();
 }
 
@@ -301,7 +301,7 @@ function requestWeight(title, initial = '') {
     modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('aria-labelledby', 'weight-dialog-title');
     modal.setAttribute('aria-describedby', 'weight-dialog-description');
-    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl border border-white/10 bg-[#161a17] p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe um valor entre 20 e 400 kg.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl bg-black/20 px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl bg-white/5 py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
+    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe um valor entre 20 e 400 kg.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl mol-field px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
     document.body.appendChild(modal);
     const input = modal.querySelector('[data-value]');
     input.value = initial;
@@ -315,8 +315,7 @@ function requestWeight(title, initial = '') {
   });
 }
 
-onAuthStateChanged(auth, user => {
-  if (!user) { location.href = './login.html'; return; }
+watchProtectedPage(user => {
   currentUser = user;
   load();
 });

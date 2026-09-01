@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimate1RM, normalizedGroup, personalRecords, sessionMetrics, volumeByGroup, workoutDate } from '../js/modules/workout-analytics.js';
+import { estimate1RM, exerciseTrends, normalizedGroup, personalRecords, sessionMetrics, trainingBalance, volumeByGroup, workoutDate } from '../js/modules/workout-analytics.js';
 
 const timestamp = iso => ({ toDate: () => new Date(iso) });
 const session = (date, sets, name = 'Supino Reto', group = 'Peito') => ({ concluidoEm: date, exercicios: [{ nome: name, grupo: group, series: sets }] });
@@ -69,5 +69,25 @@ describe('métricas de treino', () => {
       session('inválida', [{ concluida: true, kg: 140, reps: 5 }])
     ];
     expect(personalRecords(sessions, new Date('2026-08-19T12:00:00Z'))[0].weight).toBe(80);
+  });
+  it('classifica tendências por exercício usando sessões distintas', () => {
+    const sessions = [
+      session('2026-07-01T12:00:00Z', [{ concluida: true, kg: 60, reps: 8 }]),
+      session('2026-08-01T12:00:00Z', [{ concluida: true, kg: 70, reps: 8 }])
+    ];
+    const [trend] = exerciseTrends(sessions, 90, new Date('2026-08-19T12:00:00Z'));
+    expect(trend.state).toBe('improving');
+    expect(trend.sessions).toBe(2);
+    expect(trend.deltaPercent).toBeGreaterThan(10);
+  });
+
+  it('não inventa tendência com somente uma sessão', () => {
+    expect(exerciseTrends([session('2026-08-01T12:00:00Z', [{ concluida: true, kg: 70, reps: 8 }])], 90, new Date('2026-08-19T12:00:00Z'))).toEqual([]);
+  });
+
+  it('gera leitura neutra ou concentrada da distribuição', () => {
+    expect(trainingBalance({})).toMatchObject({ state: 'empty' });
+    expect(trainingBalance({ Peito: 12, Costas: 4, Pernas: 4 })).toMatchObject({ state: 'concentrated' });
+    expect(trainingBalance({ Peito: 8, Costas: 8, Pernas: 6 })).toMatchObject({ state: 'distributed' });
   });
 });

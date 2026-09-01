@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#070a08">
   <title>Mol</title>
   <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <script src="/theme-bootstrap.js"></script>
   <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
   <link rel="stylesheet" href="../css/tailwind.css">
   <link rel="stylesheet" href="../css/style.css">
@@ -33,6 +34,19 @@
       </div>
     </section>
 
+    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="device-title">
+      <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="smartphone" class="h-5 w-5"></i></span><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Neste aparelho</p><h2 id="device-title" class="mt-1 text-lg font-extrabold">Offline e lembretes</h2></div></div>
+      <div class="mt-5 divide-y divide-white/5 rounded-2xl bg-white/5 px-4">
+        <label class="flex min-h-20 cursor-pointer items-center justify-between gap-4"><span><strong class="block text-sm">Disponível sem internet</strong><small class="mt-1 block text-xs leading-relaxed text-gray-500">Guarda treinos e dados acessados neste aparelho. Ative somente em um dispositivo pessoal.</small></span><span class="relative shrink-0"><input id="trusted-device" type="checkbox" class="peer sr-only"><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label>
+        <label class="flex min-h-20 cursor-pointer items-center justify-between gap-4"><span><strong class="block text-sm">Lembretes no aparelho</strong><small class="mt-1 block text-xs leading-relaxed text-gray-500">Avisa enquanto o Mol estiver aberto. No iPhone, instale na Tela de Início para permitir notificações.</small></span><span class="relative shrink-0"><input id="reminders-enabled" type="checkbox" class="peer sr-only"><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <label class="text-xs font-bold text-gray-400">Treino<input id="workout-time" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label>
+        <label class="text-xs font-bold text-gray-400">Refeição<input id="meal-time" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label>
+      </div>
+      <button id="test-reminder" type="button" class="mt-4 min-h-11 w-full rounded-xl border border-white/10 text-xs font-bold text-gray-300">Enviar lembrete de teste</button>
+      <p id="device-status" class="mt-3 text-xs leading-relaxed text-gray-500" role="status">As preferências valem somente para este aparelho.</p>
+    </section>
     <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="account-title">
       <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="shield-check" class="h-5 w-5"></i></span><div class="min-w-0"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Conta</p><h2 id="account-title" class="mt-1 text-lg font-extrabold">Sessão e segurança</h2></div></div>
       <div class="mt-5 rounded-2xl bg-white/5 px-4 py-3"><p class="text-xs text-gray-500">Conta conectada</p><p id="session-email" class="mt-1 truncate text-sm font-semibold">Carregando…</p></div>

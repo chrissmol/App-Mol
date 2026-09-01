@@ -1,5 +1,5 @@
-import { auth, authReady, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { dateOf, estimatedWorkoutMinutes, monday, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../modules/dashboard-analytics.js';
@@ -8,7 +8,7 @@ import { foodNutrients, nextMeal, normalizeDietMeals } from '../modules/nutritio
 import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
+import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem, setSessionItem } from '../utils/storage.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -36,6 +36,16 @@ let dashboardUser = null;
 let profileData = {};
 let mealRefreshTimer = null;
 const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), timeout))]);
+const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
+const cacheFresh = value => value?.savedAt && Date.now() - value.savedAt < 1000 * 60 * 60 * 6;
+const writeDashboardDataCache = (uid, patch) => {
+  const current = safeJSON(getSessionItem(dashboardCacheKey(uid)), {}) || {};
+  setSessionItem(dashboardCacheKey(uid), JSON.stringify({ ...current, ...patch, savedAt: Date.now() }));
+};
+const readDashboardDataCache = uid => {
+  const cached = safeJSON(getSessionItem(dashboardCacheKey(uid)), null);
+  return cacheFresh(cached) ? cached : null;
+};
 
 function normalizeCards(value) {
   if (!Array.isArray(value)) return defaultCards.map(card => ({ ...card }));
@@ -57,7 +67,7 @@ function setWeek(sessions, goal = 1) {
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);
-  $('week-days').innerHTML = days.map(d => { const done = thisWeek.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center" aria-label="${dayLabel[d.getDay()]}, ${d.toLocaleDateString('pt-BR')}${done ? ', treino concluído' : ''}"><span aria-hidden="true" class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()].slice(0, 1)}</span><span aria-hidden="true" class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'bg-white/5 text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
+  $('week-days').innerHTML = days.map(d => { const done = thisWeek.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center" aria-label="${dayLabel[d.getDay()]}, ${d.toLocaleDateString('pt-BR')}${done ? ', treino concluído' : ''}"><span aria-hidden="true" class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()].slice(0, 1)}</span><span aria-hidden="true" class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'mol-soft text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
   $('weekly-title').textContent = `${thisWeek.length} treino${thisWeek.length === 1 ? '' : 's'} concluído${thisWeek.length === 1 ? '' : 's'}`;
   $('weekly-sessions').textContent = thisWeek.length;
   $('weekly-volume').textContent = Math.round(volume).toLocaleString('pt-BR');
@@ -186,7 +196,7 @@ function openDashboardEditor() {
   document.getElementById('mol-dashboard-editor')?.remove();
   const panel = document.createElement('div'); panel.id = 'mol-dashboard-editor'; panel.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center';
   const close = (commit = true) => { if (!commit) dashboardCards = originalCards.map(card => ({ ...card })); panel.remove(); opener?.focus?.(); };
-  const render = () => { panel.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="dashboard-editor-title" class="mx-auto w-full max-w-md rounded-3xl border border-white/10 bg-[#161a17] p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Seu início</p><h2 id="dashboard-editor-title" class="mt-1 text-xl font-extrabold">Editar painel</h2><p class="mt-2 text-sm text-gray-400">Escolha o que quer ver e use as setas para mudar a ordem.</p><div class="mt-5 space-y-2">${dashboardCards.map((card, index) => `<div class="flex min-h-14 items-center gap-2 rounded-2xl bg-white/5 px-3"><button type="button" data-toggle="${card.id}" aria-label="${card.visible ? 'Ocultar' : 'Mostrar'} ${card.label}" class="h-10 w-10 rounded-xl ${card.visible ? 'bg-neon text-white' : 'bg-white/10 text-gray-400'}"><i data-lucide="${card.visible ? 'eye' : 'eye-off'}" class="mx-auto h-4 w-4"></i></button><span class="flex-1 text-sm font-bold">${card.label}</span><button type="button" data-move="${index},-1" aria-label="Mover ${card.label} para cima" ${index === 0 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="mx-auto h-5 w-5"></i></button><button type="button" data-move="${index},1" aria-label="Mover ${card.label} para baixo" ${index === dashboardCards.length - 1 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="mx-auto h-5 w-5"></i></button></div>`).join('')}</div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-reset class="min-h-12 rounded-2xl bg-white/5 text-sm font-bold text-gray-300">Restaurar</button><button type="button" data-done class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-white">Concluído</button></div></section>`; renderIcons(); panel.querySelectorAll('[data-toggle]').forEach(button => button.onclick = () => { const card = dashboardCards.find(c => c.id === button.dataset.toggle); card.visible = !card.visible; render(); }); panel.querySelectorAll('[data-move]').forEach(button => button.onclick = () => { const [index, direction] = button.dataset.move.split(',').map(Number); const target = index + direction; if (target >= 0 && target < dashboardCards.length) [dashboardCards[index], dashboardCards[target]] = [dashboardCards[target], dashboardCards[index]]; render(); }); panel.querySelector('[data-reset]').onclick = () => { dashboardCards = defaultCards.map(c => ({...c})); render(); }; panel.querySelector('[data-done]').onclick = async event => { event.currentTarget.disabled = true; applyDashboardCards(); await saveDashboardCards(); close(); }; panel.querySelector('[data-toggle]')?.focus(); };
+  const render = () => { panel.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="dashboard-editor-title" class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Seu início</p><h2 id="dashboard-editor-title" class="mt-1 text-xl font-extrabold">Editar painel</h2><p class="mt-2 text-sm text-gray-400">Escolha o que quer ver e use as setas para mudar a ordem.</p><div class="mt-5 space-y-2">${dashboardCards.map((card, index) => `<div class="flex min-h-14 items-center gap-2 rounded-2xl mol-soft px-3"><button type="button" data-toggle="${card.id}" aria-label="${card.visible ? 'Ocultar' : 'Mostrar'} ${card.label}" class="h-10 w-10 rounded-xl ${card.visible ? 'bg-neon text-white' : 'bg-white/10 text-gray-400'}"><i data-lucide="${card.visible ? 'eye' : 'eye-off'}" class="mx-auto h-4 w-4"></i></button><span class="flex-1 text-sm font-bold">${card.label}</span><button type="button" data-move="${index},-1" aria-label="Mover ${card.label} para cima" ${index === 0 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="mx-auto h-5 w-5"></i></button><button type="button" data-move="${index},1" aria-label="Mover ${card.label} para baixo" ${index === dashboardCards.length - 1 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="mx-auto h-5 w-5"></i></button></div>`).join('')}</div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-reset class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Restaurar</button><button type="button" data-done class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-white">Concluído</button></div></section>`; renderIcons(); panel.querySelectorAll('[data-toggle]').forEach(button => button.onclick = () => { const card = dashboardCards.find(c => c.id === button.dataset.toggle); card.visible = !card.visible; render(); }); panel.querySelectorAll('[data-move]').forEach(button => button.onclick = () => { const [index, direction] = button.dataset.move.split(',').map(Number); const target = index + direction; if (target >= 0 && target < dashboardCards.length) [dashboardCards[index], dashboardCards[target]] = [dashboardCards[target], dashboardCards[index]]; render(); }); panel.querySelector('[data-reset]').onclick = () => { dashboardCards = defaultCards.map(c => ({...c})); render(); }; panel.querySelector('[data-done]').onclick = async event => { event.currentTarget.disabled = true; applyDashboardCards(); await saveDashboardCards(); close(); }; panel.querySelector('[data-toggle]')?.focus(); };
   panel.onclick = event => { if (event.target === panel) close(false); };
   panel.onkeydown = event => {
     if (event.key === 'Escape') return close(false);
@@ -200,13 +210,26 @@ function openDashboardEditor() {
   document.body.appendChild(panel); render();
 }
 
-authReady.finally(() => onAuthStateChanged(auth, async user => {
-  if (!user) return window.location.href = './pages/login.html';
+watchProtectedPage(async user => {
   dashboardUser = user;
   // O esqueleto do Início não depende do banco: aparece assim que a sessão existe.
   $('app-body').classList.remove('opacity-0');
   $('user-name').textContent = user.displayName?.trim().split(/\s+/)[0] || 'Atleta';
   setupDashboardCards();
+  const cachedDashboard = readDashboardDataCache(user.uid);
+  if (cachedDashboard) {
+    if (Array.isArray(cachedDashboard.routines)) setToday(cachedDashboard.routines, user);
+    if (Array.isArray(cachedDashboard.sessions)) setWeek(cachedDashboard.sessions, cachedDashboard.goal || 1);
+    if (Array.isArray(cachedDashboard.weights)) {
+      const { last, change } = recentWeightTrend(cachedDashboard.weights);
+      if (last) {
+        $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
+        $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
+      }
+    }
+    document.body.setAttribute('aria-busy', 'false');
+    renderIcons();
+  }
   // Carrega a agenda alimentar em paralelo ao restante do painel.
   void loadNextMeal(user.uid);
   // Leituras independentes começam juntas, importante em conexões móveis.
@@ -237,6 +260,7 @@ authReady.finally(() => onAuthStateChanged(auth, async user => {
     try {
       const routineSnapshot = await dashboardData.routines;
       const routines = routineSnapshot.docs.map(item => ({ id: item.id, ...normalizeRoutineRecord(item.data()) }));
+      writeDashboardDataCache(user.uid, { routines });
       setToday(routines, user);
     } catch (error) {
       console.error('Erro ao carregar rotinas:', error);
@@ -248,7 +272,9 @@ authReady.finally(() => onAuthStateChanged(auth, async user => {
   const loadSessions = async () => {
     try {
       const sessionSnapshot = await dashboardData.sessions;
-      setWeek(sessionSnapshot.docs.map(d => d.data()), profileData.metaSemanal || 1);
+      const sessions = sessionSnapshot.docs.map(d => d.data());
+      writeDashboardDataCache(user.uid, { sessions, goal: profileData.metaSemanal || 1 });
+      setWeek(sessions, profileData.metaSemanal || 1);
     } catch (error) {
       console.error('Erro ao carregar sessões:', error.code, error.message);
       $('weekly-title').textContent = 'Histórico indisponível';
@@ -259,7 +285,9 @@ authReady.finally(() => onAuthStateChanged(auth, async user => {
   const loadWeights = async () => {
     try {
       const weightSnapshot = await dashboardData.weights;
-      const { last, change } = recentWeightTrend(weightSnapshot.docs.map(d => d.data()));
+      const weights = weightSnapshot.docs.map(d => d.data());
+      writeDashboardDataCache(user.uid, { weights });
+      const { last, change } = recentWeightTrend(weights);
       if (last) {
         $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
         $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
@@ -269,5 +297,5 @@ authReady.finally(() => onAuthStateChanged(auth, async user => {
   await Promise.allSettled([loadRoutines(), loadSessions(), loadWeights()]);
   clearTimeout(window.__molDashboardFallback);
   document.body.setAttribute('aria-busy','false'); renderIcons();
-}));
+});
 renderIcons();

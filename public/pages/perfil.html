@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#070a08">
   <title>Mol</title>
   <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <script src="/theme-bootstrap.js"></script>
   <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
   <link rel="stylesheet" href="../css/tailwind.css" data-mol-tailwind>
   <link rel="stylesheet" href="../css/style.css">
@@ -23,7 +24,7 @@
     </header>
 
     <section class="glass-card mb-4 flex flex-col items-center rounded-3xl border border-white/5 p-6 text-center" aria-labelledby="user-name">
-      <div id="avatar-frame" role="img" class="avatar-frame avatar-frame--plastic relative mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-card-dark-2 shadow-md" aria-label="Moldura de Plástico">
+      <div id="avatar-frame" role="img" class="avatar-frame avatar-frame--plastic relative mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-white/10 mol-field shadow-md" aria-label="Moldura de Plástico">
         <i id="default-avatar-icon" data-lucide="user" class="h-8 w-8 text-neon"></i>
         <img id="user-avatar" src="../assets/mol-mark.svg" alt="" class="hidden h-full w-full object-cover">
       </div>
@@ -58,7 +59,7 @@
         <a href="./configuracoes.html" class="glass-card flex min-h-20 items-center gap-4 rounded-3xl p-5 text-left"><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="settings-2" class="h-5 w-5"></i></span><span class="flex-1"><strong class="block">Configurações</strong><small class="block text-gray-500">Acessibilidade, notificações e conta</small></span><i data-lucide="chevron-right"></i></a>
       </nav>
 
-      <button id="btn-logout" type="button" class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-card-dark py-3.5 font-bold text-red-400"><i data-lucide="log-out" class="h-4 w-4"></i><span>Sair da conta</span></button>
+      <button id="btn-logout" type="button" class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 mol-panel py-3.5 font-bold text-red-400"><i data-lucide="log-out" class="h-4 w-4"></i><span>Sair da conta</span></button>
     </div>
   </main>
 

@@ -1,7 +1,7 @@
-import { auth, db } from '../config/firebase-config.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
+import { watchProtectedPage } from '../modules/auth.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { personalRecords, volumeByGroup } from '../modules/workout-analytics.js';
+import { exerciseTrends, personalRecords, trainingBalance, volumeByGroup } from '../modules/workout-analytics.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML, showToast } from '../utils/ui.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -61,9 +61,28 @@ function renderRecords(records) {
   $('toggle-records')?.addEventListener('click', () => { showAllRecords = !showAllRecords; renderRecords(records); });
 }
 
+function renderInsight(volume) {
+  const insight = trainingBalance(volume);
+  const tones = { empty: 'text-gray-400', focused: 'text-blue-400', concentrated: 'text-orange-400', distributed: 'text-neon' };
+  $('balance-insight').innerHTML = `<div class="flex items-start gap-3"><span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl mol-soft ${tones[insight.state] || 'text-neon'}"><i data-lucide="sparkles" class="h-4 w-4"></i></span><div><h3 class="text-sm font-bold">${escapeHTML(insight.title)}</h3><p class="mt-1 text-xs leading-relaxed text-gray-500">${escapeHTML(insight.message)}</p></div></div>`;
+}
+
+function renderTrends(trends) {
+  if (!trends.length) {
+    $('trends').innerHTML = '<div class="rounded-2xl mol-soft px-4 py-6 text-center"><p class="text-sm font-bold">Precisamos de duas sessões</p><p class="mt-1 text-xs text-gray-500">Repita um exercício com carga registrada para calcular uma tendência.</p></div>';
+    return;
+  }
+  const labels = { improving: ['Evoluindo', 'text-neon', 'trending-up'], stable: ['Estável', 'text-blue-400', 'minus'], declining: ['Atenção', 'text-orange-400', 'trending-down'] };
+  $('trends').innerHTML = trends.slice(0, 8).map(trend => {
+    const [label, tone, icon] = labels[trend.state];
+    const change = `${trend.deltaPercent > 0 ? '+' : ''}${trend.deltaPercent.toLocaleString('pt-BR')}%`;
+    return `<article class="flex items-center justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(trend.name)}</h3><p class="mt-1 text-[11px] text-gray-500">${trend.sessions} sessões · e1RM recente ${trend.recentE1rm.toLocaleString('pt-BR')} kg</p></div><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}</span></article>`;
+  }).join('');
+}
 function renderProgress() {
   const volume = volumeByGroup(sessions, selectedDays);
   const records = personalRecords(sessions);
+  const trends = exerciseTrends(sessions, Math.max(selectedDays, 30));
   $('period-label').textContent = `Últimos ${selectedDays} dias`;
   $('summary-period').textContent = `séries em ${selectedDays} dias`;
   document.querySelectorAll('[data-period]').forEach(button => {
@@ -71,7 +90,8 @@ function renderProgress() {
     button.className = `min-h-10 rounded-xl px-4 text-xs font-bold ${active ? 'bg-neon text-black' : 'bg-white/5 text-gray-400'}`;
     button.setAttribute('aria-pressed', String(active));
   });
-  renderSummary(volume, records); renderVolume(volume); renderRecords(records);
+  renderSummary(volume, records); renderInsight(volume); renderVolume(volume); renderTrends(trends); renderRecords(records);
+  window.lucide?.createIcons();
 }
 
 function renderError() {
@@ -96,4 +116,4 @@ async function loadProgress() {
 }
 
 document.querySelectorAll('[data-period]').forEach(button => button.addEventListener('click', () => { selectedDays = Number(button.dataset.period); renderProgress(); }));
-onAuthStateChanged(auth, user => { if (!user) { window.location.href = './login.html'; return; } currentUser = user; void loadProgress(); });
+watchProtectedPage(user => { currentUser = user; void loadProgress(); });
