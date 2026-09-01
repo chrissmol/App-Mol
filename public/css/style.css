@@ -123,6 +123,12 @@ body {
 .set-type-badge.is-d { background: rgba(96,165,250,.12); color: #60a5fa; }
 .set-type-badge.is-normal { color: var(--mol-brand-text); }
 
+.mol-tour-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(2, 7, 4, .78); padding: 1rem; display: flex; align-items: flex-end; justify-content: center; }
+.mol-tour-card { width: min(100%, 28rem); border: 1px solid rgba(52, 211, 153, .35); border-radius: 1.5rem; background: var(--mol-surface); color: var(--mol-text); padding: 1.25rem; box-shadow: 0 20px 70px rgba(0,0,0,.45); animation: mol-tour-in .2s ease-out; }
+.mol-tour-target { position: relative !important; z-index: 950 !important; border-radius: .9rem; box-shadow: 0 0 0 4px var(--mol-bg), 0 0 0 7px var(--mol-brand-green), 0 0 28px rgba(52, 211, 153, .45) !important; }
+@keyframes mol-tour-in { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 640px) { .mol-tour-overlay { align-items: center; } }
+
 .mol-btn {
   display: inline-flex;
   min-height: 2.75rem;

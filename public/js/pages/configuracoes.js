@@ -10,6 +10,7 @@ import { getReminderPreferences, requestReminderPermission, saveReminderPreferen
 import { watchProtectedPage } from '../modules/auth.js';
 
 setupAppShell();
+document.getElementById('restart-onboarding')?.addEventListener('click', () => window.__molOpenOnboarding?.());
 
 const $ = id => document.getElementById(id);
 

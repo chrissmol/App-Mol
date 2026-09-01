@@ -5,6 +5,7 @@ import { setupMobileAppMode } from './mobile-app.js';
 import { connectivityState, isTrustedDevice } from './offline.js';
 import { startReminderMonitor } from './reminders.js';
 import { setupTelemetry } from '../modules/telemetry.js';
+import { setupOnboarding } from '../modules/onboarding.js';
 
 function setupConnectivityIndicator() {
   let indicator = document.getElementById('mol-connectivity');
@@ -51,6 +52,7 @@ export function setupAppShell() {
   setupConnectivityIndicator();
   startReminderMonitor();
   setupTelemetry();
+  setupOnboarding();
   enhanceSelects();
   const inPages = location.pathname.includes('/pages/');
   const faviconHref = `${inPages ? '../' : './'}assets/mol-mark.svg?v=2`;
