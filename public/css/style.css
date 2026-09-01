@@ -365,10 +365,11 @@ a:focus-visible {
 /* Casca compartilhada: todas as telas se comportam como parte do mesmo app. */
 .app-surface main {
   width: 100%;
-  max-width: 32rem;
+  max-width: min(64rem, 100%);
   margin-left: auto;
   margin-right: auto;
 }
+.dashboard-surface main { max-width: min(84rem, 100%); }
 
 .app-static-root,
 .app-static-page {
@@ -895,7 +896,7 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 }
 
 /* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */
-@media (min-width: 1024px) {
+@media (min-width: 600px) {
   .app-surface main { max-width: 64rem; padding-left: 2.5rem; padding-right: 2.5rem; }
   .dashboard-surface main { max-width: 72rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-content: start; }
   .dashboard-surface main > header { grid-column: 1 / -1; }
@@ -907,7 +908,7 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
   #exercicios-list { max-width: 52rem; }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1180px) {
   .dashboard-surface main { max-width: 84rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-surface main > section:last-child { grid-column: auto; }
   .app-surface main { padding-left: 3rem; padding-right: 3rem; }
