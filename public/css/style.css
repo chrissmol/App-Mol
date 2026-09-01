@@ -832,6 +832,14 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 .app-surface a { touch-action: manipulation; }
 .app-surface button:disabled { cursor: not-allowed; opacity: .5; }
 
+/* A busca usa uma única superfície; o input interno não deve criar um retângulo cinza. */
+.app-surface .history-search-field input,
+.app-surface .history-search-field input:focus {
+  border: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+
 .mol-brand {
   display: inline-flex;
   align-items: center;
