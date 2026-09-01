@@ -24,6 +24,16 @@ function openTour(uid, force = false) {
     overlay.querySelector('[data-skip]').onclick = finish;
     overlay.querySelector('[data-back]')?.addEventListener('click', () => { index -= 1; render(); });
     overlay.querySelector('[data-next]').onclick = () => { if (index === steps.length - 1) finish(); else { index += 1; render(); } };
+    const positionCard = () => {
+      const card = overlay.querySelector('.mol-tour-card');
+      if (!card) return;
+      const margin = 16; const rect = target?.getBoundingClientRect(); const width = Math.min(card.offsetWidth || 448, window.innerWidth - margin * 2); const height = card.offsetHeight || 220;
+      let left = (window.innerWidth - width) / 2; let top = (window.innerHeight - height) / 2;
+      if (rect) { left = Math.max(margin, Math.min(window.innerWidth - width - margin, rect.left + rect.width / 2 - width / 2)); top = rect.bottom + 18; if (top + height > window.innerHeight - margin) top = Math.max(margin, rect.top - height - 18); }
+      card.style.width = `${width}px`; card.style.left = `${left}px`; card.style.top = `${top}px`;
+    };
+    positionCard();
+    window.requestAnimationFrame(positionCard);
     overlay.querySelector('[data-next]').focus();
   };
   const finish = () => { localStorage.setItem(key(uid), 'done'); document.querySelectorAll('.mol-tour-target').forEach(el => el.classList.remove('mol-tour-target')); overlay.remove(); active = null; };
