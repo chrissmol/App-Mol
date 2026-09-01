@@ -6,6 +6,12 @@ import { setupAppShell } from '../utils/app-shell.js';
 const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
 const $ = id => document.getElementById(id);
 setupAppShell();
+const back = document.createElement('a');
+back.href = './perfil.html';
+back.className = 'mol-btn mol-btn-secondary min-h-9 rounded-xl px-3 text-xs';
+back.textContent = 'Voltar ao perfil';
+back.setAttribute('aria-label', 'Voltar ao perfil');
+document.querySelector('header')?.prepend(back);
 let errors = [];
 const fmt = value => value?.toDate ? value.toDate().toLocaleString('pt-BR') : 'agora';
 function denied() { $('admin-status').textContent = 'Acesso restrito ao administrador.'; }
