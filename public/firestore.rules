@@ -101,14 +101,14 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, delete: if signedIn() && request.auth.uid == userId;
-      allow create: if (signedIn() && request.auth.uid == userId && validNewUserProfile()) || (isAdmin() && validNewUserProfile());
-      allow update: if (signedIn() && request.auth.uid == userId && validUserProfileUpdate()) || (isAdmin() && validUserProfileUpdate());
+      allow create: if signedIn() && request.auth.uid == userId && validNewUserProfile();
+      allow update: if signedIn() && request.auth.uid == userId && validUserProfileUpdate();
     }
 
     match /treinos/{treinoId} {
       allow read, delete: if ownsExisting();
-      allow create: if (ownsNew() && validRoutine()) || (isAdmin() && validRoutine());
-      allow update: if (ownsExisting() && ownsNew() && validRoutine()) || (isAdmin() && validRoutine());
+      allow create: if ownsNew() && validRoutine();
+      allow update: if ownsExisting() && ownsNew() && validRoutine();
     }
 
     match /sessoes/{sessaoId} {
@@ -126,8 +126,8 @@ service cloud.firestore {
     match /dietas/{dietaId} {
       allow read: if signedIn() && dietaId == request.auth.uid;
       allow delete: if ownsExisting() && dietaId == request.auth.uid;
-      allow create: if (ownsNew() && dietaId == request.auth.uid && validDiet()) || (isAdmin() && validDiet());
-      allow update: if (ownsExisting() && ownsNew() && dietaId == request.auth.uid && validDiet()) || (isAdmin() && validDiet());
+      allow create: if ownsNew() && dietaId == request.auth.uid && validDiet();
+      allow update: if ownsExisting() && ownsNew() && dietaId == request.auth.uid && validDiet();
     }
 
     match /presence/{userId} {
