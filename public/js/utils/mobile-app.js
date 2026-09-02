@@ -34,10 +34,26 @@ export function setupMobileAppMode() {
 
   document.documentElement.classList.add('mol-mobile-app');
   const isStandalone = window.navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   document.documentElement.classList.toggle('mol-standalone', Boolean(isStandalone));
+  document.documentElement.classList.toggle('mol-ios', Boolean(isIOS));
+  document.documentElement.classList.toggle('mol-ios-standalone', Boolean(isIOS && isStandalone));
+
+  const syncViewportState = () => {
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    document.documentElement.style.setProperty('--mol-app-height', `${Math.round(viewportHeight)}px`);
+    const keyboardOpen = Boolean(isIOS && window.visualViewport && viewportHeight < window.innerHeight - 120);
+    document.body?.classList.toggle('mol-keyboard-open', keyboardOpen);
+  };
+  syncViewportState();
 
   if (window.__molMobileAppMode) return;
   window.__molMobileAppMode = true;
+
+  window.addEventListener('resize', syncViewportState, { passive: true });
+  window.addEventListener('orientationchange', () => window.setTimeout(syncViewportState, 250), { passive: true });
+  window.visualViewport?.addEventListener('resize', syncViewportState, { passive: true });
+  window.visualViewport?.addEventListener('scroll', syncViewportState, { passive: true });
 
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
     document.addEventListener(type, preventZoomGesture, { passive: false });

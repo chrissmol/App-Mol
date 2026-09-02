@@ -187,19 +187,35 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: .75rem;
+  align-items: end;
 }
 
 .reminder-time-field {
+  display: block;
   min-width: 0;
 }
 
 .reminder-time-field input[type="time"] {
+  display: block;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   text-align: center;
+  box-sizing: border-box;
 }
 
-@media (max-width: 360px) {
+.mol-ios .reminder-time-grid {
+  grid-template-columns: 1fr;
+}
+
+.mol-ios .reminder-time-field input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (max-width: 380px) {
   .reminder-time-grid {
     grid-template-columns: 1fr;
   }
@@ -627,6 +643,39 @@ html[data-theme="light"] body.dashboard-surface .mol-bottom-nav .mol-nav-item.te
 
 #back:active { color: #2fbf78 !important; }
 
+
+.mol-ios .mol-bottom-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: translate3d(0, 0, 0) !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  transition: background-color .18s ease, border-color .18s ease;
+}
+
+.mol-ios .mol-nav-item:active {
+  transform: none !important;
+}
+
+.mol-ios-standalone body.has-bottom-nav {
+  min-height: var(--mol-app-height, 100dvh);
+  padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem);
+}
+
+.mol-ios-standalone .workout-page .mol-bottom-nav,
+.mol-ios-standalone body.workout-page .mol-bottom-nav {
+  position: fixed !important;
+  inset-inline: 0 !important;
+  top: auto !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  contain: layout paint;
+}
+
+.mol-ios-standalone .workout-page .mol-bottom-nav > div,
+.mol-ios-standalone body.workout-page .mol-bottom-nav > div {
+  transform: none !important;
+  -webkit-transform: none !important;
+}
 .mol-bottom-nav {
   /* iOS Safari em modo "Adicionar à Tela de Início" reposiciona barras fixed
      que recebem transform durante a navegação. A barra em si não anima. */
