@@ -4,7 +4,7 @@ import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { avatarTier, formatTrainingTime, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
+import { avatarTier, formatTrainingTime, profileAchievements, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
@@ -40,8 +40,17 @@ function renderStats(stats) {
   $('consistency-title').textContent = `${stats.weekly} de ${stats.goal} treino${stats.goal === 1 ? '' : 's'} nesta semana`;
   $('consistency-progress').style.width = `${stats.percent}%`;
   $('consistency-message').textContent = stats.weekly >= stats.goal ? `Meta semanal concluída. ${profileMilestone(stats.workouts)}` : `${stats.goal - stats.weekly} treino${stats.goal - stats.weekly === 1 ? '' : 's'} para concluir a meta. ${profileMilestone(stats.workouts)}`;
+  renderAchievements(stats);
   $('profile-content').classList.remove('hidden');
   renderIcons();
+}
+
+function renderAchievements(stats) {
+  const badges = profileAchievements(stats);
+  const unlocked = badges.filter(badge => badge.unlocked);
+  const preview = (unlocked.length ? unlocked.slice(-3) : badges.slice(0, 3));
+  $('achievements-count').textContent = `${unlocked.length} de ${badges.length}`;
+  $('profile-achievements').innerHTML = preview.map(badge => `<div class="flex min-w-0 items-center gap-3 rounded-2xl bg-white/5 p-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.icon}" class="h-4 w-4"></i></span><span class="min-w-0"><strong class="block truncate text-sm">${badge.title}</strong><small class="block truncate text-xs text-gray-500">${badge.unlocked ? 'Desbloqueada' : badge.progressLabel}</small></span></div>`).join('');
 }
 
 function setReady(message = '') {

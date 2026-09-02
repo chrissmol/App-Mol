@@ -1,5 +1,5 @@
 import {
-  Apple, Archive, ArrowLeft, BellRing, CalendarCheck, CalendarDays,
+  Apple, Archive, ArrowLeft, ArrowUpRight, BellRing, CalendarCheck, CalendarDays,
   ChartNoAxesColumnIncreasing, ChartNoAxesCombined, Check, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
   CalendarCheck2, Compass, Copy, createIcons, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2,
@@ -11,7 +11,7 @@ import {
 } from 'lucide';
 
 const icons = {
-  Apple, Archive, ArrowLeft, BellRing, CalendarCheck, CalendarDays,
+  Apple, Archive, ArrowLeft, ArrowUpRight, BellRing, CalendarCheck, CalendarDays,
   ChartNoAxesColumnIncreasing, ChartNoAxesCombined, Check, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
   Compass, Copy, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2, Flame, Footprints, Info, Languages,
