@@ -14,6 +14,42 @@ document.getElementById('restart-onboarding')?.addEventListener('click', () => w
 
 const $ = id => document.getElementById(id);
 
+async function updateApplication() {
+  if (!navigator.onLine) throw new Error('Conecte-se à internet para atualizar o aplicativo.');
+  if ('caches' in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+  }
+  const registration = await navigator.serviceWorker?.getRegistration?.();
+  await registration?.unregister?.();
+  location.reload();
+}
+
+function clearTemporaryData() {
+  removeLocalItemsWithPrefix('mol-profile-cache-');
+  removeLocalItemsWithPrefix('mol-progress-cache-');
+  removeLocalItemsWithPrefix('mol-history-cache-');
+  try { window.sessionStorage.clear(); } catch { /* armazenamento pode estar indisponível */ }
+}
+
+$('refresh-app')?.addEventListener('click', async () => {
+  const confirmed = await confirmAction({ title: 'Atualizar aplicativo?', message: 'O Mol vai buscar os arquivos mais recentes e recarregar esta tela. Seus dados e preferências serão preservados.', confirmText: 'Atualizar' });
+  if (!confirmed) return;
+  const button = $('refresh-app');
+  const original = button.innerHTML;
+  setButtonLoading(button, true, original);
+  try { await updateApplication(); }
+  catch (error) { setButtonLoading(button, false, original); window.lucide?.createIcons(); $('app-status').textContent = error.message || 'Não foi possível atualizar o aplicativo.'; showToast(error.message || 'Não foi possível atualizar o aplicativo.'); }
+});
+
+$('clear-temporary')?.addEventListener('click', async () => {
+  const confirmed = await confirmAction({ title: 'Limpar dados temporários?', message: 'Serão removidos caches de carregamento, histórico local da sessão e tutoriais pendentes. Seus treinos, dieta, conta e preferências serão preservados.', confirmText: 'Limpar' });
+  if (!confirmed) return;
+  clearTemporaryData();
+  $('app-status').textContent = 'Dados temporários removidos deste aparelho.';
+  showToast('Dados temporários limpos.', 'success');
+});
+
 let appearance = getAccessibilityPreferences();
 const themeChoices = [
   ['system', 'monitor', 'Sistema'],
