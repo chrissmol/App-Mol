@@ -334,6 +334,20 @@ a:focus-visible {
   outline: 2px solid #2fbf78;
   outline-offset: 2px;
 }
+html[data-theme="light"] button:focus-visible,
+html[data-theme="light"] input:focus-visible,
+html[data-theme="light"] select:focus-visible,
+html[data-theme="light"] textarea:focus-visible,
+html[data-theme="light"] summary:focus-visible,
+html[data-theme="light"] a:focus-visible {
+  outline-color: #176b43;
+}
+
+/* Controles compactos continuam confortáveis no toque sem esticar botões
+   de texto ou alterar a composição dos cards. */
+.mol-nav-item,
+.mol-select-trigger,
+.mol-select-option { min-width: 44px; }
 
 /* Respeita usuários que preferem menos movimento */
 @media (prefers-reduced-motion: reduce) {
@@ -920,7 +934,8 @@ html[data-theme="light"] body .divide-white\/5 > :not([hidden]) ~ :not([hidden])
 @media (min-width: 1180px) {
   .dashboard-surface main { max-width: 84rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-surface main > section:last-child { grid-column: auto; }
-  .app-surface main { padding-left: 3rem; padding-right: 3rem; }
+  .app-surface main { max-width: 72rem; padding-left: 3rem; padding-right: 3rem; }
+  .app-surface main.max-w-md { max-width: 72rem; }
 }
 
 /* Celular horizontal: reduz respiros verticais e preserva controles acima da navegação. */
