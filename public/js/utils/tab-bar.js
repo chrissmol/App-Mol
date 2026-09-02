@@ -18,21 +18,9 @@ function activePage() {
   return current === '' ? 'index.html' : current;
 }
 
-export function setupTabBar() {
-  const nav = document.querySelector('nav[data-mol-tabbar], nav.mol-tabbar, nav.mol-bottom-nav, nav.fixed');
-  if (!nav) return;
-
-  const inPages = location.pathname.includes('/pages/');
-  const current = activePage();
+function tabMarkup(inPages, current) {
   const activeIndex = Math.max(0, TABS.findIndex(tab => tab.page === current));
-
-  document.body.classList.add('has-bottom-nav');
-  nav.className = 'mol-tabbar';
-  nav.dataset.molTabbar = 'true';
-  nav.setAttribute('aria-label', t('mainNavigation', 'Navegação principal'));
-  nav.setAttribute('role', 'navigation');
-
-  nav.innerHTML = `
+  return `
     <div class="mol-tabbar__surface" style="--mol-tab-index:${activeIndex};--mol-tab-count:${TABS.length};">
       <span class="mol-tabbar__indicator" aria-hidden="true"></span>
       ${TABS.map(tab => {
@@ -47,6 +35,43 @@ export function setupTabBar() {
       }).join('')}
     </div>
   `;
+}
+
+export function setupTabBar() {
+  const nav = document.querySelector('nav[data-mol-tabbar], nav.mol-tabbar, nav.mol-bottom-nav, nav.fixed');
+  if (!nav) return;
+
+  const inPages = location.pathname.includes('/pages/');
+  const current = activePage();
+  const activeIndex = Math.max(0, TABS.findIndex(tab => tab.page === current));
+
+  document.body.classList.add('has-bottom-nav');
+  nav.className = 'mol-tabbar';
+  nav.dataset.molTabbar = 'true';
+  nav.setAttribute('aria-label', t('mainNavigation', 'Navegação principal'));
+  nav.setAttribute('role', 'navigation');
+
+  if (!nav.querySelector('.mol-tabbar__surface')) {
+    nav.innerHTML = tabMarkup(inPages, current);
+  }
+
+  const surface = nav.querySelector('.mol-tabbar__surface');
+  surface?.style.setProperty('--mol-tab-index', String(activeIndex));
+  surface?.style.setProperty('--mol-tab-count', String(TABS.length));
+
+  nav.querySelectorAll('.mol-tabbar__item').forEach(item => {
+    const page = item.dataset.page;
+    const tab = TABS.find(entry => entry.page === page);
+    const isActive = page === current || (current === '' && page === 'index.html');
+    const label = tab ? t(tab.labelKey, tab.fallback) : item.textContent.trim();
+    item.classList.toggle('is-active', isActive);
+    item.href = hrefFor(page, inPages);
+    item.setAttribute('aria-label', label);
+    if (isActive) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+    const span = item.querySelector('span');
+    if (span) span.textContent = label;
+  });
 
   renderIcons(nav);
 }

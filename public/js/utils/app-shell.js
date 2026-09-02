@@ -90,13 +90,6 @@ export function setupAppShell() {
       window.dispatchEvent(new Event('mol-install-available'));
     });
   }
-  // Folha compilada comum: mantém o mesmo tema também nas páginas legadas.
-  if (!document.querySelector('link[data-mol-tailwind]')) {
-    const css = document.createElement('link');
-    css.rel = 'stylesheet'; css.dataset.molTailwind = 'true';
-    css.href = location.pathname.includes('/pages/') ? '../css/tailwind.css' : './css/tailwind.css';
-    document.head.appendChild(css);
-  }
   setupTabBar();
   document.body.classList.add('mol-shell-ready');
 }
