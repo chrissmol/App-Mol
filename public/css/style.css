@@ -394,7 +394,7 @@ html[data-large-text="true"] { font-size: 112.5%; }
 }
 
 body { padding-bottom: var(--mol-bottom-nav-safe-area); }
-body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
+body.has-bottom-nav { padding-bottom: calc(var(--mol-tabbar-height, var(--mol-bottom-nav-height)) + 1rem); }
 html { scrollbar-gutter: stable; }
 nav.fixed { padding-bottom: 0; }
 nav.fixed.bottom-0, nav.fixed.mol-bottom-nav { background: #101411; background-color: #101411; }
@@ -710,6 +710,160 @@ html[data-theme="light"] body .mol-bottom-nav::before {
   background: #ffffff;
 }
 
+/* Tab bar principal: componente único, opaco e estável para PWA/iOS/Android. */
+:root {
+  --mol-tabbar-content-height: 4.75rem;
+  --mol-tabbar-safe-area: env(safe-area-inset-bottom, 0px);
+  --mol-tabbar-height: calc(var(--mol-tabbar-content-height) + var(--mol-tabbar-safe-area));
+  --mol-bottom-nav-content-height: var(--mol-tabbar-content-height);
+  --mol-bottom-nav-safe-area: var(--mol-tabbar-safe-area);
+  --mol-bottom-nav-height: var(--mol-tabbar-height);
+  --mol-tabbar-bg: #101411;
+  --mol-tabbar-border: rgba(255,255,255,.1);
+  --mol-tabbar-muted: #7f8f88;
+  --mol-tabbar-active: #57d493;
+  --mol-tabbar-indicator: rgba(47,191,120,.13);
+}
+
+html[data-theme="light"] {
+  --mol-tabbar-bg: #ffffff;
+  --mol-tabbar-border: #dce7df;
+  --mol-tabbar-muted: #5f7069;
+  --mol-tabbar-active: #0f6b42;
+  --mol-tabbar-indicator: #e2f4eb;
+}
+
+body.has-bottom-nav {
+  padding-bottom: calc(var(--mol-tabbar-height) + 1rem);
+}
+
+.mol-tabbar,
+.mol-bottom-nav,
+nav.fixed.bottom-0 {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 0;
+  z-index: 120;
+  width: 100%;
+  height: var(--mol-tabbar-height);
+  min-height: var(--mol-tabbar-height);
+  padding: 0 0 var(--mol-tabbar-safe-area);
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--mol-tabbar-bg);
+  background-color: var(--mol-tabbar-bg);
+  border-top: 1px solid var(--mol-tabbar-border);
+  box-shadow: 0 -1px 0 rgba(255,255,255,.04), 0 -18px 40px rgba(0,0,0,.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: translate3d(0,0,0);
+  -webkit-transform: translate3d(0,0,0);
+  contain: layout paint style;
+  isolation: isolate;
+  overscroll-behavior: none;
+}
+
+.mol-tabbar::before,
+.mol-bottom-nav::before,
+nav.fixed.bottom-0::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--mol-tabbar-bg);
+  pointer-events: none;
+}
+
+.mol-tabbar__surface,
+.mol-bottom-nav .mol-nav-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: .25rem;
+  width: min(100%, 32rem);
+  height: var(--mol-tabbar-content-height);
+  min-height: var(--mol-tabbar-content-height);
+  margin: 0 auto;
+  padding: .55rem .75rem;
+  box-sizing: border-box;
+}
+
+.mol-tabbar__indicator {
+  position: absolute;
+  z-index: 0;
+  top: .55rem;
+  bottom: .55rem;
+  left: calc(.75rem + ((100% - 1.5rem) / var(--mol-tab-count, 4)) * var(--mol-tab-index, 0));
+  width: calc((100% - 1.5rem) / var(--mol-tab-count, 4));
+  border-radius: 1.25rem;
+  background: var(--mol-tabbar-indicator);
+  transition: left .22s ease, background-color .18s ease;
+  pointer-events: none;
+}
+
+.mol-tabbar__item,
+.mol-nav-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .2rem;
+  min-width: 0;
+  min-height: 3.15rem;
+  border-radius: 1.15rem;
+  color: var(--mol-tabbar-muted);
+  text-decoration: none;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  transform: none !important;
+  -webkit-transform: none !important;
+  transition: color .18s ease, background-color .18s ease;
+}
+
+.mol-tabbar__item.is-active,
+.mol-tabbar__item[aria-current="page"],
+.mol-bottom-nav .mol-nav-item[aria-current="page"],
+.mol-bottom-nav .mol-nav-item.text-neon {
+  color: var(--mol-tabbar-active);
+}
+
+.mol-tabbar__item svg,
+.mol-tabbar__item [data-lucide],
+.mol-nav-item svg,
+.mol-nav-item [data-lucide] {
+  width: 1.22rem;
+  height: 1.22rem;
+  flex: 0 0 1.22rem;
+  stroke-width: 2.15;
+}
+
+.mol-tabbar__item span,
+.mol-nav-item span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .64rem;
+  line-height: .9rem;
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+
+.app-surface .mol-tabbar a:active,
+.app-surface .mol-tabbar__item:active,
+.app-surface .mol-bottom-nav a:active,
+.app-surface .mol-nav-item:active {
+  transform: none !important;
+  -webkit-transform: none !important;
+}
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
@@ -1112,13 +1266,13 @@ html[data-reduce-motion="true"] *::after {
   .app-surface main > section,
   .app-surface main > article { min-width: 0; }
   .max-w-md { max-width: 32rem; }
-  body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
+  body.has-bottom-nav { padding-bottom: calc(var(--mol-tabbar-height, var(--mol-bottom-nav-height)) + 1rem); }
   /* Nunca cria cards estreitos: só abre uma nova coluna com ao menos 22rem livres. */
   #rotinas-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1rem; }
   #rotinas-list > * { margin-top: 0 !important; margin-bottom: 0 !important; }
   #view-detalhe, #view-biblioteca, #view-explorar, #view-nova-rotina { max-width: 44rem; margin-left: auto; margin-right: auto; }
   #exercicios-list { max-width: 44rem; margin-left: auto; margin-right: auto; }
-  body.rest-active .workout-page main { padding-bottom: calc(var(--mol-bottom-nav-height) + 8rem); }
+  body.rest-active .workout-page main { padding-bottom: calc(var(--mol-tabbar-height, var(--mol-bottom-nav-height)) + 8rem); }
 }
 
 /* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */
@@ -1143,11 +1297,11 @@ html[data-reduce-motion="true"] *::after {
 
 /* Celular horizontal: reduz respiros verticais e preserva controles acima da navegação. */
 @media (orientation: landscape) and (max-height: 600px) {
-  :root { --mol-bottom-nav-content-height: 4.25rem; }
-  body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + .75rem); }
+  :root { --mol-tabbar-content-height: 4.25rem; --mol-bottom-nav-content-height: var(--mol-tabbar-content-height); }
+  body.has-bottom-nav { padding-bottom: calc(var(--mol-tabbar-height, var(--mol-bottom-nav-height)) + .75rem); }
   .app-surface main { max-width: 42rem; }
-  .mol-bottom-nav > div { height: var(--mol-bottom-nav-content-height); min-height: var(--mol-bottom-nav-content-height); max-width: 42rem; }
-  .mol-nav-item { min-height: 2.75rem; }
+  .mol-tabbar__surface, .mol-bottom-nav > div { height: var(--mol-tabbar-content-height); min-height: var(--mol-tabbar-content-height); max-width: 42rem; }
+  .mol-tabbar__item, .mol-nav-item { min-height: 2.75rem; }
   .pt-8 { padding-top: 1.25rem; }
   .pb-6, .pb-7 { padding-bottom: 1rem; }
   nav.fixed .py-3 { padding-top: .5rem; padding-bottom: .5rem; }

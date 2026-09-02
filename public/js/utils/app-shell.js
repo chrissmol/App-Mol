@@ -1,11 +1,11 @@
 import { enhanceSelects } from './ui.js';
 import { initializeAccessibility } from './accessibility.js';
-import { renderIcons } from './icons.js';
 import { setupMobileAppMode } from './mobile-app.js';
 import { connectivityState, isTrustedDevice } from './offline.js';
 import { startReminderMonitor } from './reminders.js';
 import { applyLanguage, initializeLanguage, t } from './language.js';
 import { setupTelemetry } from '../modules/telemetry.js';
+import { setupTabBar } from './tab-bar.js';
 
 
 function setupSkipLink() {
@@ -97,29 +97,6 @@ export function setupAppShell() {
     css.href = location.pathname.includes('/pages/') ? '../css/tailwind.css' : './css/tailwind.css';
     document.head.appendChild(css);
   }
-  const nav = document.querySelector('nav.fixed');
-  if (nav) {
-    document.body.classList.add('has-bottom-nav');
-    // Algumas páginas antigas traziam utilitários próprios (inclusive
-    // backdrop-filter) na barra. Em iOS instalado isso criava outro plano de
-    // composição e fazia o rodapé terminar acima da área segura.
-    nav.className = 'fixed bottom-0 left-0 right-0 z-50 mol-bottom-nav';
-    const prefix = inPages ? '.' : './pages';
-    nav.innerHTML = `<div class="mol-nav-inner">
-      <a href="${inPages ? '../index.html' : './index.html'}" data-page="index.html" aria-label="${t('home', 'Início')}"><i data-lucide="layout-dashboard"></i><span data-i18n="home">${t('home', 'Início')}</span></a>
-      <a href="${prefix}/treino.html" data-page="treino.html" aria-label="${t('workout', 'Treino')}"><i data-lucide="dumbbell"></i><span data-i18n="workout">${t('workout', 'Treino')}</span></a>
-      <a href="${prefix}/dieta.html" data-page="dieta.html" aria-label="${t('diet', 'Dieta')}"><i data-lucide="apple"></i><span data-i18n="diet">${t('diet', 'Dieta')}</span></a>
-      <a href="${prefix}/perfil.html" data-page="perfil.html" aria-label="${t('profile', 'Perfil')}"><i data-lucide="user"></i><span data-i18n="profile">${t('profile', 'Perfil')}</span></a>
-    </div>`;
-    nav.querySelectorAll('a').forEach(control => {
-      const path = control.getAttribute('href')?.split('/').pop();
-      const isActive = path === location.pathname.split('/').pop();
-      control.classList.toggle('text-neon', isActive);
-      control.classList.toggle('text-gray-500', !isActive);
-      if (isActive) control.setAttribute('aria-current', 'page');
-      control.classList.add('mol-nav-item');
-    });
-    renderIcons();
-  }
+  setupTabBar();
   document.body.classList.add('mol-shell-ready');
 }
