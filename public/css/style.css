@@ -389,11 +389,11 @@ html[data-large-text="true"] { font-size: 112.5%; }
 /* Mobile first: evita que a barra fixa e o notch cubram conteúdo ou controles. */
 :root {
   --mol-bottom-nav-content-height: 4.75rem;
-  --mol-bottom-nav-safe-area: env(safe-area-inset-bottom, 0px);
+  --mol-bottom-nav-safe-area: 0px;
   --mol-bottom-nav-height: calc(var(--mol-bottom-nav-content-height) + var(--mol-bottom-nav-safe-area));
 }
 
-body { padding-bottom: var(--mol-bottom-nav-safe-area); }
+body { padding-bottom: 0; }
 body.has-bottom-nav { padding-bottom: calc(var(--mol-tabbar-height, var(--mol-bottom-nav-height)) + 1rem); }
 html { scrollbar-gutter: stable; }
 nav.fixed { padding-bottom: 0; }
@@ -666,7 +666,7 @@ html[data-theme="light"] body.dashboard-surface .mol-bottom-nav .mol-nav-item.te
 }
 
 body.has-bottom-nav {
-  min-height: var(--mol-app-height, 100dvh);
+  min-height: 100dvh;
 }
 .mol-bottom-nav {
   position: fixed !important;
@@ -674,7 +674,7 @@ body.has-bottom-nav {
   top: auto !important;
   bottom: 0 !important;
   height: var(--mol-bottom-nav-height);
-  padding-bottom: var(--mol-bottom-nav-safe-area);
+  padding-bottom: 0;
   box-sizing: border-box;
   overflow: hidden;
   isolation: isolate;
@@ -713,7 +713,7 @@ html[data-theme="light"] body .mol-bottom-nav::before {
 /* Tab bar principal: componente único, opaco e estável para PWA/iOS/Android. */
 :root {
   --mol-tabbar-content-height: 4.75rem;
-  --mol-tabbar-safe-area: env(safe-area-inset-bottom, 0px);
+  --mol-tabbar-safe-area: 0px;
   --mol-tabbar-height: calc(var(--mol-tabbar-content-height) + var(--mol-tabbar-safe-area));
   --mol-bottom-nav-content-height: var(--mol-tabbar-content-height);
   --mol-bottom-nav-safe-area: var(--mol-tabbar-safe-area);
@@ -749,7 +749,7 @@ nav.fixed.bottom-0 {
   width: 100%;
   height: var(--mol-tabbar-height);
   min-height: var(--mol-tabbar-height);
-  padding: 0 0 var(--mol-tabbar-safe-area);
+  padding: 0;
   margin: 0;
   box-sizing: border-box;
   overflow: hidden;
@@ -864,14 +864,16 @@ nav.fixed.bottom-0::before {
   transform: none !important;
   -webkit-transform: none !important;
 }
+html.mol-ios body.has-bottom-nav {
+  min-height: 100svh;
+}
+
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
 }
 
-#exercise-filters,
-#library-shortcuts,
-[role="group"].overflow-x-auto {
+.overflow-x-auto {
   mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.25rem), transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.25rem), transparent 100%);
 }
