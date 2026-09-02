@@ -316,7 +316,6 @@ html[data-theme="light"] body .text-white, html[data-theme="light"] body .text-g
 html[data-theme="light"] body .text-gray-400 { color: var(--mol-muted); }
 html[data-theme="light"] body .text-gray-500, html[data-theme="light"] body .text-gray-600 { color: var(--mol-muted); }
 html[data-theme="light"] body input, html[data-theme="light"] body select, html[data-theme="light"] body textarea { color: var(--mol-text); background-color: var(--mol-surface-2); border-color: #d3e0d7; }
-html[data-theme="light"] body .mol-bottom-nav { background: #ffffff; border-color: var(--mol-border); box-shadow: 0 -1px 0 #dce7df; }
 html[data-theme="light"] body .mol-brand { color: var(--mol-text); }
 html[data-theme="light"] body .text-black { color: #07140c; }
 html[data-theme="light"] body [class*="bg-[#151"],
@@ -596,6 +595,8 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
 .app-surface button:active, .app-surface .mol-nav-item:active, .app-surface a:active { transform: scale(.98); }
 .mol-bottom-nav { background: #101411; border-color: rgba(255,255,255,.1); box-shadow: 0 -1px 0 rgba(255,255,255,.08); }
 .mol-bottom-nav > div {
+  position: relative;
+  z-index: 1;
   width: min(100%, 32rem);
   height: var(--mol-bottom-nav-content-height);
   min-height: var(--mol-bottom-nav-content-height);
@@ -674,7 +675,10 @@ body.has-bottom-nav {
   height: var(--mol-bottom-nav-height);
   padding-bottom: var(--mol-bottom-nav-safe-area);
   box-sizing: border-box;
+  overflow: hidden;
+  isolation: isolate;
   background: #101411;
+  background-color: #101411;
   border-top: 1px solid rgba(255,255,255,.1);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -683,6 +687,25 @@ body.has-bottom-nav {
   will-change: auto;
   contain: layout paint;
   transition: background-color .18s ease, border-color .18s ease;
+}
+
+.mol-bottom-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #101411;
+}
+
+html[data-theme="light"] body .mol-bottom-nav {
+  background: #ffffff;
+  background-color: #ffffff;
+  border-color: var(--mol-border);
+  box-shadow: 0 -1px 0 #dce7df;
+}
+
+html[data-theme="light"] body .mol-bottom-nav::before {
+  background: #ffffff;
 }
 
 .overflow-x-auto {
