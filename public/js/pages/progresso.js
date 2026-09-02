@@ -94,6 +94,21 @@ function renderProgress() {
   window.lucide?.createIcons();
 }
 
+async function shareProgress() {
+  const volume = volumeByGroup(sessions, selectedDays);
+  const records = personalRecords(sessions);
+  const series = Object.values(volume).reduce((sum, value) => sum + value, 0);
+  const totalVolume = sessions.reduce((sum, session) => sum + (Number(session.volumeTotal) || 0), 0);
+  const text = `Meu resumo Mol · últimos ${selectedDays} dias\n${series} séries · ${Math.round(totalVolume).toLocaleString('pt-BR')} kg de volume · ${records.length} exercícios monitorados`;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Meu progresso no Mol', text }); return; }
+    await navigator.clipboard.writeText(text);
+    showToast('Resumo copiado para a área de transferência.', 'success');
+  } catch (error) {
+    if (error?.name !== 'AbortError') showToast('Não foi possível compartilhar o resumo.');
+  }
+}
+
 function renderError() {
   $('weekly-sets').textContent = '—'; $('trained-groups').textContent = '—'; $('record-count').textContent = '—';
   $('volume').innerHTML = '<div class="rounded-2xl bg-white/5 p-5 text-center"><p class="text-sm text-gray-500">Não foi possível carregar a distribuição.</p><button id="retry-progress" type="button" class="mt-4 min-h-10 rounded-xl bg-neon px-4 text-xs font-bold text-black">Tentar novamente</button></div>';
@@ -121,4 +136,5 @@ async function loadProgress() {
 }
 
 document.querySelectorAll('[data-period]').forEach(button => button.addEventListener('click', () => { selectedDays = Number(button.dataset.period); renderProgress(); }));
+document.getElementById('share-progress')?.addEventListener('click', shareProgress);
 watchProtectedPage(user => { currentUser = user; void loadProgress(); });

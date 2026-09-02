@@ -5,7 +5,7 @@ import {
   Compass, Copy, createIcons, Download, Dumbbell, Eye, EyeOff, FilePlus2,
   Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole,
   LogOut, Medal, Minus, Monitor, Moon, Palette, Pencil, Play, Plus, Replace, Ruler, Scale,
-  Search, Send, Settings2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star,
+  Search, Send, Settings2, Share2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star,
   Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Upload, User,
   Utensils, X
 } from 'lucide';
@@ -17,7 +17,7 @@ const icons = {
   Compass, Copy, Download, Dumbbell, Eye, EyeOff, FilePlus2, Info, Languages,
   Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole, LogOut, Medal,
   Minus, Monitor, Moon, Palette, Pencil, Play, Plus, Replace, Ruler, Scale, Search, Send,
-  Settings2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
+  Settings2, Share2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
   TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Upload, User, Utensils, X
 };
 
