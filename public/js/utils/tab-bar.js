@@ -74,4 +74,5 @@ export function setupTabBar() {
   });
 
   renderIcons(nav);
+  requestAnimationFrame(() => document.documentElement.classList.add('mol-tabbar-ready'));
 }

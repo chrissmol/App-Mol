@@ -864,44 +864,26 @@ nav.fixed.bottom-0::before {
   transform: none !important;
   -webkit-transform: none !important;
 }
-html.mol-ios body.has-bottom-nav {
-  min-height: 100svh;
-}
-/* iOS instalado: congela o viewport do app e deixa somente o conteúdo rolar.
-   Isso evita o salto do fixed bottom enquanto o WebKit recalcula a tela. */
-html.mol-ios-standalone,
-html.mol-ios-standalone body.has-bottom-nav {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  overflow: hidden;
+
+
+
+/* Evita expor o estado intermediário do WebKit/iOS durante o primeiro cálculo
+   do viewport. A barra aparece já no estado final, sem o pulo visual. */
+html.mol-ios-standalone:not(.mol-tabbar-ready) body.has-bottom-nav > .mol-tabbar {
+  opacity: 0;
+  pointer-events: none;
 }
 
-html.mol-ios-standalone body.has-bottom-nav {
-  position: fixed;
-  inset: 0;
-  padding-bottom: 0;
-}
-
-html.mol-ios-standalone body.has-bottom-nav > main {
-  height: 100%;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  padding-bottom: calc(var(--mol-tabbar-height) + 1.25rem);
-}
-
-html.mol-ios-standalone body.has-bottom-nav > .mol-tabbar {
-  position: absolute;
-  bottom: 0;
+html.mol-ios-standalone.mol-tabbar-ready body.has-bottom-nav > .mol-tabbar {
+  opacity: 1;
 }
 
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
 }
+
+
 
 .overflow-x-auto {
   mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.25rem), transparent 100%);
