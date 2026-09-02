@@ -20,6 +20,7 @@ let weights = [];
 let activeDays = new Set();
 let now = new Date();
 let visibleMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+let selectedCalendarDay = null;
 
 function setPageState(state, message = '') {
   $('page-status').classList.toggle('hidden', state === 'ready');
@@ -62,8 +63,21 @@ function renderCalendar() {
   $('next-month').disabled = isCurrent;
   $('next-month').classList.toggle('opacity-30', isCurrent);
   const blanks = Array.from({ length: calendar.leadingBlanks }, () => '<span aria-hidden="true"></span>');
-  const days = calendar.days.map(item => `<span class="flex aspect-square items-center justify-center rounded-lg text-xs ${item.trained ? 'bg-neon font-extrabold text-black' : 'bg-white/5 text-gray-400'} ${item.today && !item.trained ? 'ring-1 ring-neon' : ''}" aria-label="${item.day}${item.trained ? ', treino concluído' : ''}${item.today ? ', hoje' : ''}">${item.day}</span>`);
+  const days = calendar.days.map(item => `<button type="button" data-calendar-day="${item.day}" ${item.trained ? '' : 'disabled'} class="flex aspect-square items-center justify-center rounded-lg text-xs ${item.trained ? 'bg-neon font-extrabold text-black' : 'bg-white/5 text-gray-400'} ${item.today && !item.trained ? 'ring-1 ring-neon' : ''} ${selectedCalendarDay === item.day ? 'ring-2 ring-white ring-offset-1 ring-offset-[#070a08]' : ''}" aria-label="${item.day}${item.trained ? ', treino concluído' : ', sem treino'}${item.today ? ', hoje' : ''}" aria-pressed="${selectedCalendarDay === item.day}">${item.day}</button>`);
   $('calendar').innerHTML = [...blanks, ...days].join('');
+  $('calendar').querySelectorAll('[data-calendar-day]').forEach(button => button.onclick = () => { selectedCalendarDay = Number(button.dataset.calendarDay); renderCalendar(); renderCalendarSummary(); });
+  renderCalendarSummary();
+}
+
+function renderCalendarSummary() {
+  const summary = $('calendar-day-summary');
+  if (!summary) return;
+  if (!selectedCalendarDay) { summary.textContent = 'Selecione um dia com treino.'; return; }
+  const date = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), selectedCalendarDay);
+  const daySessions = sessions.filter(session => { const value = dateFrom(session.concluidoEm); return value && value.getFullYear() === date.getFullYear() && value.getMonth() === date.getMonth() && value.getDate() === date.getDate(); });
+  const series = daySessions.reduce((total, session) => total + (session.exercicios || []).reduce((sum, exercise) => sum + (exercise.series || []).filter(set => set.concluida === true).length, 0), 0);
+  const volume = daySessions.reduce((total, session) => total + (Number(session.volumeTotal) || 0), 0);
+  summary.textContent = `${selectedCalendarDay} de ${date.toLocaleDateString('pt-BR', { month: 'long' })} · ${daySessions.length} ${daySessions.length === 1 ? 'treino' : 'treinos'} · ${series} séries · ${Math.round(volume).toLocaleString('pt-BR')} kg`;
 }
 
 function renderBadges(stats) {
@@ -322,8 +336,8 @@ watchProtectedPage(user => {
 
 $('goal-down').onclick = () => saveGoal(-1);
 $('goal-up').onclick = () => saveGoal(1);
-$('previous-month').onclick = () => { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1); renderCalendar(); };
-$('next-month').onclick = () => { if (!$('next-month').disabled) { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1); renderCalendar(); } };
+$('previous-month').onclick = () => { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1); selectedCalendarDay = null; renderCalendar(); };
+$('next-month').onclick = () => { if (!$('next-month').disabled) { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1); selectedCalendarDay = null; renderCalendar(); } };
 
 $('save').onclick = async () => {
   if (!currentUser) return showToast('Aguarde o carregamento da conta.');
