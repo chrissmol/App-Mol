@@ -7,6 +7,7 @@ const presenceRef = uid => doc(db, 'presence', uid);
 let currentUser = null;
 let heartbeat = 0;
 let errorQueue = [];
+const MAX_ERROR_QUEUE = 20;
 
 function isAdmin(user) { return String(user?.email || '').toLowerCase() === ADMIN_EMAIL; }
 function safeText(value, max = 2000) { return String(value || '').slice(0, max); }
@@ -16,8 +17,16 @@ async function writePresence(online) {
 }
 async function flushError(error) {
   if (!currentUser || isAdmin(currentUser)) return;
-  const payload = { userId: currentUser.uid, email: safeText(currentUser.email, 254), message: safeText(error.message || error, 1000), stack: safeText(error.stack, 4000), page: location.pathname, url: location.href.slice(0, 1000), userAgent: navigator.userAgent.slice(0, 500), createdAt: serverTimestamp() };
-  try { await addDoc(collection(db, 'clientErrors'), payload); } catch { errorQueue.push(payload); }
+  const payload = { userId: currentUser.uid, email: safeText(currentUser.email, 254), message: safeText(error.message || error, 1000), stack: safeText(error.stack, 4000), page: location.pathname, url: safeText(`${location.origin}${location.pathname}`, 500), userAgent: navigator.userAgent.slice(0, 500), createdAt: serverTimestamp() };
+  try { await addDoc(collection(db, 'clientErrors'), payload); } catch { errorQueue.push(payload); if (errorQueue.length > MAX_ERROR_QUEUE) errorQueue.shift(); }
+}
+async function retryQueuedErrors() {
+  if (!currentUser || isAdmin(currentUser) || !errorQueue.length) return;
+  const pending = errorQueue.splice(0, MAX_ERROR_QUEUE);
+  for (const payload of pending) {
+    try { await addDoc(collection(db, 'clientErrors'), payload); }
+    catch { errorQueue.unshift(payload); break; }
+  }
 }
 function captureError(message, source, line, column, error) { void flushError({ message: `${message}${source ? ` (${source}:${line || 0}:${column || 0})` : ''}`, stack: error?.stack }); }
 export function setupTelemetry() {
@@ -27,5 +36,5 @@ export function setupTelemetry() {
   window.addEventListener('unhandledrejection', event => { void flushError(event.reason instanceof Error ? event.reason : { message: event.reason }); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void writePresence(true); });
   window.addEventListener('pagehide', () => { void writePresence(false); });
-  onAuthStateChanged(auth, async user => { currentUser = user; clearInterval(heartbeat); errorQueue = []; if (!user) return; await writePresence(true); heartbeat = window.setInterval(() => void writePresence(true), 30000); });
+  onAuthStateChanged(auth, async user => { currentUser = user; clearInterval(heartbeat); if (!user) { errorQueue = []; return; } await writePresence(true); await retryQueuedErrors(); heartbeat = window.setInterval(() => { void writePresence(true); void retryQueuedErrors(); }, 30000); });
 }
