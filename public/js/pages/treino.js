@@ -396,14 +396,15 @@ async function compartilharResumoTreino(summary) {
   const context = canvas.getContext('2d');
   if (!context) return showToast('Não foi possível criar a imagem do resumo.');
   const background = context.createLinearGradient(0, 0, 1080, 1350);
+  const fillCard = (x, y, width, height, radius = 26) => { context.beginPath(); if (context.roundRect) context.roundRect(x, y, width, height, radius); else context.rect(x, y, width, height); context.fill(); };
   background.addColorStop(0, '#0b1710'); background.addColorStop(1, '#050806');
   context.fillStyle = background; context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = '#57d493'; context.font = '700 34px Inter, sans-serif'; context.fillText('〽 MOL', 72, 100);
   context.fillStyle = '#f8fafc'; context.font = '800 62px Inter, sans-serif'; context.fillText('Treino concluído', 72, 205);
   context.fillStyle = '#8b9a91'; context.font = '400 30px Inter, sans-serif'; context.fillText('Seu esforço de hoje ficou registrado.', 72, 255);
   const cards = [['SÉRIES', summary.series], ['VOLUME', `${Math.round(summary.volume).toLocaleString('pt-BR')} kg`], ['DURAÇÃO', `${summary.minutos} min`], ['EXERCÍCIOS', summary.exercicios], ['NOVOS RECORDES', summary.records]];
-  cards.forEach(([label, value], index) => { const x = 72 + (index % 2) * 480; const y = 350 + Math.floor(index / 2) * 190; context.fillStyle = '#142219'; context.roundRect(x, y, 420, 140, 26); context.fill(); context.fillStyle = '#8b9a91'; context.font = '700 22px Inter, sans-serif'; context.fillText(label, x + 28, y + 42); context.fillStyle = index === 1 || index === 4 ? '#57d493' : '#f8fafc'; context.font = '800 42px Inter, sans-serif'; context.fillText(String(value), x + 28, y + 98); });
-  context.fillStyle = '#1d3b28'; context.roundRect(72, 890, 936, 190, 26); context.fill();
+  cards.forEach(([label, value], index) => { const x = 72 + (index % 2) * 480; const y = 350 + Math.floor(index / 2) * 190; context.fillStyle = '#142219'; fillCard(x, y, 420, 140); context.fillStyle = '#8b9a91'; context.font = '700 22px Inter, sans-serif'; context.fillText(label, x + 28, y + 42); context.fillStyle = index === 1 || index === 4 ? '#57d493' : '#f8fafc'; context.font = '800 42px Inter, sans-serif'; context.fillText(String(value), x + 28, y + 98); });
+  context.fillStyle = '#1d3b28'; fillCard(72, 890, 936, 190);
   context.fillStyle = '#57d493'; context.font = '700 24px Inter, sans-serif'; context.fillText('COMPARAÇÃO MOL', 104, 945);
   context.fillStyle = '#f8fafc'; context.font = '600 30px Inter, sans-serif';
   const comparison = summary.comparison; const words = comparison.match(/.{1,48}(?:\s|$)/g) || [comparison];
