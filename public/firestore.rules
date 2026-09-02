@@ -29,10 +29,56 @@ service cloud.firestore {
       ];
     }
 
+
+    function validMacroGoals() {
+      return !('macroGoals' in request.resource.data)
+        || (request.resource.data.macroGoals is map
+          && request.resource.data.macroGoals.keys().hasOnly(['protein', 'carbs', 'fat'])
+          && (!('protein' in request.resource.data.macroGoals) || (request.resource.data.macroGoals.protein is number && request.resource.data.macroGoals.protein >= 0 && request.resource.data.macroGoals.protein <= 600))
+          && (!('carbs' in request.resource.data.macroGoals) || (request.resource.data.macroGoals.carbs is number && request.resource.data.macroGoals.carbs >= 0 && request.resource.data.macroGoals.carbs <= 1200))
+          && (!('fat' in request.resource.data.macroGoals) || (request.resource.data.macroGoals.fat is number && request.resource.data.macroGoals.fat >= 0 && request.resource.data.macroGoals.fat <= 400)));
+    }
+
+    function validAccessibilityPreferences() {
+      return !('preferenciasAcessibilidade' in request.resource.data)
+        || (request.resource.data.preferenciasAcessibilidade is map
+          && request.resource.data.preferenciasAcessibilidade.keys().hasOnly(['theme', 'contrast', 'largeText', 'reduceMotion', 'language'])
+          && (!('theme' in request.resource.data.preferenciasAcessibilidade) || request.resource.data.preferenciasAcessibilidade.theme in ['system', 'dark', 'light'])
+          && (!('contrast' in request.resource.data.preferenciasAcessibilidade) || request.resource.data.preferenciasAcessibilidade.contrast is bool)
+          && (!('largeText' in request.resource.data.preferenciasAcessibilidade) || request.resource.data.preferenciasAcessibilidade.largeText is bool)
+          && (!('reduceMotion' in request.resource.data.preferenciasAcessibilidade) || request.resource.data.preferenciasAcessibilidade.reduceMotion is bool)
+          && (!('language' in request.resource.data.preferenciasAcessibilidade) || (request.resource.data.preferenciasAcessibilidade.language is map
+            && request.resource.data.preferenciasAcessibilidade.language.keys().hasOnly(['mode', 'value'])
+            && (!('mode' in request.resource.data.preferenciasAcessibilidade.language) || request.resource.data.preferenciasAcessibilidade.language.mode in ['system', 'pt-BR', 'en-US', 'es-ES'])
+            && (!('value' in request.resource.data.preferenciasAcessibilidade.language) || request.resource.data.preferenciasAcessibilidade.language.value in ['pt-BR', 'en-US', 'es-ES']))));
+    }
+
+    function validDashboardPreferences() {
+      return (!('dashboardCards' in request.resource.data) || (request.resource.data.dashboardCards is list && request.resource.data.dashboardCards.size() <= 10))
+        && (!('dashboardCardsUpdatedAt' in request.resource.data) || request.resource.data.dashboardCardsUpdatedAt is string || request.resource.data.dashboardCardsUpdatedAt is timestamp);
+    }
+
+    function validExerciseLibraryPreferences() {
+      return !('exerciseLibraryPreferences' in request.resource.data)
+        || (request.resource.data.exerciseLibraryPreferences is map
+          && request.resource.data.exerciseLibraryPreferences.keys().hasOnly(['favoritosExercicios', 'recentesExercicios', 'exerciciosPersonalizados'])
+          && (!('favoritosExercicios' in request.resource.data.exerciseLibraryPreferences) || (request.resource.data.exerciseLibraryPreferences.favoritosExercicios is list && request.resource.data.exerciseLibraryPreferences.favoritosExercicios.size() <= 300))
+          && (!('recentesExercicios' in request.resource.data.exerciseLibraryPreferences) || (request.resource.data.exerciseLibraryPreferences.recentesExercicios is list && request.resource.data.exerciseLibraryPreferences.recentesExercicios.size() <= 30))
+          && (!('exerciciosPersonalizados' in request.resource.data.exerciseLibraryPreferences) || (request.resource.data.exerciseLibraryPreferences.exerciciosPersonalizados is list && request.resource.data.exerciseLibraryPreferences.exerciciosPersonalizados.size() <= 30)));
+    }
     function validUserProfileValues() {
       return (!('name' in request.resource.data) || request.resource.data.name is string || request.resource.data.name == null)
         && (!('email' in request.resource.data) || request.resource.data.email is string || request.resource.data.email == null)
         && (!('photoURL' in request.resource.data) || request.resource.data.photoURL is string || request.resource.data.photoURL == null)
+        && (!('dailyCalorieGoal' in request.resource.data) || (request.resource.data.dailyCalorieGoal is number && request.resource.data.dailyCalorieGoal >= 800 && request.resource.data.dailyCalorieGoal <= 8000))
+        && (!('metaCalorias' in request.resource.data) || (request.resource.data.metaCalorias is number && request.resource.data.metaCalorias >= 800 && request.resource.data.metaCalorias <= 8000))
+        && validMacroGoals()
+        && validAccessibilityPreferences()
+        && validDashboardPreferences()
+        && validExerciseLibraryPreferences()
+        && (!('unidadePeso' in request.resource.data) || request.resource.data.unidadePeso in ['kg', 'lb'])
+        && (!('perfilPrivado' in request.resource.data) || request.resource.data.perfilPrivado is bool)
+        && (!('compartilharEstatisticas' in request.resource.data) || request.resource.data.compartilharEstatisticas is bool)
         && (!('metaSemanal' in request.resource.data) || (request.resource.data.metaSemanal is number && request.resource.data.metaSemanal >= 1 && request.resource.data.metaSemanal <= 7))
         && (!('alturaCm' in request.resource.data) || request.resource.data.alturaCm == null || (request.resource.data.alturaCm is number && request.resource.data.alturaCm >= 100 && request.resource.data.alturaCm <= 250))
         && (!('metaPesoKg' in request.resource.data) || request.resource.data.metaPesoKg == null || (request.resource.data.metaPesoKg is number && request.resource.data.metaPesoKg >= 20 && request.resource.data.metaPesoKg <= 400))

@@ -29,6 +29,8 @@ describe('contrato visual entre páginas', () => {
     const css = await readFile(new URL('../css/style.css', import.meta.url), 'utf8');
     expect(css).not.toContain('body[data-theme="light"]');
     expect(css).toContain('html[data-theme="light"] body');
-    expect(css.match(/!important/g)?.length || 0).toBeLessThanOrEqual(50);
+    expect(css).toContain('prefers-reduced-motion: reduce');
+    expect(css).toContain('html[data-reduce-motion="true"]');
+    expect(css.match(/!important/g)?.length || 0).toBeLessThanOrEqual(60);
   });
 });

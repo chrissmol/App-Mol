@@ -4,8 +4,25 @@ import { renderIcons } from './icons.js';
 import { setupMobileAppMode } from './mobile-app.js';
 import { connectivityState, isTrustedDevice } from './offline.js';
 import { startReminderMonitor } from './reminders.js';
+import { applyLanguage, initializeLanguage, t } from './language.js';
 import { setupTelemetry } from '../modules/telemetry.js';
 import { setupOnboarding } from '../modules/onboarding.js';
+
+
+function setupSkipLink() {
+  const main = document.querySelector('main');
+  if (!main) return;
+  if (!main.id) main.id = 'conteudo-principal';
+  if (!main.hasAttribute('tabindex')) main.tabIndex = -1;
+  if (document.getElementById('mol-skip-link')) return;
+  const link = document.createElement('a');
+  link.id = 'mol-skip-link';
+  link.className = 'mol-skip-link';
+  link.href = `#${main.id}`;
+  link.textContent = 'Pular para o conteúdo';
+  link.addEventListener('click', () => window.setTimeout(() => main.focus(), 0));
+  document.body.prepend(link);
+}
 
 function setupConnectivityIndicator() {
   let indicator = document.getElementById('mol-connectivity');
@@ -24,13 +41,13 @@ function setupConnectivityIndicator() {
     const state = connectivityState(navigator.onLine);
     indicator.classList.toggle('is-offline', !state.online);
     if (!state.online) {
-      indicator.innerHTML = `<span aria-hidden="true"></span><strong>Offline</strong><small>${isTrustedDevice() ? 'Alterações aguardando sincronização' : 'Dados disponíveis até fechar o app'}</small>`;
+      indicator.innerHTML = `<span aria-hidden="true"></span><strong>${t('offline', 'Offline')}</strong><small>${isTrustedDevice() ? t('offlineTrusted', 'Alterações aguardando sincronização') : t('offlineTemporary', 'Dados disponíveis até fechar o app')}</small>`;
       indicator.classList.remove('hidden');
       wasOffline = true;
       return;
     }
     if (wasOffline) {
-      indicator.innerHTML = '<span aria-hidden="true"></span><strong>Online novamente</strong><small>Sincronizando alterações</small>';
+      indicator.innerHTML = `<span aria-hidden="true"></span><strong>${t('onlineAgain', 'Online novamente')}</strong><small>${t('syncing', 'Sincronizando alterações')}</small>`;
       indicator.classList.remove('hidden');
       hideTimer = window.setTimeout(() => indicator.classList.add('hidden'), 2800);
     } else indicator.classList.add('hidden');
@@ -48,7 +65,9 @@ function setupConnectivityIndicator() {
 export function setupAppShell() {
   document.title = 'Mol';
   setupMobileAppMode();
+  setupSkipLink();
   initializeAccessibility();
+  initializeLanguage();
   setupConnectivityIndicator();
   startReminderMonitor();
   setupTelemetry();
@@ -64,8 +83,7 @@ export function setupAppShell() {
     document.head.appendChild(favicon);
   }
   favicon.href = faviconHref;
-  try { document.documentElement.lang = localStorage.getItem('mol-language') || 'pt-BR'; }
-  catch { document.documentElement.lang = 'pt-BR'; }
+  applyLanguage();
   if (!window.__molPwaPromptListener) {
     window.__molPwaPromptListener = true;
     window.addEventListener('beforeinstallprompt', (event) => {
@@ -90,10 +108,10 @@ export function setupAppShell() {
     nav.className = 'fixed bottom-0 left-0 right-0 z-50 mol-bottom-nav';
     const prefix = inPages ? '.' : './pages';
     nav.innerHTML = `<div class="mol-nav-inner">
-      <a href="${inPages ? '../index.html' : './index.html'}" data-page="index.html"><i data-lucide="layout-dashboard"></i><span>Início</span></a>
-      <a href="${prefix}/treino.html" data-page="treino.html"><i data-lucide="dumbbell"></i><span>Treino</span></a>
-      <a href="${prefix}/dieta.html" data-page="dieta.html"><i data-lucide="apple"></i><span>Dieta</span></a>
-      <a href="${prefix}/perfil.html" data-page="perfil.html"><i data-lucide="user"></i><span>Perfil</span></a>
+      <a href="${inPages ? '../index.html' : './index.html'}" data-page="index.html" aria-label="${t('home', 'Início')}"><i data-lucide="layout-dashboard"></i><span data-i18n="home">${t('home', 'Início')}</span></a>
+      <a href="${prefix}/treino.html" data-page="treino.html" aria-label="${t('workout', 'Treino')}"><i data-lucide="dumbbell"></i><span data-i18n="workout">${t('workout', 'Treino')}</span></a>
+      <a href="${prefix}/dieta.html" data-page="dieta.html" aria-label="${t('diet', 'Dieta')}"><i data-lucide="apple"></i><span data-i18n="diet">${t('diet', 'Dieta')}</span></a>
+      <a href="${prefix}/perfil.html" data-page="perfil.html" aria-label="${t('profile', 'Perfil')}"><i data-lucide="user"></i><span data-i18n="profile">${t('profile', 'Perfil')}</span></a>
     </div>`;
     nav.querySelectorAll('a').forEach(control => {
       const path = control.getAttribute('href')?.split('/').pop();

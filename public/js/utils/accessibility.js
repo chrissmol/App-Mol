@@ -4,14 +4,24 @@ import { auth, db } from '../config/firebase-config.js';
 
 const STORAGE_KEY = 'mol-accessibility';
 const PROFILE_FIELD = 'preferenciasAcessibilidade';
-const defaults = { theme: 'system', contrast: false, largeText: false };
+const languageDefaults = { mode: 'system', value: 'pt-BR' };
+const defaults = { theme: 'system', contrast: false, largeText: false, reduceMotion: false, language: languageDefaults };
+
+function normalizeLanguage(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  const mode = ['system', 'pt-BR', 'en-US', 'es-ES'].includes(source.mode) ? source.mode : 'system';
+  const language = ['pt-BR', 'en-US', 'es-ES'].includes(source.value) ? source.value : languageDefaults.value;
+  return { mode, value: language };
+}
 
 export function normalizeAccessibility(value = {}) {
   const legacyTheme = value.theme === '' ? 'dark' : value.theme;
   return {
     theme: ['system', 'dark', 'light'].includes(legacyTheme) ? legacyTheme : defaults.theme,
     contrast: value.contrast === true,
-    largeText: value.largeText === true
+    largeText: value.largeText === true,
+    reduceMotion: value.reduceMotion === true,
+    language: normalizeLanguage(value.language)
   };
 }
 
@@ -35,10 +45,12 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
     document.documentElement.dataset.theme = resolvedTheme;
     document.documentElement.dataset.highContrast = preferences.contrast ? 'true' : 'false';
     document.documentElement.dataset.largeText = preferences.largeText ? 'true' : 'false';
+    document.documentElement.dataset.reduceMotion = preferences.reduceMotion ? 'true' : 'false';
     document.documentElement.style.colorScheme = resolvedTheme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'light' ? '#f4f7f5' : '#070a08');
     document.body.dataset.theme = resolvedTheme;
     document.body.dataset.highContrast = document.documentElement.dataset.highContrast;
+    document.body.dataset.reduceMotion = document.documentElement.dataset.reduceMotion;
   }
   return preferences;
 }

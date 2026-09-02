@@ -4,6 +4,7 @@ import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenti
 import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
+import { applyLanguage, supportedLanguages } from '../utils/language.js';
 import { removeLocalItemsWithPrefix } from '../utils/storage.js';
 import { setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
@@ -56,6 +57,10 @@ const themeChoices = [
   ['dark', 'moon', 'Escuro'],
   ['light', 'sun', 'Claro']
 ];
+const languageChoices = [
+  ['system', 'smartphone', 'Sistema'],
+  ...supportedLanguages.map(language => [language.code, 'languages', language.label])
+];
 
 function applyAppearance() {
   appearance = applyAccessibilityPreferences(appearance);
@@ -66,6 +71,16 @@ function applyAppearance() {
   });
   $('contrast').checked = appearance.contrast;
   $('large-text').checked = appearance.largeText;
+  $('reduce-motion').checked = appearance.reduceMotion;
+  $('language-segments').querySelectorAll('button').forEach(button => {
+    const selected = button.dataset.language === appearance.language.mode;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  const language = applyLanguage(appearance.language);
+  $('language-status').textContent = appearance.language.mode === 'system'
+    ? `Usando o idioma do aparelho: ${language}.`
+    : `Idioma fixado em ${language}.`;
 }
 
 async function persistAppearance() {
@@ -90,6 +105,20 @@ themeChoices.forEach(([value, icon, label]) => {
 
 $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };
 $('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
+$('reduce-motion').onchange = () => { appearance.reduceMotion = $('reduce-motion').checked; persistAppearance(); };
+
+languageChoices.forEach(([value, icon, label]) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.language = value;
+  button.className = 'flex min-h-14 items-center justify-center gap-2 rounded-2xl px-3 text-xs font-bold';
+  button.innerHTML = `<i data-lucide="${icon}" class="h-4 w-4"></i><span>${label}</span>`;
+  button.onclick = () => {
+    appearance.language = { mode: value, value: value === 'system' ? appearance.language.value : value };
+    persistAppearance();
+  };
+  $('language-segments').appendChild(button);
+});
 
 
 const reminderPreferences = getReminderPreferences();

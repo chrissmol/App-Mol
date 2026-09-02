@@ -8,21 +8,21 @@ test('login, navegação privada, dieta e tema permanecem estáveis', async ({ p
   await page.locator('#googleLoginBtn').click();
   await page.waitForURL('**/index.html');
   await expect(page.locator('#user-name')).toHaveText('Christian');
-  const skipTutorial = page.getByRole('button', { name: 'Pular' });
+  const skipTutorial = page.getByRole('button', { name: /Pular|Skip|Saltar/ });
   await skipTutorial.click({ timeout: 5000 }).catch(() => {});
 
   await page.locator('[data-page="treino.html"]').click();
   await page.waitForURL('**/pages/treino.html');
-  await expect(page.getByRole('heading', { name: 'Treinos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Treinos|Training|Entreno/ })).toBeVisible();
   await expect(page).not.toHaveURL(/login\.html/);
 
   await page.locator('[data-page="dieta.html"]').click();
   await page.waitForURL('**/pages/dieta.html');
-  await expect(page.getByRole('heading', { name: 'Dieta' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Dieta|Diet/ })).toBeVisible();
   await expect(page.locator('#diet-content')).toBeVisible();
 
   await page.goto('/pages/configuracoes.html');
-  await page.getByRole('button', { name: 'Claro' }).click();
+  await page.getByRole('button', { name: /Claro|Light/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.goBack();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');

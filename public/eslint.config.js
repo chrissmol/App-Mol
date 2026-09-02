@@ -11,7 +11,7 @@ const qualityRules = {
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'assets/lucide.min.js', 'css/tailwind.css']
+    ignores: ['dist/**', 'node_modules/**', 'css/tailwind.css']
   },
   {
     files: ['js/**/*.js'],

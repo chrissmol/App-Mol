@@ -205,7 +205,6 @@ export function activateDialog(modal, { initialFocus, onCancel } = {}) {
 
 export function confirmAction({ title, message, confirmText = "Confirmar", cancelText = "Cancelar", danger = false }) {
   return new Promise((resolve) => {
-    const opener = document.activeElement;
     document.getElementById("mol-confirm")?.remove();
     const modal = document.createElement("div");
     modal.id = "mol-confirm";
@@ -218,19 +217,11 @@ export function confirmAction({ title, message, confirmText = "Confirmar", cance
     modal.querySelector('[data-title]').textContent = title;
     modal.querySelector('[data-message]').textContent = message;
     document.body.appendChild(modal); window.lucide?.createIcons();
-    const close = (result) => { modal.remove(); opener?.focus?.(); resolve(result); };
+    const closeDialog = activateDialog(modal, { initialFocus: modal.querySelector('[data-cancel]'), onCancel: () => close(false) });
+    const close = (result) => { closeDialog(); resolve(result); };
     modal.querySelector("[data-cancel]").onclick = () => close(false);
     modal.querySelector("[data-confirm]").onclick = () => close(true);
     modal.onclick = (event) => { if (event.target === modal) close(false); };
-    modal.onkeydown = event => {
-      if (event.key === 'Escape') return close(false);
-      if (event.key !== 'Tab') return;
-      const controls = [...modal.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled)')];
-      const first = controls[0]; const last = controls.at(-1);
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    modal.querySelector('[data-cancel]')?.focus();
   });
 }
 

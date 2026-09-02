@@ -33,6 +33,32 @@ describe('regras do Firestore', () => {
     await assertFails(setDoc(doc(owner, 'users', 'user-a'), { name: 'A', metaSemanal: 99 }));
   });
 
+
+  it('valida campos estruturados do perfil e bloqueia preferências inválidas', async () => {
+    const owner = user('user-a');
+    const reference = doc(owner, 'users', 'user-a');
+    await assertSucceeds(setDoc(reference, {
+      name: 'A',
+      metaSemanal: 3,
+      dailyCalorieGoal: 2400,
+      metaCalorias: 2400,
+      macroGoals: { protein: 180, carbs: 250, fat: 70 },
+      preferenciasAcessibilidade: { theme: 'system', contrast: false, largeText: true, reduceMotion: false, language: { mode: 'pt-BR', value: 'pt-BR' } },
+      dashboardCards: [{ id: 'today-card', visible: true }],
+      dashboardCardsUpdatedAt: '2026-09-02T12:00:00.000Z',
+      exerciseLibraryPreferences: { favoritosExercicios: ['Supino'], recentesExercicios: [], exerciciosPersonalizados: [] },
+      unidadePeso: 'kg',
+      perfilPrivado: true,
+      compartilharEstatisticas: false
+    }));
+    await assertFails(updateDoc(reference, { unidadePeso: 'stone' }));
+    await assertFails(updateDoc(reference, { macroGoals: { protein: 9999 } }));
+    await assertFails(updateDoc(reference, { preferenciasAcessibilidade: { theme: 'solarized' } }));
+    await assertFails(updateDoc(reference, { preferenciasAcessibilidade: { language: { mode: 'fr-FR', value: 'fr-FR' } } }));
+    await assertFails(updateDoc(reference, { dashboardCards: Array.from({ length: 11 }, (_, index) => ({ id: `card-${index}`, visible: true })) }));
+    await assertFails(updateDoc(reference, { exerciseLibraryPreferences: { favoritosExercicios: Array.from({ length: 301 }, (_, index) => `ex-${index}`) } }));
+  });
+
   it('valida dono, nome e limite estrutural das rotinas', async () => {
     const owner = user('user-a');
     await assertSucceeds(setDoc(doc(owner, 'treinos', 'rotina-a'), routine('user-a')));
