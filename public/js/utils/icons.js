@@ -2,23 +2,23 @@ import {
   Apple, Archive, ArrowLeft, BellRing, CalendarCheck, CalendarDays,
   ChartNoAxesColumnIncreasing, ChartNoAxesCombined, Check, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
-  Compass, Copy, createIcons, Download, Dumbbell, Eye, EyeOff, FilePlus2,
-  Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole,
+  CalendarCheck2, Compass, Copy, createIcons, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2,
+  Flame, Footprints, Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole,
   LogOut, Medal, Minus, Monitor, Moon, Palette, Pencil, Play, Plus, Replace, Ruler, Scale,
   Search, Send, Settings2, Share2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star,
-  Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Upload, User,
-  Utensils, X
+  Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Upload, User,
+  Utensils, Weight, X
 } from 'lucide';
 
 const icons = {
   Apple, Archive, ArrowLeft, BellRing, CalendarCheck, CalendarDays,
   ChartNoAxesColumnIncreasing, ChartNoAxesCombined, Check, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
-  Compass, Copy, Download, Dumbbell, Eye, EyeOff, FilePlus2, Info, Languages,
-  Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole, LogOut, Medal,
+  Compass, Copy, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2, Flame, Footprints, Info, Languages,
+  CalendarCheck2, Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole, LogOut, Medal,
   Minus, Monitor, Moon, Palette, Pencil, Play, Plus, Replace, Ruler, Scale, Search, Send,
   Settings2, Share2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
-  TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Upload, User, Utensils, X
+  TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Upload, User, Utensils, Weight, X
 };
 
 const kebabCase = name => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Za-z])(\d)/g, '$1-$2').toLocaleLowerCase('en-US');

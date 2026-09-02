@@ -90,7 +90,12 @@ export function profileAchievements(stats) {
     { id: 'time-invested', icon: 'clock-3', title: 'Tempo investido', description: 'Treine por 10 horas no total.', unlocked: seconds >= 36000, ...milestone(seconds, 36000, 'segundos') },
     { id: 'weekly-focus', icon: 'target', title: 'Meta batida', description: 'Conclua sua meta semanal atual.', unlocked: weeklyGoalReached, ...milestone(weekly, goal, 'treinos na semana') },
     { id: 'consistency-master', icon: 'calendar-check-2', title: 'Consistência de aço', description: 'Complete 4 semanas seguidas na meta.', unlocked: value('streak') >= 4, ...milestone(value('streak'), 4, 'semanas') },
-    { id: 'calendar-alive', icon: 'calendar-days', title: 'Calendário vivo', description: 'Treine em 12 dias diferentes.', unlocked: value('activeDays') >= 12, ...milestone(value('activeDays'), 12, 'dias') }
+    { id: 'calendar-alive', icon: 'calendar-days', title: 'Calendário vivo', description: 'Treine em 12 dias diferentes.', unlocked: value('activeDays') >= 12, ...milestone(value('activeDays'), 12, 'dias') },
+    { id: 'long-haul', icon: 'footprints', title: 'Longo caminho', description: 'Treine em 30 dias diferentes.', unlocked: value('activeDays') >= 30, ...milestone(value('activeDays'), 30, 'dias') },
+    { id: 'volume-legend', icon: 'weight', title: 'Lenda do volume', description: 'Some 100 mil kg de volume.', unlocked: volume >= 100000, ...milestone(volume, 100000, 'kg') },
+    { id: 'set-machine', icon: 'layers-3', title: 'Máquina de séries', description: 'Registre 500 séries concluídas.', unlocked: sets >= 500, ...milestone(sets, 500, 'séries') },
+    { id: 'iron-year', icon: 'calendar-check-2', title: 'Ano de ferro', description: 'Complete 8 semanas seguidas na meta.', unlocked: value('streak') >= 8, ...milestone(value('streak'), 8, 'semanas') },
+    { id: 'mol-legend', icon: 'sparkles', title: 'Lenda Mol', description: 'Complete 250 treinos.', unlocked: workouts >= 250, ...milestone(workouts, 250, 'treinos') }
   ];
 }
 
