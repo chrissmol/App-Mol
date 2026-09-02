@@ -7,6 +7,7 @@ import { activateDialog, showToast, confirmAction, escapeHTML } from '../utils/u
 import { setupAppShell } from '../utils/app-shell.js';
 import { cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
 import { matchesExerciseSearch, progressionAdvice, rankExerciseSubstitutes } from '../modules/workout-coach.js';
+import { estimate1RM } from '../modules/workout-analytics.js';
 import { detailedExerciseGroup as grupoDetalhado, exerciseEquipment as equipamentoDo, exerciseGuidance as orientacaoDo } from '../modules/exercise-presentation.js';
 import { buildExercisePerformanceHistory, MAX_CUSTOM_EXERCISES, normalizeExerciseLibraryPreferences } from '../modules/exercise-library.js';
 import { getLocalItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
@@ -367,18 +368,70 @@ function atualizarDisplayTempo() {
   }
 }
 
-function mostrarResumoTreino({ series, volume, exercicios, duracao }) {
+function resumoComparativo(volume) {
+  const comparisons = [
+    [2500, 'um carro compacto'],
+    [1200, 'um piano de cauda'],
+    [600, 'um dinossauro pequeno'],
+    [250, 'um gorila adulto'],
+    [100, 'um halter pesado']
+  ];
+  const match = comparisons.find(([threshold]) => volume >= threshold);
+  return match ? `Seu volume foi equivalente a levantar ${match[1]} (comparação divertida).` : 'Cada quilo conta — hoje você colocou a força em movimento.';
+}
+
+function novosRecordesDaSessao(exercicios) {
+  let total = 0;
+  exercicios.forEach(exercicio => {
+    const anterior = (historicoPerformance.get(exercicio.nome) || []).reduce((best, item) => Math.max(best, estimate1RM(item.kg, item.reps)), 0);
+    const atual = (exercicio.series || []).reduce((best, serie) => serie.concluida ? Math.max(best, estimate1RM(serie.kg, serie.reps)) : best, 0);
+    if (atual > 0 && atual > anterior) total += 1;
+  });
+  return total;
+}
+
+async function compartilharResumoTreino(summary) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080; canvas.height = 1350;
+  const context = canvas.getContext('2d');
+  if (!context) return showToast('Não foi possível criar a imagem do resumo.');
+  const background = context.createLinearGradient(0, 0, 1080, 1350);
+  background.addColorStop(0, '#0b1710'); background.addColorStop(1, '#050806');
+  context.fillStyle = background; context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = '#57d493'; context.font = '700 34px Inter, sans-serif'; context.fillText('〽 MOL', 72, 100);
+  context.fillStyle = '#f8fafc'; context.font = '800 62px Inter, sans-serif'; context.fillText('Treino concluído', 72, 205);
+  context.fillStyle = '#8b9a91'; context.font = '400 30px Inter, sans-serif'; context.fillText('Seu esforço de hoje ficou registrado.', 72, 255);
+  const cards = [['SÉRIES', summary.series], ['VOLUME', `${Math.round(summary.volume).toLocaleString('pt-BR')} kg`], ['DURAÇÃO', `${summary.minutos} min`], ['EXERCÍCIOS', summary.exercicios], ['NOVOS RECORDES', summary.records]];
+  cards.forEach(([label, value], index) => { const x = 72 + (index % 2) * 480; const y = 350 + Math.floor(index / 2) * 190; context.fillStyle = '#142219'; context.roundRect(x, y, 420, 140, 26); context.fill(); context.fillStyle = '#8b9a91'; context.font = '700 22px Inter, sans-serif'; context.fillText(label, x + 28, y + 42); context.fillStyle = index === 1 || index === 4 ? '#57d493' : '#f8fafc'; context.font = '800 42px Inter, sans-serif'; context.fillText(String(value), x + 28, y + 98); });
+  context.fillStyle = '#1d3b28'; context.roundRect(72, 890, 936, 190, 26); context.fill();
+  context.fillStyle = '#57d493'; context.font = '700 24px Inter, sans-serif'; context.fillText('COMPARAÇÃO MOL', 104, 945);
+  context.fillStyle = '#f8fafc'; context.font = '600 30px Inter, sans-serif';
+  const comparison = summary.comparison; const words = comparison.match(/.{1,48}(?:\s|$)/g) || [comparison];
+  words.slice(0, 3).forEach((line, index) => context.fillText(line.trim(), 104, 995 + index * 38));
+  context.fillStyle = '#52645a'; context.font = '400 22px Inter, sans-serif'; context.fillText(new Date().toLocaleDateString('pt-BR'), 72, 1240);
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png')); if (!blob) return showToast('Não foi possível exportar a imagem.');
+  const file = new File([blob], 'mol-resumo-treino.png', { type: 'image/png' });
+  try {
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ title: 'Meu treino no Mol', files: [file] }); return; }
+    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = file.name; link.click(); URL.revokeObjectURL(url); showToast('Imagem do resumo baixada.', 'success');
+  } catch (error) { if (error?.name !== 'AbortError') showToast('Não foi possível compartilhar o resumo.'); }
+}
+
+function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDetalhados = [] }) {
   document.getElementById('mol-workout-summary')?.remove();
   const minutos = Math.max(1, Math.round(duracao / 60));
+  const records = novosRecordesDaSessao(exerciciosDetalhados);
+  const comparison = resumoComparativo(volume);
   const modal = document.createElement('div');
   modal.id = 'mol-workout-summary';
   modal.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.setAttribute('aria-labelledby', 'workout-summary-title');
   modal.setAttribute('aria-describedby', 'workout-summary-description');
-  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-3 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black active:scale-[.98]">Concluído</button></section>`;
+  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p><p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
   document.body.appendChild(modal);
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   modal.querySelector('[data-close]').onclick = close;
+  modal.querySelector('[data-share]').onclick = () => void compartilharResumoTreino({ series, volume, exercicios, minutos, records, comparison });
   modal.onclick = event => { if (event.target === modal) close(); };
   renderIcons();
 }
@@ -1105,7 +1158,7 @@ window.finalizarEConcluirTreino = async () => {
     limparRascunho();
     pararCronometro();
     pararDescanso();
-    mostrarResumoTreino({ series: totais.completed, volume: resumoVolume, exercicios: sessaoConcluida.filter(ex => ex.series?.some(serie => serie.concluida)).length, duracao: duracaoConcluida });
+    mostrarResumoTreino({ series: totais.completed, volume: resumoVolume, exercicios: sessaoConcluida.filter(ex => ex.series?.some(serie => serie.concluida)).length, duracao: duracaoConcluida, exerciciosDetalhados: sessaoConcluida });
     
     esconderTudo();
     viewRotinas.classList.remove('hidden');
