@@ -12,6 +12,7 @@ let user = null;
 let meals = [];
 let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };
 let fasting = normalizeFastingSettings();
+let dietMode = 'view';
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const rounded = value => Math.round(Number(value) || 0);
@@ -82,6 +83,7 @@ function renderFastingCard() {
 }
 
 function render() {
+  setDietMode(dietMode);
   renderFastingCard();
   const totals = nutritionTotals(meals);
   $('diet-total').textContent = `${rounded(totals.kcal).toLocaleString('pt-BR')} kcal`;
@@ -99,7 +101,39 @@ function render() {
   }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Sua agenda está vazia</p><p class="mt-2 text-sm text-gray-500">Adicione café da manhã, almoço, jantar ou seus próprios horários.</p><button type="button" data-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Adicionar refeição</button></div>';
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
+  renderEditView();
   window.lucide?.createIcons();
+}
+
+function setDietMode(mode) {
+  dietMode = mode === 'edit' ? 'edit' : 'view';
+  const view = $('diet-content'); const edit = $('diet-edit-content');
+  const viewButton = $('diet-mode-view'); const editButton = $('diet-mode-edit');
+  if (!view || !edit || !viewButton || !editButton) return;
+  const viewing = dietMode === 'view';
+  view.classList.toggle('hidden', !viewing); edit.classList.toggle('hidden', viewing);
+  viewButton.classList.toggle('bg-neon', viewing); viewButton.classList.toggle('text-black', viewing); viewButton.classList.toggle('text-gray-400', !viewing);
+  editButton.classList.toggle('bg-neon', !viewing); editButton.classList.toggle('text-black', !viewing); editButton.classList.toggle('text-gray-400', viewing);
+  viewButton.setAttribute('aria-selected', String(viewing)); editButton.setAttribute('aria-selected', String(!viewing));
+}
+
+function renderEditView() {
+  const list = $('diet-edit-list');
+  if (!list) return;
+  const sorted = [...meals].sort((a, b) => a.hora.localeCompare(b.hora));
+  list.innerHTML = sorted.length ? sorted.map(meal => {
+    const total = nutritionTotals([{ alimentos: meal.alimentos }]);
+    return `<article class="glass-card rounded-3xl p-5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${meal.alimentos.length} alimento(s) · ${rounded(total.kcal)} kcal</p></div><button type="button" data-edit-view="${escapeHTML(meal.id)}" class="min-h-10 rounded-xl mol-soft px-3 text-xs font-bold">Visualizar</button></div><div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"><button type="button" data-edit-meal="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl bg-neon px-3 text-xs font-bold text-black">Editar refeição</button><button type="button" data-edit-foods="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold">Alimentos</button><button type="button" data-delete-meal="${escapeHTML(meal.id)}" class="col-span-2 min-h-11 rounded-xl bg-red-500/10 px-3 text-xs font-bold text-red-300 sm:col-span-1">Excluir</button></div></article>`;
+  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeição para editar</p><p class="mt-2 text-sm text-gray-500">Crie sua primeira refeição e adicione quantos alimentos quiser.</p><button type="button" data-edit-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Nova refeição</button></div>';
+  list.querySelectorAll('[data-edit-view]').forEach(button => button.onclick = () => openMeal(button.dataset.editView));
+  list.querySelectorAll('[data-edit-meal]').forEach(button => button.onclick = () => openMealForm(button.dataset.editMeal));
+  list.querySelectorAll('[data-edit-foods]').forEach(button => button.onclick = () => openMeal(button.dataset.editFoods));
+  list.querySelectorAll('[data-delete-meal]').forEach(button => button.onclick = async () => {
+    const meal = meals.find(item => item.id === button.dataset.deleteMeal);
+    if (!meal || !await confirmAction({ title: 'Excluir refeição?', message: `${meal.nome} e seus alimentos serão removidos.`, confirmText: 'Excluir', danger: true })) return;
+    if (await persist(meals.filter(item => item.id !== meal.id))) showToast('Refeição excluída.', 'success');
+  });
+  list.querySelector('[data-edit-empty-add]')?.addEventListener('click', () => openMealForm());
 }
 
 function openFastingForm() {
@@ -229,4 +263,7 @@ async function load() {
 }
 
 $('add-meal').onclick = () => openMealForm(); $('food-search').onclick = chooseMealForFood;
+$('edit-add-meal').onclick = () => openMealForm();
+$('diet-mode-view').onclick = () => setDietMode('view');
+$('diet-mode-edit').onclick = () => setDietMode('edit');
 watchProtectedPage(account => { user = account; void load(); });
