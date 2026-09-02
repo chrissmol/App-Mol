@@ -4,6 +4,15 @@
   const storageKey = 'mol-accessibility';
   const allowedThemes = new Set(['system', 'dark', 'light']);
 
+  function bootstrapMolDeviceClasses() {
+    const root = document.documentElement;
+    const isStandalone = window.navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    root.classList.add('mol-mobile-app');
+    root.classList.toggle('mol-standalone', Boolean(isStandalone));
+    root.classList.toggle('mol-ios', Boolean(isIOS));
+    root.classList.toggle('mol-ios-standalone', Boolean(isIOS && isStandalone));
+  }
   function normalizeLanguage(value) {
     const source = value && typeof value === 'object' ? value : {};
     const allowed = new Set(['system', 'pt-BR', 'en-US', 'es-ES']);
@@ -60,6 +69,7 @@
 
   function reapply() { return apply(read()); }
 
+  bootstrapMolDeviceClasses();
   window.MolTheme = Object.freeze({ storageKey, normalize, read, resolve, apply, reapply });
   reapply();
   window.addEventListener('pageshow', reapply);
