@@ -348,6 +348,7 @@ html[data-theme="light"] a:focus-visible {
 .mol-nav-item,
 .mol-select-trigger,
 .mol-select-option { min-width: 44px; }
+#clear-errors { min-height: 44px; }
 
 /* Respeita usuários que preferem menos movimento */
 @media (prefers-reduced-motion: reduce) {
