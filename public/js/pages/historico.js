@@ -143,8 +143,12 @@ function renderError() {
 async function loadHistory({ ignoreCache = false } = {}) {
   if (!currentUser) return;
   const cached = !ignoreCache && readCache(currentUser.uid);
-  if (cached) { sessions = sortSessionsNewest(cached); renderAll(); return; }
-  $('sessions').innerHTML = '<div class="glass-card rounded-2xl p-4 text-sm text-gray-500">Carregando sessões…</div>';
+  if (cached) {
+    sessions = sortSessionsNewest(cached);
+    renderAll();
+  } else {
+    $('sessions').innerHTML = '<div class="glass-card rounded-2xl p-4 text-sm text-gray-500">Carregando sessões…</div>';
+  }
   try {
     const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)));
     sessions = sortSessionsNewest(snapshot.docs.map(item => ({ id: item.id, ...item.data() }))); writeCache(currentUser.uid); renderAll();

@@ -104,9 +104,14 @@ function renderError() {
 async function loadProgress() {
   if (!currentUser) return;
   const cached = readCache(currentUser.uid);
-  if (cached) { sessions = cached; renderProgress(); return; }
-  $('volume').innerHTML = '<p class="text-sm text-gray-500">Carregando distribuição…</p>';
-  $('prs').innerHTML = '<p class="text-sm text-gray-500">Carregando recordes…</p>';
+  // Mostra o último resultado imediatamente e atualiza em segundo plano.
+  if (cached) {
+    sessions = cached;
+    renderProgress();
+  } else {
+    $('volume').innerHTML = '<p class="text-sm text-gray-500">Carregando distribuição…</p>';
+    $('prs').innerHTML = '<p class="text-sm text-gray-500">Carregando recordes…</p>';
+  }
   try {
     const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)));
     sessions = snapshot.docs.map(item => item.data()); writeCache(currentUser.uid, sessions); renderProgress();
