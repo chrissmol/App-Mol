@@ -8,8 +8,6 @@ test('login, navegação privada, dieta e tema permanecem estáveis', async ({ p
   await page.locator('#googleLoginBtn').click();
   await page.waitForURL('**/index.html');
   await expect(page.locator('#user-name')).toHaveText('Christian');
-  const skipTutorial = page.getByRole('button', { name: /Pular|Skip|Saltar/ });
-  await skipTutorial.click({ timeout: 5000 }).catch(() => {});
 
   await page.locator('[data-page="treino.html"]').click();
   await page.waitForURL('**/pages/treino.html');

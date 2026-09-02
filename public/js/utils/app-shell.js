@@ -6,7 +6,6 @@ import { connectivityState, isTrustedDevice } from './offline.js';
 import { startReminderMonitor } from './reminders.js';
 import { applyLanguage, initializeLanguage, t } from './language.js';
 import { setupTelemetry } from '../modules/telemetry.js';
-import { setupOnboarding } from '../modules/onboarding.js';
 
 
 function setupSkipLink() {
@@ -71,7 +70,6 @@ export function setupAppShell() {
   setupConnectivityIndicator();
   startReminderMonitor();
   setupTelemetry();
-  setupOnboarding();
   enhanceSelects();
   const inPages = location.pathname.includes('/pages/');
   const faviconHref = `${inPages ? '../' : './'}assets/mol-mark.svg?v=2`;

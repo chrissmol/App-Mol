@@ -11,7 +11,6 @@ import { getReminderPreferences, requestReminderPermission, saveReminderPreferen
 import { watchProtectedPage } from '../modules/auth.js';
 
 setupAppShell();
-document.getElementById('restart-onboarding')?.addEventListener('click', () => window.__molOpenOnboarding?.());
 
 const $ = id => document.getElementById(id);
 
@@ -44,7 +43,7 @@ $('refresh-app')?.addEventListener('click', async () => {
 });
 
 $('clear-temporary')?.addEventListener('click', async () => {
-  const confirmed = await confirmAction({ title: 'Limpar dados temporários?', message: 'Serão removidos caches de carregamento, histórico local da sessão e tutoriais pendentes. Seus treinos, dieta, conta e preferências serão preservados.', confirmText: 'Limpar' });
+  const confirmed = await confirmAction({ title: 'Limpar dados temporários?', message: 'Serão removidos caches de carregamento e histórico local da sessão. Seus treinos, dieta, conta e preferências serão preservados.', confirmText: 'Limpar' });
   if (!confirmed) return;
   clearTemporaryData();
   $('app-status').textContent = 'Dados temporários removidos deste aparelho.';

@@ -114,10 +114,12 @@ body {
 
 .mol-skip-link {
   position: fixed;
-  left: max(1rem, env(safe-area-inset-left));
-  top: max(1rem, env(safe-area-inset-top));
+  left: 50%;
+  top: max(.75rem, env(safe-area-inset-top));
   z-index: 1200;
-  transform: translateY(-150%);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -160%);
   border: 2px solid var(--mol-brand-text);
   border-radius: .9rem;
   background: var(--mol-surface);
@@ -126,9 +128,19 @@ body {
   font-size: .875rem;
   font-weight: 900;
   box-shadow: 0 18px 42px rgba(0,0,0,.3);
-  transition: transform .16s ease;
+  transition: opacity .16s ease, transform .16s ease;
 }
-.mol-skip-link:focus-visible { transform: translateY(0); outline: none; }
+.mol-skip-link:focus:not(:focus-visible) {
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -160%);
+}
+.mol-skip-link:focus-visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate(-50%, 0);
+  outline: none;
+}
 
 .app-surface a:focus-visible,
 .app-surface button:focus-visible,
@@ -171,6 +183,27 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: .75rem;
 }
+.reminder-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.reminder-time-field {
+  min-width: 0;
+}
+
+.reminder-time-field input[type="time"] {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+@media (max-width: 360px) {
+  .reminder-time-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .set-type-badge {
   display: inline-flex;
@@ -190,22 +223,6 @@ body {
 .set-type-badge.is-d { background: rgba(96,165,250,.12); color: #60a5fa; }
 .set-type-badge.is-normal { color: var(--mol-brand-text); }
 
-.mol-tour-active { overflow: hidden !important; overscroll-behavior: none !important; touch-action: none !important; }
-.mol-tour-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(2, 7, 4, .78); padding: 1rem; pointer-events: auto; overscroll-behavior: none; touch-action: none; }
-.mol-tour-card { position: fixed; border: 1px solid rgba(52, 211, 153, .45); border-radius: 1.5rem; background: var(--mol-surface); color: var(--mol-text); padding: 1.25rem; box-shadow: 0 20px 70px rgba(0,0,0,.5); animation: mol-tour-in .2s ease-out; transition: top .25s ease, left .25s ease; pointer-events: auto; touch-action: auto; }
-.mol-tour-card::after { content: ''; position: absolute; left: 50%; width: 14px; height: 14px; background: var(--mol-surface); border: 1px solid rgba(52, 211, 153, .45); transform: translateX(-50%) rotate(45deg); }
-.mol-tour-card.is-below::after { top: -8px; border-right: 0; border-bottom: 0; }
-.mol-tour-card.is-above::after { bottom: -8px; border-left: 0; border-top: 0; }
-.mol-tour-target { position: relative !important; z-index: 950 !important; pointer-events: none !important; border-radius: .9rem; box-shadow: 0 0 0 4px var(--mol-bg), 0 0 0 7px var(--mol-brand-green), 0 0 28px rgba(52, 211, 153, .45) !important; }
-@keyframes mol-tour-in { from { opacity: 1; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
-
-.mol-tour-card .text-neon { color: var(--mol-brand-text) !important; }
-.mol-tour-card button.bg-neon,
-.mol-tour-card [data-next].bg-neon {
-  background-color: var(--mol-brand-green);
-  color: #fff !important;
-}
-.mol-tour-card button.bg-neon * { color: inherit; }
 
 .mol-btn {
   display: inline-flex;
@@ -317,12 +334,7 @@ html[data-theme="light"] body .focus\:border-neon:focus {
 }
 html[data-theme="light"] body .text-neon\/80 { color: rgba(15, 95, 58, .9); }
 
-html[data-theme="light"] body .mol-tour-card .bg-neon,
-html[data-theme="light"] body .mol-tour-card button.bg-neon,
-html[data-theme="light"] body [data-next].bg-neon {
-  background-color: #0f5f3a;
-  color: #fff !important;
-}
+
 html[data-theme="light"] body .mol-select-trigger.is-placeholder {
   color: var(--mol-muted-strong);
 }
