@@ -397,6 +397,7 @@ body { padding-bottom: var(--mol-bottom-nav-safe-area); }
 body.has-bottom-nav { padding-bottom: calc(var(--mol-bottom-nav-height) + 1rem); }
 html { scrollbar-gutter: stable; }
 nav.fixed { padding-bottom: 0; }
+nav.fixed.bottom-0, nav.fixed.mol-bottom-nav { background: #101411; background-color: #101411; }
 /* Cards de treino não devem criar uma segunda rolagem horizontal no celular. */
 .workout-page main { min-width: 0; max-width: 100%; overflow-x: hidden; }
 .workout-exercise-card { min-width: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
@@ -697,6 +698,7 @@ body.has-bottom-nav {
   background: #101411;
 }
 
+html[data-theme="light"] body nav.fixed.bottom-0,
 html[data-theme="light"] body .mol-bottom-nav {
   background: #ffffff;
   background-color: #ffffff;

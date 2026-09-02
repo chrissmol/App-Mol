@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../css/tailwind.css">
   <link rel="stylesheet" href="../css/style.css">
 </head>
-<body class="app-surface min-h-screen text-white">
-  <main class="mx-auto max-w-md px-5 pb-28 pt-6">
+<body class="app-surface min-h-screen has-bottom-nav text-white">
+  <main>
     <header>
       <a id="back" href="./treino.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para treinos"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Treinos</span></a>
       <p class="mt-4 text-xs font-semibold uppercase tracking-[.16em] text-neon">Consistência</p>
@@ -45,7 +45,7 @@
       <button id="load-more-sessions" type="button" class="mt-4 hidden min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold text-gray-300">Mostrar mais sessões</button>
     </section>
   </main>
-  <nav class="fixed bottom-0 left-0 right-0 border-t border-white/10"></nav>
+  <nav class="fixed bottom-0 left-0 right-0 z-50 mol-bottom-nav"></nav>
   <script type="module" src="../js/pages/historico.js"></script>
 </body>
 </html>
