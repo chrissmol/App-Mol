@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="../css/tailwind.css">
   <link rel="stylesheet" href="../css/style.css">
 </head>
-<body class="app-surface min-h-screen has-bottom-nav text-white">
+<body class="app-surface min-h-screen has-app-nav text-white">
   <main>
     <header>
       <a id="back" href="./treino.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para treinos"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Treinos</span></a>
@@ -45,12 +45,7 @@
       <button id="load-more-sessions" type="button" class="mt-4 hidden min-h-12 w-full rounded-2xl bg-white/5 text-sm font-bold text-gray-300">Mostrar mais sessões</button>
     </section>
   </main>
-  <nav class="mol-tabbar" data-mol-tabbar="true" aria-label="Navegação principal"><div class="mol-tabbar__surface" style="--mol-tab-index:1;--mol-tab-count:4;"><span class="mol-tabbar__indicator" aria-hidden="true"></span>
-      <a class="mol-tabbar__item" href="../index.html" data-page="index.html" aria-label="Início"><i data-lucide="layout-dashboard" aria-hidden="true"></i><span data-i18n="home">Início</span></a>
-      <a class="mol-tabbar__item is-active" href="./treino.html" data-page="treino.html" aria-label="Treino" aria-current="page"><i data-lucide="dumbbell" aria-hidden="true"></i><span data-i18n="workout">Treino</span></a>
-      <a class="mol-tabbar__item" href="./dieta.html" data-page="dieta.html" aria-label="Dieta"><i data-lucide="apple" aria-hidden="true"></i><span data-i18n="diet">Dieta</span></a>
-      <a class="mol-tabbar__item" href="./perfil.html" data-page="perfil.html" aria-label="Perfil"><i data-lucide="user" aria-hidden="true"></i><span data-i18n="profile">Perfil</span></a>
-    </div></nav>
+  <nav class="mol-app-nav" data-mol-app-nav="true" aria-label="Navegação principal"></nav>
   <script type="module" src="../js/pages/historico.js"></script>
 </body>
 </html>

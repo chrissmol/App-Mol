@@ -45,6 +45,7 @@ export function setupMobileAppMode() {
     const keyboardOpen = Boolean(isIOS && window.visualViewport && viewportHeight < window.innerHeight - 120);
     document.body?.classList.toggle('mol-keyboard-open', keyboardOpen);
   };
+
   syncViewportState();
 
   if (window.__molMobileAppMode) return;

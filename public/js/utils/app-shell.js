@@ -5,7 +5,7 @@ import { connectivityState, isTrustedDevice } from './offline.js';
 import { startReminderMonitor } from './reminders.js';
 import { applyLanguage, initializeLanguage, t } from './language.js';
 import { setupTelemetry } from '../modules/telemetry.js';
-import { setupTabBar } from './tab-bar.js';
+import { setupAppNavigation } from './app-nav.js';
 
 
 function setupSkipLink() {
@@ -90,6 +90,6 @@ export function setupAppShell() {
       window.dispatchEvent(new Event('mol-install-available'));
     });
   }
-  setupTabBar();
+  setupAppNavigation();
   document.body.classList.add('mol-shell-ready');
 }

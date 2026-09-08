@@ -20,6 +20,16 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'desktop',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: false,
+      },
+    },
+    {
       name: 'android',
       use: {
         browserName: 'chromium',

@@ -77,22 +77,65 @@ test.describe('shell móvel sem backend', () => {
     expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1);
   });
 
-  test('barra inferior permanece presa à área visível', async ({ page }) => {
+  test('dock móvel fica acima da área segura e abre a navegação', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'desktop', 'Dock móvel não é exibido no desktop.');
     await authenticateWhenPrivate(page, '/pages/treino.html');
     await page.goto('/pages/treino.html');
-    const nav = page.locator('nav.fixed');
+    const nav = page.locator('.mol-app-nav');
     await expect(nav).toBeVisible();
-    await expect(nav.locator('.mol-nav-inner')).toBeVisible();
-    const box = await nav.boundingBox();
+    const trigger = nav.locator('.mol-dock__trigger');
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await trigger.click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav.locator('.mol-dock__menu')).toBeVisible();
+    await expect(nav.locator('.mol-dock__item')).toHaveCount(4);
+    const box = await trigger.boundingBox();
     const viewport = page.viewportSize();
-    const metrics = await nav.evaluate(element => ({
-      height: element.getBoundingClientRect().height,
-      cssHeight: Number.parseFloat(getComputedStyle(element).height),
-      safeArea: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mol-bottom-nav-safe-area')) || 0,
-    }));
-    expect(Math.abs((box?.y || 0) + (box?.height || 0) - (viewport?.height || 0))).toBeLessThanOrEqual(1);
-    expect(metrics.height).toBeCloseTo(metrics.cssHeight, 1);
-    expect(metrics.height).toBeGreaterThanOrEqual(68 + metrics.safeArea);
-    expect(metrics.height).toBeLessThanOrEqual(80 + metrics.safeArea);
+    expect((viewport?.height || 0) - ((box?.y || 0) + (box?.height || 0))).toBeGreaterThanOrEqual(12);
+  });
+
+  test('dock móvel no iOS instalado não depende do rodapé da viewport', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'iphone', 'Validação de PWA iOS roda no projeto iPhone.');
+    await page.addInitScript(() => {
+      localStorage.setItem('__mol_e2e_user', 'true');
+      Object.defineProperty(navigator, 'standalone', { configurable: true, get: () => true });
+      Object.defineProperty(navigator, 'platform', { configurable: true, get: () => 'MacIntel' });
+      Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, get: () => 5 });
+      window.matchMedia = query => ({
+        matches: query.includes('display-mode: standalone'),
+        media: query,
+        onchange: null,
+        addListener() {},
+        removeListener() {},
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent: () => false,
+      });
+    });
+    await page.goto('/pages/treino.html');
+    await expect(page.locator('html')).toHaveClass(/mol-ios-standalone/);
+    const nav = page.locator('.mol-app-nav');
+    await expect(nav).toBeVisible();
+    const metrics = await nav.locator('.mol-dock__trigger').evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      return {
+        bottomGap: Math.round(window.innerHeight - rect.bottom),
+        height: Math.round(rect.height),
+        opacity: getComputedStyle(element).opacity,
+      };
+    });
+    expect(metrics.bottomGap).toBeGreaterThanOrEqual(12);
+    expect(metrics.height).toBeGreaterThanOrEqual(60);
+    expect(metrics.opacity).toBe('1');
+  });
+
+  test('desktop usa sidebar e não exibe dock móvel', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Validação desktop roda apenas no projeto desktop.');
+    await authenticateWhenPrivate(page, '/pages/treino.html');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/pages/treino.html');
+    await expect(page.locator('.mol-sidebar')).toBeVisible();
+    await expect(page.locator('.mol-app-nav')).toBeHidden();
   });
 });

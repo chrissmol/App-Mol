@@ -44,7 +44,7 @@
       #detalhe-titulo { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
     @media (min-width: 768px) {
-      .workout-page > div, .workout-page nav > div { max-width: 48rem; }
+      .workout-page > div { max-width: 48rem; }
       .workout-exercise-card { overflow-x: hidden; }
       .workout-set-grid, .workout-set-header { min-width: 0; }
     }
@@ -53,7 +53,7 @@
     }
   </style>
 </head>
-<body class="app-surface workout-page has-bottom-nav text-white" id="app-body" aria-busy="true">
+<body class="app-surface workout-page min-h-screen has-app-nav text-white" id="app-body" aria-busy="true">
 
   <main class="max-w-md mx-auto px-5">
 
@@ -188,12 +188,7 @@
       </div>
   </div>
 
-  <nav class="mol-tabbar" data-mol-tabbar="true" aria-label="Navegação principal"><div class="mol-tabbar__surface" style="--mol-tab-index:1;--mol-tab-count:4;"><span class="mol-tabbar__indicator" aria-hidden="true"></span>
-      <a class="mol-tabbar__item" href="../index.html" data-page="index.html" aria-label="Início"><i data-lucide="layout-dashboard" aria-hidden="true"></i><span data-i18n="home">Início</span></a>
-      <a class="mol-tabbar__item is-active" href="./treino.html" data-page="treino.html" aria-label="Treino" aria-current="page"><i data-lucide="dumbbell" aria-hidden="true"></i><span data-i18n="workout">Treino</span></a>
-      <a class="mol-tabbar__item" href="./dieta.html" data-page="dieta.html" aria-label="Dieta"><i data-lucide="apple" aria-hidden="true"></i><span data-i18n="diet">Dieta</span></a>
-      <a class="mol-tabbar__item" href="./perfil.html" data-page="perfil.html" aria-label="Perfil"><i data-lucide="user" aria-hidden="true"></i><span data-i18n="profile">Perfil</span></a>
-    </div></nav>
+  <nav class="mol-app-nav" data-mol-app-nav="true" aria-label="Navegação principal"></nav>
 
   <script type="module" src="../js/pages/treino.js?v=8"></script>
 </body>
