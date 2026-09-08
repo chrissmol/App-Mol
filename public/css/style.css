@@ -178,6 +178,17 @@ body {
   box-shadow: 0 0 0 3px rgba(52, 211, 153, .1);
 }
 
+html[data-theme="light"] body .history-search-field {
+  border-color: var(--mol-border);
+  background: var(--mol-surface);
+}
+
+html[data-theme="light"] body .history-search-field:focus-within {
+  border-color: rgba(30, 115, 73, .42);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(30, 115, 73, .1);
+}
+
 .fasting-time-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1298,7 +1309,7 @@ html[data-reduce-motion="true"] *::after {
 
   body.has-app-nav {
     padding-bottom: 0;
-    padding-left: var(--mol-sidebar-width);
+    padding-left: 0;
   }
 
   .app-surface main,
@@ -1308,6 +1319,14 @@ html[data-reduce-motion="true"] *::after {
     max-width: none;
     margin-inline: auto;
     padding: clamp(2rem, 3vw, 3.5rem);
+  }
+
+  body.has-app-nav main,
+  body.has-app-nav main.max-w-md,
+  body.has-app-nav main.max-w-2xl {
+    width: calc(100vw - var(--mol-sidebar-width));
+    margin-left: var(--mol-sidebar-width);
+    margin-right: 0;
   }
 
   .mol-app-nav {
@@ -1465,7 +1484,7 @@ html[data-reduce-motion="true"] *::after {
   }
 }
 
-/* Desktop & tablet premium: em telas grandes o Mol vira painel, não celular esticado. */
+/* Organização premium dos cards: tablet e desktop deixam de parecer celular esticado. */
 @media (min-width: 900px) {
   .settings-page main,
   .personal-page main,
@@ -1477,142 +1496,224 @@ html[data-reduce-motion="true"] *::after {
     max-width: min(112rem, calc(100vw - 4rem));
   }
 
+  .app-surface .glass-card {
+    border-radius: 1.65rem;
+  }
+
   .settings-page main,
-  .personal-page main {
+  .history-page main,
+  .progress-page main,
+  .admin-page main,
+  .personal-page #personal-content:not(.hidden),
+  .evolution-page #evolution-content:not(.hidden),
+  .diet-page #diet-content:not(.hidden),
+  .diet-page #diet-edit-content:not(.hidden),
+  .admin-page #admin-content:not(.hidden) {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 1rem;
+    gap: clamp(1rem, 1.25vw, 1.4rem);
     align-items: start;
   }
 
   .settings-page #back,
   .settings-page header,
-  .personal-page #back,
-  .personal-page header,
-  .settings-page #language-status,
-  .personal-page #page-status {
+  .personal-page main > #back,
+  .personal-page main > header,
+  .personal-page #page-status,
+  .evolution-page main > #back,
+  .evolution-page main > header,
+  .evolution-page #page-status,
+  .diet-page main > #back,
+  .diet-page main > header,
+  .diet-page #diet-status,
+  .diet-page #diet-mode-tabs,
+  .history-page main > #back,
+  .history-page main > header,
+  .progress-page main > #back,
+  .progress-page main > header,
+  .progress-page main > div[role="group"],
+  .admin-page main > .mol-brand,
+  .admin-page main > header,
+  .admin-page #admin-status,
+  .admin-page #admin-content {
     grid-column: 1 / -1;
   }
 
   .settings-page main > section,
-  .personal-page #personal-content > section {
+  .personal-page #personal-content > *,
+  .evolution-page #evolution-content > *,
+  .diet-page #diet-content > *,
+  .diet-page #diet-edit-content > *,
+  .history-page main > section,
+  .progress-page main > section,
+  .admin-page #admin-content > section {
     min-width: 0;
     margin-top: 0 !important;
-  }
-
-  .settings-page main > section[aria-labelledby="appearance-title"] { grid-column: span 7; }
-  .settings-page main > section[aria-labelledby="device-title"] { grid-column: span 5; }
-  .settings-page main > section[aria-labelledby="app-title"],
-  .settings-page main > section[aria-labelledby="account-title"] { grid-column: span 6; }
-
-  .personal-page #personal-content:not(.hidden),
-  .evolution-page #evolution-content:not(.hidden),
-  .diet-page #diet-content:not(.hidden),
-  .diet-page #diet-edit-content:not(.hidden) {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 1rem;
-    align-items: start;
+    margin-bottom: 0 !important;
   }
 
   .personal-page #personal-content,
   .evolution-page #evolution-content,
   .diet-page #diet-content,
   .diet-page #diet-edit-content {
-    margin-top: 1.5rem;
+    margin-top: clamp(1.25rem, 2vw, 1.75rem);
   }
 
-  .personal-page #personal-content > *,
-  .evolution-page #evolution-content > *,
-  .diet-page #diet-content > *,
-  .diet-page #diet-edit-content > * {
-    min-width: 0;
-    margin-top: 0 !important;
+  .settings-page main > header,
+  .personal-page main > header,
+  .evolution-page main > header,
+  .diet-page main > header,
+  .history-page main > header,
+  .progress-page main > header,
+  .admin-page main > header {
+    max-width: 46rem;
   }
 
-  .personal-page #personal-content > section:first-child { grid-column: span 7; }
+  .settings-page main > section[aria-labelledby="appearance-title"] {
+    grid-column: span 7;
+  }
+
+  .settings-page main > section[aria-labelledby="device-title"] {
+    grid-column: span 5;
+  }
+
+  .settings-page main > section[aria-labelledby="app-title"],
+  .settings-page main > section[aria-labelledby="account-title"] {
+    grid-column: span 6;
+  }
+
+  .personal-page #personal-content > section:first-child {
+    grid-column: span 7;
+  }
+
   .personal-page #personal-content > section:nth-child(2),
-  .personal-page #personal-content > section:nth-child(3) { grid-column: span 5; }
-  .personal-page #personal-content > section:nth-child(4) { grid-column: span 7; }
+  .personal-page #personal-content > section:nth-child(3) {
+    grid-column: span 5;
+  }
+
+  .personal-page #personal-content > section:nth-child(4) {
+    grid-column: span 7;
+  }
 
   .diet-page #diet-mode-tabs,
   .diet-page #diet-status {
     max-width: 44rem;
   }
 
-  .diet-page #diet-content > section:first-child { grid-column: span 5; }
-  .diet-page #diet-content > section:nth-child(2) { grid-column: span 7; }
-  .diet-page #diet-content > section:nth-child(3) { grid-column: 1 / -1; }
+  .diet-page #diet-content > section:first-child {
+    grid-column: span 5;
+  }
+
+  .diet-page #diet-content > section:nth-child(2) {
+    grid-column: span 7;
+  }
+
+  .diet-page #diet-content > section:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
   .diet-page #meal-list,
   .diet-page #diet-edit-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
-    gap: 1rem;
+    gap: clamp(.85rem, 1vw, 1.15rem);
   }
+
   .diet-page #meal-list > *,
-  .diet-page #diet-edit-list > * { margin-top: 0 !important; }
-  .diet-page #diet-edit-content > section:first-child { grid-column: span 5; position: sticky; top: 1.5rem; }
-  .diet-page #diet-edit-content > #diet-edit-list { grid-column: span 7; }
-
-  .evolution-page #evolution-content > section:first-child { grid-column: span 8; }
-  .evolution-page #evolution-content > section:nth-child(2) { grid-column: span 4; align-self: stretch; }
-  .evolution-page #evolution-content > section:nth-child(3),
-  .evolution-page #evolution-content > section:nth-child(4),
-  .evolution-page #evolution-content > section:nth-child(5),
-  .evolution-page #evolution-content > section:nth-child(6) { grid-column: span 6; }
-  .evolution-page #evolution-content > section:nth-child(7) { grid-column: 1 / -1; }
-  .evolution-page #evolution-content > section:nth-child(8),
-  .evolution-page #evolution-content > section:nth-child(9) { grid-column: span 4; }
-  .evolution-page #evolution-content > section:nth-child(10) { grid-column: span 8; }
-
-  .history-page main,
-  .progress-page main,
-  .admin-page main {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 1rem;
-    align-items: start;
-  }
-
-  .history-page main > header,
-  .history-page main > #back,
-  .progress-page main > header,
-  .progress-page main > #back,
-  .admin-page main > .mol-brand,
-  .admin-page main > header,
-  .admin-page #admin-status {
-    grid-column: 1 / -1;
-  }
-
-  .history-page main > section,
-  .progress-page main > section,
-  .admin-page #admin-content > section {
-    min-width: 0;
+  .diet-page #diet-edit-list > * {
     margin-top: 0 !important;
   }
 
-  .history-page main > section:nth-of-type(1) { grid-column: span 4; }
-  .history-page main > section:nth-of-type(2) { grid-column: span 4; }
-  .history-page main > section:nth-of-type(3) { grid-column: span 8; grid-row: span 2; }
-
-  .progress-page main > section:nth-of-type(1),
-  .progress-page main > div[role="group"] { grid-column: 1 / -1; }
-  .progress-page main > section:nth-of-type(2) { grid-column: span 4; }
-  .progress-page main > section:nth-of-type(3) { grid-column: span 8; }
-  .progress-page main > section:nth-of-type(4),
-  .progress-page main > section:nth-of-type(5) { grid-column: span 6; }
-  .progress-page main > section:nth-of-type(6) { grid-column: 1 / -1; }
-
-  .admin-page #admin-content:not(.hidden) {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 1rem;
+  .diet-page #diet-edit-content > section:first-child {
+    grid-column: span 5;
+    position: sticky;
+    top: 1.5rem;
   }
 
-  .admin-page #admin-content > section:first-child { grid-column: span 4; }
-  .admin-page #admin-content > section:nth-child(2) { grid-column: span 4; }
-  .admin-page #admin-content > section:nth-child(3) { grid-column: span 8; }
+  .diet-page #diet-edit-content > #diet-edit-list {
+    grid-column: span 7;
+  }
+
+  .evolution-page #evolution-content > section:first-child {
+    grid-column: span 8;
+  }
+
+  .evolution-page #evolution-content > section:nth-child(2) {
+    grid-column: span 4;
+    align-self: stretch;
+  }
+
+  .evolution-page #evolution-content > section:nth-child(3),
+  .evolution-page #evolution-content > section:nth-child(4),
+  .evolution-page #evolution-content > section:nth-child(5),
+  .evolution-page #evolution-content > section:nth-child(6) {
+    grid-column: span 6;
+  }
+
+  .evolution-page #evolution-content > section:nth-child(7) {
+    grid-column: 1 / -1;
+  }
+
+  .evolution-page #evolution-content > section:nth-child(8),
+  .evolution-page #evolution-content > section:nth-child(9) {
+    grid-column: span 4;
+  }
+
+  .evolution-page #evolution-content > section:nth-child(10) {
+    grid-column: span 8;
+  }
+
+  .history-page main > section[aria-label="Resumo do histórico"] {
+    grid-column: 9 / -1;
+    grid-row: 3;
+  }
+
+  .history-page main > section[aria-labelledby="calendar-title"] {
+    grid-column: 9 / -1;
+    grid-row: 2;
+  }
+
+  .history-page main > section[aria-labelledby="sessions-title"] {
+    grid-column: 1 / 9;
+    grid-row: 2 / span 3;
+  }
+
+  .history-page main > section[aria-label="Resumo do histórico"] {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-page main > section:nth-of-type(1) {
+    grid-column: 1 / -1;
+  }
+
+  .progress-page main > section:nth-of-type(2) {
+    grid-column: span 4;
+  }
+
+  .progress-page main > section:nth-of-type(3) {
+    grid-column: span 8;
+  }
+
+  .progress-page main > section:nth-of-type(4),
+  .progress-page main > section:nth-of-type(5) {
+    grid-column: span 6;
+  }
+
+  .progress-page main > section:nth-of-type(6) {
+    grid-column: 1 / -1;
+  }
+
+  .admin-page #admin-content > section:first-child {
+    grid-column: span 4;
+  }
+
+  .admin-page #admin-content > section:nth-child(2) {
+    grid-column: span 4;
+  }
+
+  .admin-page #admin-content > section:nth-child(3) {
+    grid-column: span 8;
+  }
 }
 
 @media (min-width: 1180px) {
@@ -1654,6 +1755,36 @@ html[data-reduce-motion="true"] *::after {
 
   #exercicios-list {
     max-width: none;
+  }
+
+  .dashboard-surface main {
+    gap: clamp(1.1rem, 1.2vw, 1.5rem);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .dashboard-surface #today-card {
+    grid-column: span 5;
+  }
+
+  .dashboard-surface #fasting-card,
+  .dashboard-surface #next-meal-card {
+    grid-column: span 3;
+  }
+
+  .dashboard-surface #weekly-card,
+  .dashboard-surface #last-session-card,
+  .dashboard-surface #weight-card,
+  .dashboard-surface #insights-card,
+  .dashboard-surface main > section:not([id]) {
+    grid-column: span 4;
+  }
+
+  .progress-page main > section:nth-of-type(2) {
+    grid-column: span 3;
+  }
+
+  .progress-page main > section:nth-of-type(3) {
+    grid-column: span 9;
   }
 }
 
