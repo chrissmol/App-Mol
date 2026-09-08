@@ -13,6 +13,63 @@ import { watchProtectedPage } from '../modules/auth.js';
 setupAppShell();
 
 const $ = id => document.getElementById(id);
+const isStandalone = () => window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
+const isIosDevice = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+function renderInstallCard() {
+  const card = $('install-card');
+  const button = $('install-app');
+  if (!card || !button) return;
+  const installed = isStandalone();
+  const hasPrompt = Boolean(window.__molInstallPrompt);
+  const ios = isIosDevice();
+  const shouldShow = !installed;
+  card.classList.toggle('hidden', !shouldShow);
+  if (!shouldShow) {
+    $('app-status').textContent = installed ? 'Mol já está instalado neste aparelho.' : '';
+    return;
+  }
+  $('install-title').textContent = ios ? 'Adicionar à Tela de Início' : 'Baixar o Mol neste aparelho';
+  $('install-description').textContent = ios
+    ? 'No iPhone ou iPad, toque em Compartilhar e escolha “Adicionar à Tela de Início”.'
+    : hasPrompt
+      ? 'Instale o Mol para abrir em tela cheia, com acesso mais rápido na academia.'
+      : 'Se o botão nativo não abrir, use o ícone de instalar na barra do navegador ou o menu do Chrome.';
+  button.disabled = false;
+  button.querySelector('span').textContent = hasPrompt ? 'Instalar no dispositivo' : 'Como baixar o Mol';
+  window.lucide?.createIcons();
+}
+
+async function installApplication() {
+  const button = $('install-app');
+  const ios = isIosDevice();
+  if (ios && !window.__molInstallPrompt) {
+    $('app-status').textContent = 'No Safari: toque em Compartilhar e depois em “Adicionar à Tela de Início”.';
+    showToast('Use Compartilhar > Adicionar à Tela de Início.', 'success');
+    return;
+  }
+  const prompt = window.__molInstallPrompt;
+  if (!prompt) {
+    $('app-status').textContent = 'No Chrome/Edge: clique no ícone de instalar na barra de endereço ou abra o menu do navegador e escolha “Instalar Mol”.';
+    showToast('Use o ícone de instalar na barra do navegador.', 'success');
+    return;
+  }
+  const original = button.innerHTML;
+  setButtonLoading(button, true, original);
+  try {
+    await prompt.prompt();
+    window.__molInstallPrompt = null;
+    $('app-status').textContent = 'Se você confirmou, o Mol já foi instalado neste aparelho.';
+    showToast('Instalação iniciada.', 'success');
+    renderInstallCard();
+  } catch {
+    $('app-status').textContent = 'Não foi possível abrir a instalação agora.';
+    showToast('Não foi possível instalar agora.');
+  } finally {
+    setButtonLoading(button, false, original);
+    window.lucide?.createIcons();
+  }
+}
 
 async function updateApplication() {
   if (!navigator.onLine) throw new Error('Conecte-se à internet para atualizar o aplicativo.');
@@ -48,6 +105,14 @@ $('clear-temporary')?.addEventListener('click', async () => {
   clearTemporaryData();
   $('app-status').textContent = 'Dados temporários removidos deste aparelho.';
   showToast('Dados temporários limpos.', 'success');
+});
+
+$('install-app')?.addEventListener('click', installApplication);
+window.addEventListener('mol-install-available', renderInstallCard);
+window.addEventListener('appinstalled', () => {
+  window.__molInstallPrompt = null;
+  renderInstallCard();
+  showToast('Mol instalado neste aparelho.', 'success');
 });
 
 let appearance = getAccessibilityPreferences();
@@ -284,4 +349,5 @@ watchProtectedPage(async user => {
 });
 
 applyAppearance();
+renderInstallCard();
 window.lucide?.createIcons();

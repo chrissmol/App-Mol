@@ -205,6 +205,22 @@ body {
   box-sizing: border-box;
 }
 
+.app-install-card {
+  border: 1px solid rgba(87, 212, 147, .22);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(87, 212, 147, .16), transparent 34%),
+    linear-gradient(145deg, rgba(87, 212, 147, .08), rgba(255, 255, 255, .035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 18px 42px rgba(0, 0, 0, .2);
+}
+
+html[data-theme="light"] body .app-install-card {
+  border-color: rgba(30, 115, 73, .18);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(30, 115, 73, .12), transparent 34%),
+    linear-gradient(145deg, rgba(30, 115, 73, .06), rgba(255, 255, 255, .92));
+  box-shadow: 0 14px 34px rgba(18, 45, 29, .08);
+}
+
 .mol-ios .reminder-time-grid {
   grid-template-columns: 1fr;
   gap: 1rem;
@@ -1445,6 +1461,198 @@ html[data-reduce-motion="true"] *::after {
   #view-explorar,
   #view-nova-rotina {
     width: min(100%, 76rem);
+    max-width: none;
+  }
+}
+
+/* Desktop & tablet premium: em telas grandes o Mol vira painel, não celular esticado. */
+@media (min-width: 900px) {
+  .settings-page main,
+  .personal-page main,
+  .evolution-page main,
+  .diet-page main,
+  .history-page main,
+  .progress-page main,
+  .admin-page main {
+    max-width: min(112rem, calc(100vw - 4rem));
+  }
+
+  .settings-page main,
+  .personal-page main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .settings-page #back,
+  .settings-page header,
+  .personal-page #back,
+  .personal-page header,
+  .settings-page #language-status,
+  .personal-page #page-status {
+    grid-column: 1 / -1;
+  }
+
+  .settings-page main > section,
+  .personal-page #personal-content > section {
+    min-width: 0;
+    margin-top: 0 !important;
+  }
+
+  .settings-page main > section[aria-labelledby="appearance-title"] { grid-column: span 7; }
+  .settings-page main > section[aria-labelledby="device-title"] { grid-column: span 5; }
+  .settings-page main > section[aria-labelledby="app-title"],
+  .settings-page main > section[aria-labelledby="account-title"] { grid-column: span 6; }
+
+  .personal-page #personal-content:not(.hidden),
+  .evolution-page #evolution-content:not(.hidden),
+  .diet-page #diet-content:not(.hidden),
+  .diet-page #diet-edit-content:not(.hidden) {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .personal-page #personal-content,
+  .evolution-page #evolution-content,
+  .diet-page #diet-content,
+  .diet-page #diet-edit-content {
+    margin-top: 1.5rem;
+  }
+
+  .personal-page #personal-content > *,
+  .evolution-page #evolution-content > *,
+  .diet-page #diet-content > *,
+  .diet-page #diet-edit-content > * {
+    min-width: 0;
+    margin-top: 0 !important;
+  }
+
+  .personal-page #personal-content > section:first-child { grid-column: span 7; }
+  .personal-page #personal-content > section:nth-child(2),
+  .personal-page #personal-content > section:nth-child(3) { grid-column: span 5; }
+  .personal-page #personal-content > section:nth-child(4) { grid-column: span 7; }
+
+  .diet-page #diet-mode-tabs,
+  .diet-page #diet-status {
+    max-width: 44rem;
+  }
+
+  .diet-page #diet-content > section:first-child { grid-column: span 5; }
+  .diet-page #diet-content > section:nth-child(2) { grid-column: span 7; }
+  .diet-page #diet-content > section:nth-child(3) { grid-column: 1 / -1; }
+  .diet-page #meal-list,
+  .diet-page #diet-edit-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+    gap: 1rem;
+  }
+  .diet-page #meal-list > *,
+  .diet-page #diet-edit-list > * { margin-top: 0 !important; }
+  .diet-page #diet-edit-content > section:first-child { grid-column: span 5; position: sticky; top: 1.5rem; }
+  .diet-page #diet-edit-content > #diet-edit-list { grid-column: span 7; }
+
+  .evolution-page #evolution-content > section:first-child { grid-column: span 8; }
+  .evolution-page #evolution-content > section:nth-child(2) { grid-column: span 4; align-self: stretch; }
+  .evolution-page #evolution-content > section:nth-child(3),
+  .evolution-page #evolution-content > section:nth-child(4),
+  .evolution-page #evolution-content > section:nth-child(5),
+  .evolution-page #evolution-content > section:nth-child(6) { grid-column: span 6; }
+  .evolution-page #evolution-content > section:nth-child(7) { grid-column: 1 / -1; }
+  .evolution-page #evolution-content > section:nth-child(8),
+  .evolution-page #evolution-content > section:nth-child(9) { grid-column: span 4; }
+  .evolution-page #evolution-content > section:nth-child(10) { grid-column: span 8; }
+
+  .history-page main,
+  .progress-page main,
+  .admin-page main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .history-page main > header,
+  .history-page main > #back,
+  .progress-page main > header,
+  .progress-page main > #back,
+  .admin-page main > .mol-brand,
+  .admin-page main > header,
+  .admin-page #admin-status {
+    grid-column: 1 / -1;
+  }
+
+  .history-page main > section,
+  .progress-page main > section,
+  .admin-page #admin-content > section {
+    min-width: 0;
+    margin-top: 0 !important;
+  }
+
+  .history-page main > section:nth-of-type(1) { grid-column: span 4; }
+  .history-page main > section:nth-of-type(2) { grid-column: span 4; }
+  .history-page main > section:nth-of-type(3) { grid-column: span 8; grid-row: span 2; }
+
+  .progress-page main > section:nth-of-type(1),
+  .progress-page main > div[role="group"] { grid-column: 1 / -1; }
+  .progress-page main > section:nth-of-type(2) { grid-column: span 4; }
+  .progress-page main > section:nth-of-type(3) { grid-column: span 8; }
+  .progress-page main > section:nth-of-type(4),
+  .progress-page main > section:nth-of-type(5) { grid-column: span 6; }
+  .progress-page main > section:nth-of-type(6) { grid-column: 1 / -1; }
+
+  .admin-page #admin-content:not(.hidden) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .admin-page #admin-content > section:first-child { grid-column: span 4; }
+  .admin-page #admin-content > section:nth-child(2) { grid-column: span 4; }
+  .admin-page #admin-content > section:nth-child(3) { grid-column: span 8; }
+}
+
+@media (min-width: 1180px) {
+  .app-surface main,
+  .app-surface main.max-w-md,
+  .app-surface main.max-w-2xl {
+    max-width: min(116rem, calc(100vw - 4rem));
+  }
+
+  .workout-page main > div {
+    max-width: none !important;
+  }
+
+  #view-rotinas {
+    grid-template-columns: minmax(20rem, .62fr) minmax(38rem, 1.38fr);
+    column-gap: 1.75rem;
+  }
+
+  #view-rotinas > #rotinas-list {
+    grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  }
+
+  #view-rotinas > #rotinas-list > p:only-child {
+    display: flex;
+    min-height: 18rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--mol-border);
+    border-radius: 1.5rem;
+    background:
+      radial-gradient(circle at 80% 10%, rgba(87, 212, 147, .12), transparent 34%),
+      var(--mol-surface-soft);
+    color: var(--mol-muted);
+  }
+
+  #view-detalhe {
+    width: min(100%, 92rem);
+  }
+
+  #exercicios-list {
     max-width: none;
   }
 }
