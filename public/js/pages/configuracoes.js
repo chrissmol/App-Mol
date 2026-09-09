@@ -128,7 +128,7 @@ const languageChoices = [
 ];
 const modulePresetChoices = [
   ['complete', 'sparkles', 'Completo', 'Treino, dieta, progresso, evolução e conquistas.'],
-  ['training', 'dumbbell', 'Só treino', 'Interface focada em abrir, treinar e registrar.'],
+  ['training', 'dumbbell', 'Modo carverna', 'Interface bruta e direta: abrir, treinar e registrar.'],
   ['trainingDiet', 'apple', 'Treino + dieta', 'Mantém treino e alimentação, sem excesso.'],
 ];
 let appModules = normalizeAppModules();
