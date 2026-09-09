@@ -1486,6 +1486,7 @@ html[data-reduce-motion="true"] *::after {
 
 /* Organização premium dos cards: tablet e desktop deixam de parecer celular esticado. */
 @media (min-width: 900px) {
+  .profile-page main,
   .settings-page main,
   .personal-page main,
   .evolution-page main,
@@ -1513,6 +1514,40 @@ html[data-reduce-motion="true"] *::after {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: clamp(1rem, 1.25vw, 1.4rem);
     align-items: start;
+  }
+
+  .profile-page main {
+    max-width: min(112rem, calc(100vw - 4rem));
+  }
+
+  .profile-page main > header {
+    max-width: 46rem;
+  }
+
+  .profile-page main > section[aria-labelledby="user-name"] {
+    margin-bottom: clamp(1rem, 1.25vw, 1.35rem) !important;
+  }
+
+  .profile-page #profile-content:not(.hidden) {
+    gap: clamp(1rem, 1.25vw, 1.4rem);
+  }
+
+  .profile-page #profile-content > .grid:first-child {
+    grid-column: span 5;
+    grid-template-columns: 1fr;
+  }
+
+  .profile-page #profile-content > #achievements-card {
+    grid-column: span 7;
+    align-self: stretch;
+  }
+
+  .profile-page #profile-achievements {
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  }
+
+  .profile-page #profile-content > nav {
+    grid-column: 1 / -1;
   }
 
   .settings-page #back,
@@ -1569,30 +1604,45 @@ html[data-reduce-motion="true"] *::after {
     max-width: 46rem;
   }
 
-  .settings-page main > section[aria-labelledby="appearance-title"] {
-    grid-column: span 7;
-  }
-
-  .settings-page main > section[aria-labelledby="device-title"] {
-    grid-column: span 5;
-  }
-
-  .settings-page main > section[aria-labelledby="app-title"],
-  .settings-page main > section[aria-labelledby="account-title"] {
+  .settings-page main > section[aria-labelledby="appearance-title"],
+  .settings-page main > #experience,
+  .settings-page main > section[aria-labelledby="device-title"],
+  .settings-page main > section[aria-labelledby="app-title"] {
     grid-column: span 6;
+  }
+
+  .settings-page main > section[aria-labelledby="account-title"] {
+    grid-column: 1 / -1;
+  }
+
+  .settings-page #module-presets {
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  }
+
+  .settings-page #module-presets > button,
+  .settings-page #module-toggles > label {
+    min-width: 0;
+  }
+
+  .settings-page #module-toggles {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
   }
 
   .personal-page #personal-content > section:first-child {
     grid-column: span 7;
   }
 
-  .personal-page #personal-content > section:nth-child(2),
-  .personal-page #personal-content > section:nth-child(3) {
+  .personal-page #personal-content > section:nth-child(2) {
     grid-column: span 5;
   }
 
+  .personal-page #personal-content > section:nth-child(3) {
+    grid-column: span 4;
+  }
+
   .personal-page #personal-content > section:nth-child(4) {
-    grid-column: span 7;
+    grid-column: span 8;
   }
 
   .diet-page #diet-mode-tabs,
