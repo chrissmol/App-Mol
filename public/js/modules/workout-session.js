@@ -40,6 +40,7 @@ export function normalizeRoutineExercises(exercises) {
       const rir = boundedNumber(source.rir, { min: 0, max: WORKOUT_LIMITS.rir, integer: true });
       const anteriorKg = boundedNumber(source.anteriorKg, { min: 0, max: WORKOUT_LIMITS.weight });
       const anteriorReps = boundedNumber(source.anteriorReps, { min: 1, max: WORKOUT_LIMITS.reps, integer: true });
+      const anteriorRir = boundedNumber(source.anteriorRir, { min: 0, max: WORKOUT_LIMITS.rir, integer: true });
       return {
         ...source,
         tipo: ['N', 'W', 'D', 'F'].includes(String(source.tipo).toUpperCase()) ? String(source.tipo).toUpperCase() : 'N',
@@ -48,6 +49,7 @@ export function normalizeRoutineExercises(exercises) {
         rir: rir ?? '',
         anteriorKg: anteriorKg ?? '',
         anteriorReps: anteriorReps ?? '',
+        anteriorRir: anteriorRir ?? '',
         concluida: source.concluida === true && kg !== null && reps !== null
       };
     });
@@ -125,6 +127,7 @@ export function cleanRoutineExercises(exercises) {
       ...set,
       anteriorKg: set.concluida ? set.kg : set.anteriorKg,
       anteriorReps: set.concluida ? set.reps : set.anteriorReps,
+      anteriorRir: set.concluida ? set.rir : set.anteriorRir,
       concluida: false,
       kg: '',
       reps: '',

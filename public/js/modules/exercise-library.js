@@ -36,19 +36,26 @@ export function buildExercisePerformanceHistory(sessions = []) {
 
   orderedSessions.forEach(session => {
     (Array.isArray(session?.exercicios) ? session.exercicios : []).forEach(exercise => {
-      const set = [...(Array.isArray(exercise?.series) ? exercise.series : [])]
-        .reverse()
-        .find(item => item?.concluida && Number(item.kg) >= 0 && Number(item.reps) > 0);
+      const validSets = (Array.isArray(exercise?.series) ? exercise.series : [])
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => item?.concluida && Number(item.kg) >= 0 && Number(item.reps) > 0);
+      const set = [...validSets].reverse()[0]?.item;
       if (!set || !exercise?.nome) return;
       const record = {
         kg: Number(set.kg),
         reps: Number(set.reps),
         rir: set.rir === '' || set.rir == null ? null : Number(set.rir),
       };
+      const setRecords = validSets.map(({ item, index }) => ({
+        index,
+        kg: Number(item.kg),
+        reps: Number(item.reps),
+        rir: item.rir === '' || item.rir == null ? null : Number(item.rir),
+      }));
       const records = history.get(exercise.nome) || [];
       records.push(record);
       history.set(exercise.nome, records);
-      if (!latest.has(exercise.nome)) latest.set(exercise.nome, record);
+      if (!latest.has(exercise.nome)) latest.set(exercise.nome, { ...record, sets: setRecords });
     });
   });
 

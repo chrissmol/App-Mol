@@ -97,6 +97,32 @@ async function carregarUltimasPerformances() {
 }
 function registrarRecente(nome) { recentesExercicios = [nome, ...recentesExercicios.filter(item => item !== nome)].slice(0, 12); salvarPreferenciasBiblioteca(); }
 
+function valorAnteriorDaSerie(exercicio, indexSerie) {
+  const serie = exercicio?.series?.[indexSerie] || {};
+  const direto = {
+    kg: serie.anteriorKg,
+    reps: serie.anteriorReps,
+    rir: serie.anteriorRir,
+  };
+  if (direto.kg !== '' && direto.kg != null && Number(direto.reps) > 0) return direto;
+
+  const ultimoExercicio = ultimaPerformance.get(exercicio?.nome);
+  const porIndice = ultimoExercicio?.sets?.find(item => item.index === indexSerie);
+  if (porIndice && porIndice.kg >= 0 && Number(porIndice.reps) > 0) return porIndice;
+
+  return null;
+}
+
+function completarComAnteriorSeVazio({ exercicio, indexSerie, kg, reps, rir }) {
+  const anterior = valorAnteriorDaSerie(exercicio, indexSerie);
+  return {
+    kg: kg || (anterior?.kg ?? ''),
+    reps: reps || (anterior?.reps ?? ''),
+    rir: rir || (anterior?.rir ?? ''),
+    usadoAnterior: (!kg || !reps) && Boolean(anterior),
+  };
+}
+
 async function manterTelaAtiva() {
   if (!treinoIniciado || document.visibilityState !== 'visible' || !navigator.wakeLock?.request) return;
   try {
@@ -630,7 +656,7 @@ window.criarTemplate = async (nome) => {
     'Push Pull Legs': [{ nome: 'Supino Inclinado (Halter)', grupo: 'Peito' }, { nome: 'Puxada Alta (Frente / Triângulo)', grupo: 'Costas' }, { nome: 'Leg Press 45° com Pegada Alta e Fechada', grupo: 'Pernas' }],
     'Full Body': [{ nome: 'Agachamento Goblet com Halter', grupo: 'Pernas' }, { nome: 'Supino Reto (Halter)', grupo: 'Peito' }, { nome: 'Remada Curvada (Halter)', grupo: 'Costas' }]
   };
-  const exercicios = (modelos[nome] || []).map(ex => ({ ...ex, descansoSegundos: 90, series: Array.from({ length: 3 }, () => ({ tipo: 'N', kg: '', reps: '', rir: '2', anteriorKg: '', anteriorReps: '', concluida: false })) }));
+  const exercicios = (modelos[nome] || []).map(ex => ({ ...ex, descansoSegundos: 90, series: Array.from({ length: 3 }, () => ({ tipo: 'N', kg: '', reps: '', rir: '2', anteriorKg: '', anteriorReps: '', anteriorRir: '', concluida: false })) }));
   if (!usuarioAtual) return showToast('A sessão ainda está carregando.');
   if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
   try {
@@ -657,9 +683,13 @@ window.escolherExercicio = async (nomeExercicio) => {
   const ultimo = ultimaPerformance.get(nomeExercicio);
   const substituindo = Number.isInteger(substituirExercicioIndex);
   const anterior = substituindo ? cloneValue(rotina.exercicios[substituirExercicioIndex]) : null;
+  const ultimoPorSerie = (index) => ultimo?.sets?.find(item => item.index === index) || null;
   const seriesBase = substituindo && anterior?.series?.length
-    ? anterior.series.map(serie => ({ ...serie, kg: '', reps: '', rir: '', anteriorKg: ultimo?.kg ?? '', anteriorReps: ultimo?.reps ?? '', concluida: false }))
-    : [{ tipo: 'N', kg: '', reps: '', rir: '', anteriorKg: ultimo?.kg ?? '', anteriorReps: ultimo?.reps ?? '', concluida: false }];
+    ? anterior.series.map((serie, index) => {
+      const serieAnterior = ultimoPorSerie(index);
+      return { ...serie, kg: '', reps: '', rir: '', anteriorKg: serieAnterior?.kg ?? '', anteriorReps: serieAnterior?.reps ?? '', anteriorRir: serieAnterior?.rir ?? '', concluida: false };
+    })
+    : [{ tipo: 'N', kg: '', reps: '', rir: '', anteriorKg: ultimoPorSerie(0)?.kg ?? '', anteriorReps: ultimoPorSerie(0)?.reps ?? '', anteriorRir: ultimoPorSerie(0)?.rir ?? '', concluida: false }];
   const novoExercicio = {
     nome: nomeExercicio,
     grupo: catalogo?.grupo || 'Outros',
@@ -954,7 +984,6 @@ function abrirRotina(id) {
   } else {
     let exerciciosHtml = rotina.exercicios.map((ex, indexEx) => {
       let contadorNormal = 0; 
-      const ultimoTreino = ultimaPerformance.get(ex.nome);
       const conselho = progressionAdvice(ex, historicoPerformance.get(ex.nome) || []);
       const conselhoTom = conselho.state === 'increase' ? 'bg-neon/10 text-neon' : conselho.state === 'reduce' ? 'bg-orange-400/10 text-orange-400' : 'mol-soft text-gray-400';
       const currentClass = indexEx === indiceExercicioAtual ? 'is-current' : '';
@@ -994,10 +1023,9 @@ function abrirRotina(id) {
               label = 'D'; corFundo = 'text-blue-400 bg-blue-400/10';
             }
 
-            const anteriorKg = serie.anteriorKg !== '' && serie.anteriorKg != null ? serie.anteriorKg : ultimoTreino?.kg;
-            const anteriorReps = Number(serie.anteriorReps) > 0 ? serie.anteriorReps : ultimoTreino?.reps;
-            const temAnterior = anteriorKg != null && Number(anteriorReps) > 0;
-            const textoAnterior = temAnterior ? `${anteriorKg}kg x ${anteriorReps}` : '-';
+            const anteriorSerie = valorAnteriorDaSerie(ex, indexSerie);
+            const temAnterior = anteriorSerie?.kg != null && Number(anteriorSerie.reps) > 0;
+            const textoAnterior = temAnterior ? `${anteriorSerie.kg}kg x ${anteriorSerie.reps}` : '-';
             
             const bgLinha = serie.concluida ? 'bg-neon/10' : 'mol-soft';
             const bgBotaoCheck = serie.concluida ? 'bg-neon text-black' : 'mol-field border border-white/10 text-transparent';
@@ -1016,8 +1044,8 @@ function abrirRotina(id) {
                   <span>${textoAnterior}</span>
                 </button>
                 
-                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${ultimoTreino?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${ultimoTreino?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da série ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 
                 <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir série ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">
@@ -1067,11 +1095,12 @@ window.atualizarMetaExercicio = async (indexEx, campo, valor) => {
 };
 
 window.copiarAnterior = (indexEx, indexSerie) => {
-  const serie = rotinasReais.find(r => r.id === rotinaAbertaId)?.exercicios[indexEx]?.series[indexSerie];
-  if (!serie || serie.anteriorKg === '' || serie.anteriorKg == null || !Number(serie.anteriorReps)) return showToast('Ainda não há carga anterior para copiar.');
+  const exercicio = rotinasReais.find(r => r.id === rotinaAbertaId)?.exercicios[indexEx];
+  const anterior = valorAnteriorDaSerie(exercicio, indexSerie);
+  if (!anterior) return showToast('Ainda não há carga anterior para copiar.');
   const kg = document.getElementById(`kg-${indexEx}-${indexSerie}`);
   const reps = document.getElementById(`reps-${indexEx}-${indexSerie}`);
-  kg.value = serie.anteriorKg; reps.value = serie.anteriorReps;
+  kg.value = anterior.kg; reps.value = anterior.reps;
   kg.dispatchEvent(new Event('input', { bubbles: true })); reps.dispatchEvent(new Event('input', { bubbles: true }));
   showToast('Carga anterior copiada.', 'success');
 };
@@ -1092,13 +1121,21 @@ window.concluirSerie = async (indexEx, indexSerie) => {
   if (serie.concluida) {
     serie.concluida = false;
   } else {
-    const validacao = validateSet({ kg: inputKg, reps: inputReps, rir: inputRir });
+    const dadosDaSerie = completarComAnteriorSeVazio({
+      exercicio: rotina.exercicios[indexEx],
+      indexSerie,
+      kg: inputKg,
+      reps: inputReps,
+      rir: inputRir,
+    });
+    const validacao = validateSet(dadosDaSerie);
     if (!validacao.valid) return showToast(validacao.message);
 
     serie.concluida = true;
     serie.kg = validacao.values.kg;
     serie.reps = validacao.values.reps;
     serie.rir = validacao.values.rir ?? '';
+    if (dadosDaSerie.usadoAnterior) showToast('Série concluída com os dados do último treino.', 'success');
   }
   salvarRascunho({ force: true });
   abrirRotina(rotinaAbertaId);
