@@ -1778,7 +1778,7 @@ html[data-reduce-motion="true"] *::after {
   .app-surface main,
   .app-surface main.max-w-md,
   .app-surface main.max-w-2xl {
-    max-width: min(96rem, calc(100vw - 4rem));
+    max-width: min(100rem, calc(100vw - 5rem));
   }
 
   .dashboard-surface main {
@@ -1788,12 +1788,15 @@ html[data-reduce-motion="true"] *::after {
   }
 
   .dashboard-surface main > header {
-    grid-column: 1 / -1;
+    grid-column: span 3;
+    grid-row: span 2;
     display: flex;
+    flex-direction: column;
     min-height: 0;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding-bottom: clamp(.75rem, 1vw, 1.1rem);
+    align-items: stretch;
+    justify-content: flex-start;
+    padding-top: .5rem;
+    padding-bottom: 0;
   }
 
   .dashboard-surface main > header + #today-card {
@@ -1801,15 +1804,15 @@ html[data-reduce-motion="true"] *::after {
     min-height: 11rem;
   }
 
-  .dashboard-surface #next-meal-card,
-  .dashboard-surface #fasting-card {
-    grid-column: span 3;
-    min-height: 8rem;
-  }
-
   .dashboard-surface #weekly-card {
     grid-column: span 4;
     min-height: 11rem;
+  }
+
+  .dashboard-surface #next-meal-card,
+  .dashboard-surface #fasting-card {
+    grid-column: span 4;
+    min-height: 8rem;
   }
 
   .dashboard-surface #last-session-card,
@@ -1817,6 +1820,29 @@ html[data-reduce-motion="true"] *::after {
   .dashboard-surface #insights-card,
   .dashboard-surface main > section:not([id]) {
     grid-column: span 4;
+  }
+
+  .diet-page main > header {
+    grid-column: span 5;
+    max-width: none;
+  }
+
+  .diet-page #diet-mode-tabs {
+    grid-column: span 4;
+    align-self: end;
+    width: 100%;
+    max-width: none;
+  }
+
+  .diet-page #diet-status {
+    grid-column: span 3;
+    align-self: end;
+    max-width: none;
+  }
+
+  .diet-page #diet-content:not(.hidden),
+  .diet-page #diet-edit-content:not(.hidden) {
+    grid-column: 1 / -1;
   }
 
   .workout-page main > div {
@@ -1908,7 +1934,7 @@ html[data-reduce-motion="true"] *::after {
   }
 
   .diet-page #diet-content > p {
-    grid-column: 1 / -1;
+    grid-column: 1 / 6;
     justify-self: start;
     max-width: 24rem;
     margin-top: 0 !important;
