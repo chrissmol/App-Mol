@@ -1638,6 +1638,17 @@ html[data-reduce-motion="true"] *::after {
   .settings-page #back,
   .settings-page main > header {
     column-span: all;
+  }
+
+  .settings-page #back {
+    display: inline-flex;
+    position: relative;
+    z-index: 3;
+    width: fit-content;
+    pointer-events: auto;
+  }
+
+  .settings-page main > header {
     display: block;
   }
 
