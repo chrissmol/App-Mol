@@ -9,6 +9,7 @@ import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem, setSessionItem } from '../utils/storage.js';
+import { cardAllowed, normalizeAppModules } from '../utils/app-modules.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -35,6 +36,7 @@ const defaultCards = [
 let dashboardCards = [...defaultCards];
 let dashboardUser = null;
 let profileData = {};
+let appModules = normalizeAppModules();
 let mealRefreshTimer = null;
 const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), timeout))]);
 const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
@@ -214,7 +216,10 @@ function setupDashboardCards() {
 }
 
 function applyDashboardCards() {
-  dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) element.classList.toggle('hidden', !card.visible || (card.id === 'next-meal-card' && element.dataset.available === 'false')); });
+  dashboardCards.forEach(card => {
+    const element = document.getElementById(card.id);
+    if (element) element.classList.toggle('hidden', !card.visible || !cardAllowed(card.id, appModules) || (card.id === 'next-meal-card' && element.dataset.available === 'false'));
+  });
   const main = document.querySelector('main'); dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) main.appendChild(element); });
 }
 
@@ -233,7 +238,29 @@ function openDashboardEditor() {
   document.getElementById('mol-dashboard-editor')?.remove();
   const panel = document.createElement('div'); panel.id = 'mol-dashboard-editor'; panel.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center';
   const close = (commit = true) => { if (!commit) dashboardCards = originalCards.map(card => ({ ...card })); panel.remove(); opener?.focus?.(); };
-  const render = () => { panel.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="dashboard-editor-title" class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Seu início</p><h2 id="dashboard-editor-title" class="mt-1 text-xl font-extrabold">Editar painel</h2><p class="mt-2 text-sm text-gray-400">Escolha o que quer ver e use as setas para mudar a ordem.</p><div class="mt-5 space-y-2">${dashboardCards.map((card, index) => `<div class="flex min-h-14 items-center gap-2 rounded-2xl mol-soft px-3"><button type="button" data-toggle="${card.id}" aria-label="${card.visible ? 'Ocultar' : 'Mostrar'} ${card.label}" class="h-10 w-10 rounded-xl ${card.visible ? 'bg-neon text-white' : 'bg-white/10 text-gray-400'}"><i data-lucide="${card.visible ? 'eye' : 'eye-off'}" class="mx-auto h-4 w-4"></i></button><span class="flex-1 text-sm font-bold">${card.label}</span><button type="button" data-move="${index},-1" aria-label="Mover ${card.label} para cima" ${index === 0 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="mx-auto h-5 w-5"></i></button><button type="button" data-move="${index},1" aria-label="Mover ${card.label} para baixo" ${index === dashboardCards.length - 1 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="mx-auto h-5 w-5"></i></button></div>`).join('')}</div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-reset class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Restaurar</button><button type="button" data-done class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-white">Concluído</button></div></section>`; renderIcons(); panel.querySelectorAll('[data-toggle]').forEach(button => button.onclick = () => { const card = dashboardCards.find(c => c.id === button.dataset.toggle); card.visible = !card.visible; render(); }); panel.querySelectorAll('[data-move]').forEach(button => button.onclick = () => { const [index, direction] = button.dataset.move.split(',').map(Number); const target = index + direction; if (target >= 0 && target < dashboardCards.length) [dashboardCards[index], dashboardCards[target]] = [dashboardCards[target], dashboardCards[index]]; render(); }); panel.querySelector('[data-reset]').onclick = () => { dashboardCards = defaultCards.map(c => ({...c})); render(); }; panel.querySelector('[data-done]').onclick = async event => { event.currentTarget.disabled = true; applyDashboardCards(); await saveDashboardCards(); close(); }; panel.querySelector('[data-toggle]')?.focus(); };
+  const render = () => {
+    const editableCards = dashboardCards.filter(card => cardAllowed(card.id, appModules));
+    panel.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="dashboard-editor-title" class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Seu início</p><h2 id="dashboard-editor-title" class="mt-1 text-xl font-extrabold">Editar painel</h2><p class="mt-2 text-sm text-gray-400">Escolha o que quer ver. Cards de módulos desativados ficam escondidos.</p><div class="mt-5 space-y-2">${editableCards.map((card, index) => `<div class="flex min-h-14 items-center gap-2 rounded-2xl mol-soft px-3"><button type="button" data-toggle="${card.id}" aria-label="${card.visible ? 'Ocultar' : 'Mostrar'} ${card.label}" class="h-10 w-10 rounded-xl ${card.visible ? 'bg-neon text-white' : 'bg-white/10 text-gray-400'}"><i data-lucide="${card.visible ? 'eye' : 'eye-off'}" class="mx-auto h-4 w-4"></i></button><span class="flex-1 text-sm font-bold">${card.label}</span><button type="button" data-move="${card.id},-1" aria-label="Mover ${card.label} para cima" ${index === 0 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="mx-auto h-5 w-5"></i></button><button type="button" data-move="${card.id},1" aria-label="Mover ${card.label} para baixo" ${index === editableCards.length - 1 ? 'disabled' : ''} class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="mx-auto h-5 w-5"></i></button></div>`).join('')}</div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-reset class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Restaurar</button><button type="button" data-done class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-white">Concluído</button></div></section>`;
+    renderIcons();
+    panel.querySelectorAll('[data-toggle]').forEach(button => button.onclick = () => {
+      const card = dashboardCards.find(c => c.id === button.dataset.toggle);
+      if (card) card.visible = !card.visible;
+      render();
+    });
+    panel.querySelectorAll('[data-move]').forEach(button => button.onclick = () => {
+      const [id, rawDirection] = button.dataset.move.split(',');
+      const index = dashboardCards.findIndex(card => card.id === id);
+      const direction = Number(rawDirection);
+      const candidates = dashboardCards.map((card, order) => ({ card, order })).filter(item => cardAllowed(item.card.id, appModules));
+      const currentVisibleIndex = candidates.findIndex(item => item.card.id === id);
+      const target = candidates[currentVisibleIndex + direction]?.order;
+      if (index >= 0 && target != null) [dashboardCards[index], dashboardCards[target]] = [dashboardCards[target], dashboardCards[index]];
+      render();
+    });
+    panel.querySelector('[data-reset]').onclick = () => { dashboardCards = defaultCards.map(c => ({...c})); render(); };
+    panel.querySelector('[data-done]').onclick = async event => { event.currentTarget.disabled = true; applyDashboardCards(); await saveDashboardCards(); close(); };
+    panel.querySelector('[data-toggle]')?.focus();
+  };
   panel.onclick = event => { if (event.target === panel) close(false); };
   panel.onkeydown = event => {
     if (event.key === 'Escape') return close(false);
@@ -267,8 +294,7 @@ watchProtectedPage(async user => {
     document.body.setAttribute('aria-busy', 'false');
     renderIcons();
   }
-  // Carrega a agenda alimentar em paralelo ao restante do painel.
-  void loadNextMeal(user.uid);
+  appModules = normalizeAppModules();
   // Leituras independentes começam juntas, importante em conexões móveis.
   const dashboardData = {
     routines: withTimeout(getDocs(query(collection(db, 'treinos'), where('userId', '==', user.uid))), 'As rotinas'),
@@ -295,9 +321,11 @@ watchProtectedPage(async user => {
       const remoteDate = dateOf(profileData.dashboardCardsUpdatedAt)?.getTime() || 0;
       const localDate = dateOf(localPrefs.updatedAt)?.getTime() || 0;
       if (profileData.dashboardCards && remoteDate >= localDate) dashboardCards = normalizeCards(profileData.dashboardCards);
+      appModules = normalizeAppModules(profileData.appModules);
     }
   } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); showToast('O perfil demorou para responder; usando dados deste dispositivo.'); }
   applyDashboardCards();
+  if (appModules.dieta) void loadNextMeal(user.uid);
   const fullName = String(user.displayName || profileData.name || profileData.nome || '');
   $('user-name').textContent = fullName.trim().split(/\s+/)[0].slice(0, 40) || 'Atleta';
   $('week-label').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });

@@ -6,6 +6,8 @@ import { startReminderMonitor } from './reminders.js';
 import { applyLanguage, initializeLanguage, t } from './language.js';
 import { setupTelemetry } from '../modules/telemetry.js';
 import { setupAppNavigation } from './app-nav.js';
+import { applyModuleVisibility, isPageAllowed, showDisabledModuleScreen, syncAppModulesForUser } from './app-modules.js';
+import { watchAuthState } from '../modules/auth.js';
 
 
 function setupSkipLink() {
@@ -91,5 +93,22 @@ export function setupAppShell() {
     });
   }
   setupAppNavigation();
+  applyModuleVisibility();
+  if (!window.__molAppModulesAuthListener) {
+    window.__molAppModulesAuthListener = true;
+    watchAuthState(user => {
+      if (!user) return;
+      syncAppModulesForUser(user).then(modules => {
+        applyModuleVisibility(modules);
+        if (!isPageAllowed(location.pathname.split('/').pop() || 'index.html', modules)) {
+          showDisabledModuleScreen();
+        }
+      }).catch(error => console.warn('Módulos do app não sincronizados:', error.message));
+    });
+  }
+  if (!window.__molAppModulesVisibilityListener) {
+    window.__molAppModulesVisibilityListener = true;
+    window.addEventListener('mol-app-modules-changed', event => applyModuleVisibility(event.detail));
+  }
   document.body.classList.add('mol-shell-ready');
 }

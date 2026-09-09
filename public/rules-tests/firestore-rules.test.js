@@ -47,6 +47,7 @@ describe('regras do Firestore', () => {
       dashboardCards: [{ id: 'today-card', visible: true }],
       dashboardCardsUpdatedAt: '2026-09-02T12:00:00.000Z',
       exerciseLibraryPreferences: { favoritosExercicios: ['Supino'], recentesExercicios: [], exerciciosPersonalizados: [] },
+      appModules: { treino: true, dieta: true, progresso: false, evolucao: false, conquistas: true },
       unidadePeso: 'kg',
       perfilPrivado: true,
       compartilharEstatisticas: false
@@ -57,6 +58,8 @@ describe('regras do Firestore', () => {
     await assertFails(updateDoc(reference, { preferenciasAcessibilidade: { language: { mode: 'fr-FR', value: 'fr-FR' } } }));
     await assertFails(updateDoc(reference, { dashboardCards: Array.from({ length: 11 }, (_, index) => ({ id: `card-${index}`, visible: true })) }));
     await assertFails(updateDoc(reference, { exerciseLibraryPreferences: { favoritosExercicios: Array.from({ length: 301 }, (_, index) => `ex-${index}`) } }));
+    await assertFails(updateDoc(reference, { appModules: { treino: false, dieta: true } }));
+    await assertFails(updateDoc(reference, { appModules: { treino: true, financeiro: true } }));
   });
 
   it('valida dono, nome e limite estrutural das rotinas', async () => {

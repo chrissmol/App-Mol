@@ -9,6 +9,7 @@ import { removeLocalItemsWithPrefix } from '../utils/storage.js';
 import { setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
+import { MODULE_DEFINITIONS, MODULE_PRESETS, normalizeAppModules, presetFromModules, saveAppModules, syncAppModulesForUser } from '../utils/app-modules.js';
 
 setupAppShell();
 
@@ -125,6 +126,12 @@ const languageChoices = [
   ['system', 'smartphone', 'Sistema'],
   ...supportedLanguages.map(language => [language.code, 'languages', language.label])
 ];
+const modulePresetChoices = [
+  ['complete', 'sparkles', 'Completo', 'Treino, dieta, progresso, evolução e conquistas.'],
+  ['training', 'dumbbell', 'Só treino', 'Interface focada em abrir, treinar e registrar.'],
+  ['trainingDiet', 'apple', 'Treino + dieta', 'Mantém treino e alimentação, sem excesso.'],
+];
+let appModules = normalizeAppModules();
 
 function applyAppearance() {
   appearance = applyAccessibilityPreferences(appearance);
@@ -183,6 +190,48 @@ languageChoices.forEach(([value, icon, label]) => {
   };
   $('language-segments').appendChild(button);
 });
+
+function moduleToggleTemplate(module) {
+  const checked = appModules[module.id] !== false;
+  const disabled = module.required ? 'disabled' : '';
+  return `<label class="flex min-h-20 cursor-pointer items-center justify-between gap-4 ${module.required ? 'opacity-80' : ''}"><span class="flex min-w-0 items-start gap-3"><span class="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neon/10 text-neon"><i data-lucide="${module.icon}" class="h-4 w-4"></i></span><span><strong class="block text-sm">${module.label}</strong><small class="mt-1 block text-xs leading-relaxed text-gray-500">${module.description}${module.required ? ' Sempre ativo para manter o Mol funcional.' : ''}</small></span></span><span class="relative shrink-0"><input data-module="${module.id}" type="checkbox" class="peer sr-only" ${checked ? 'checked' : ''} ${disabled}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label>`;
+}
+
+function renderAppModules() {
+  const preset = presetFromModules(appModules);
+  $('module-presets').innerHTML = modulePresetChoices.map(([id, icon, label, description]) => {
+    const selected = preset === id;
+    return `<button type="button" data-preset="${id}" aria-pressed="${selected}" class="rounded-2xl border ${selected ? 'border-neon bg-neon/10 text-neon' : 'border-white/10 mol-soft text-gray-300'} p-3 text-left transition-colors"><i data-lucide="${icon}" class="h-4 w-4"></i><strong class="mt-2 block text-sm">${label}</strong><small class="mt-1 block text-xs leading-relaxed text-gray-500">${description}</small></button>`;
+  }).join('');
+  $('module-toggles').innerHTML = MODULE_DEFINITIONS.map(moduleToggleTemplate).join('');
+  $('module-status').textContent = preset === 'custom' ? 'Modo personalizado salvo na sua conta.' : 'Modo salvo na sua conta e aplicado ao navegar.';
+  $('module-presets').querySelectorAll('[data-preset]').forEach(button => {
+    button.onclick = () => {
+      appModules = normalizeAppModules(MODULE_PRESETS[button.dataset.preset]);
+      persistAppModules();
+    };
+  });
+  $('module-toggles').querySelectorAll('[data-module]').forEach(input => {
+    input.onchange = () => {
+      appModules = normalizeAppModules({ ...appModules, [input.dataset.module]: input.checked });
+      persistAppModules();
+    };
+  });
+  window.lucide?.createIcons();
+}
+
+async function persistAppModules() {
+  appModules = normalizeAppModules(appModules);
+  renderAppModules();
+  try {
+    appModules = await saveAppModules(appModules);
+    $('module-status').textContent = 'Experiência atualizada.';
+  } catch (error) {
+    console.warn('Módulos salvos apenas neste dispositivo:', error.message);
+    $('module-status').textContent = 'Aplicado neste dispositivo, mas não foi possível sincronizar com a conta.';
+    showToast('Não foi possível sincronizar os módulos com sua conta.');
+  }
+}
 
 
 const reminderPreferences = getReminderPreferences();
@@ -312,6 +361,13 @@ watchProtectedPage(async user => {
   } catch (error) {
     console.warn('Preferências da conta não carregadas:', error.message);
   }
+  try {
+    appModules = await syncAppModulesForUser(user);
+    renderAppModules();
+  } catch (error) {
+    console.warn('Módulos da conta não carregados:', error.message);
+    renderAppModules();
+  }
   $('session-email').textContent = user.email || user.displayName || 'Conta conectada';
 
   $('sign-out').onclick = async () => {
@@ -349,5 +405,6 @@ watchProtectedPage(async user => {
 });
 
 applyAppearance();
+renderAppModules();
 renderInstallCard();
 window.lucide?.createIcons();

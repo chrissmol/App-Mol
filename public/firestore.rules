@@ -25,7 +25,7 @@ service cloud.firestore {
         'metaSemanal', 'alturaCm', 'metaPesoKg', 'objetivo',
         'preferenciasAcessibilidade', 'dashboardCards', 'dashboardCardsUpdatedAt',
         'exerciseLibraryPreferences', 'medidasHistorico', 'fotosProgresso',
-        'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas'
+        'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas', 'appModules'
       ];
     }
 
@@ -58,6 +58,17 @@ service cloud.firestore {
         && (!('dashboardCardsUpdatedAt' in request.resource.data) || request.resource.data.dashboardCardsUpdatedAt is string || request.resource.data.dashboardCardsUpdatedAt is timestamp);
     }
 
+    function validAppModules() {
+      return !('appModules' in request.resource.data)
+        || (request.resource.data.appModules is map
+          && request.resource.data.appModules.keys().hasOnly(['treino', 'dieta', 'progresso', 'evolucao', 'conquistas'])
+          && (!('treino' in request.resource.data.appModules) || request.resource.data.appModules.treino == true)
+          && (!('dieta' in request.resource.data.appModules) || request.resource.data.appModules.dieta is bool)
+          && (!('progresso' in request.resource.data.appModules) || request.resource.data.appModules.progresso is bool)
+          && (!('evolucao' in request.resource.data.appModules) || request.resource.data.appModules.evolucao is bool)
+          && (!('conquistas' in request.resource.data.appModules) || request.resource.data.appModules.conquistas is bool));
+    }
+
     function validExerciseLibraryPreferences() {
       return !('exerciseLibraryPreferences' in request.resource.data)
         || (request.resource.data.exerciseLibraryPreferences is map
@@ -75,6 +86,7 @@ service cloud.firestore {
         && validMacroGoals()
         && validAccessibilityPreferences()
         && validDashboardPreferences()
+        && validAppModules()
         && validExerciseLibraryPreferences()
         && (!('unidadePeso' in request.resource.data) || request.resource.data.unidadePeso in ['kg', 'lb'])
         && (!('perfilPrivado' in request.resource.data) || request.resource.data.perfilPrivado is bool)

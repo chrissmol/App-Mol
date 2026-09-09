@@ -6,6 +6,7 @@ import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { avatarTier, formatTrainingTime, profileAchievements, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
+import { normalizeAppModules } from '../utils/app-modules.js';
 
 setupAppShell();
 const $ = id => document.getElementById(id);
@@ -45,6 +46,15 @@ function renderStats(stats) {
   renderIcons();
 }
 
+function applyProfileModules(profile = {}) {
+  const modules = normalizeAppModules(profile.appModules);
+  $('journey-card')?.classList.toggle('hidden', modules.progresso === false);
+  $('consistency-card')?.classList.toggle('hidden', modules.progresso === false);
+  $('achievements-card')?.classList.toggle('hidden', modules.conquistas === false);
+  $('profile-evolution-link')?.classList.toggle('hidden', modules.evolucao === false);
+  $('profile-evolution-link')?.classList.toggle('flex', modules.evolucao !== false);
+}
+
 function renderAchievements(stats) {
   const badges = profileAchievements(stats);
   const unlocked = badges.filter(badge => badge.unlocked);
@@ -69,6 +79,7 @@ async function loadProfile(account) {
   const sessionsPromise = cached ? null : withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'O histórico');
   const [profileResult, sessionsResult] = await Promise.allSettled([profilePromise, sessionsPromise]);
   const profile = profileResult.status === 'fulfilled' && profileResult.value.exists() ? profileResult.value.data() : {};
+  applyProfileModules(profile);
   renderIdentity(account, profile);
   if (cached) {
     const goal = Math.max(1, Math.min(7, Number(profile.metaSemanal) || cached.goal || 3));

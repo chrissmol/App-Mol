@@ -1,5 +1,6 @@
 import { renderIcons } from './icons.js';
 import { t } from './language.js';
+import { getStoredAppModules, isPageAllowed } from './app-modules.js';
 
 const NAV_ITEMS = [
   { page: 'index.html', icon: 'layout-dashboard', labelKey: 'home', fallback: 'Início' },
@@ -7,6 +8,11 @@ const NAV_ITEMS = [
   { page: 'dieta.html', icon: 'apple', labelKey: 'diet', fallback: 'Dieta' },
   { page: 'perfil.html', icon: 'user', labelKey: 'profile', fallback: 'Perfil' },
 ];
+
+function visibleNavItems() {
+  const modules = getStoredAppModules();
+  return NAV_ITEMS.filter(item => isPageAllowed(item.page, modules));
+}
 
 function hrefFor(page, inPages) {
   if (page === 'index.html') return inPages ? '../index.html' : './index.html';
@@ -19,7 +25,8 @@ function activePage() {
 }
 
 function activeItem(current) {
-  return NAV_ITEMS.find(item => item.page === current) || NAV_ITEMS[0];
+  const items = visibleNavItems();
+  return items.find(item => item.page === current) || items[0] || NAV_ITEMS[0];
 }
 
 function mobileDockMarkup(inPages, current) {
@@ -39,7 +46,7 @@ function mobileDockMarkup(inPages, current) {
         <small>${t('goTo', 'Ir para')}</small>
       </div>
       <div class="mol-dock__items">
-        ${NAV_ITEMS.map(item => {
+        ${visibleNavItems().map(item => {
           const isActive = item.page === current || (current === '' && item.page === 'index.html');
           const label = t(item.labelKey, item.fallback);
           return `
@@ -62,7 +69,7 @@ function sidebarMarkup(inPages, current) {
         <span>Mol</span>
       </a>
       <nav class="mol-sidebar__nav">
-        ${NAV_ITEMS.map(item => {
+        ${visibleNavItems().map(item => {
           const isActive = item.page === current || (current === '' && item.page === 'index.html');
           const label = t(item.labelKey, item.fallback);
           return `
@@ -142,4 +149,9 @@ export function setupAppNavigation() {
   setupMobileDock(nav);
   renderIcons(nav);
   renderIcons(sidebar);
+}
+
+if (!window.__molAppNavModulesListener) {
+  window.__molAppNavModulesListener = true;
+  window.addEventListener('mol-app-modules-changed', () => setupAppNavigation());
 }
