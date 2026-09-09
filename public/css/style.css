@@ -1494,7 +1494,7 @@ html[data-reduce-motion="true"] *::after {
   .history-page main,
   .progress-page main,
   .admin-page main {
-    max-width: min(112rem, calc(100vw - 4rem));
+    max-width: min(96rem, calc(100vw - 4rem));
   }
 
   .app-surface .glass-card {
@@ -1517,7 +1517,7 @@ html[data-reduce-motion="true"] *::after {
   }
 
   .profile-page main {
-    max-width: min(112rem, calc(100vw - 4rem));
+    max-width: min(96rem, calc(100vw - 4rem));
   }
 
   .profile-page main > header {
@@ -1629,49 +1629,12 @@ html[data-reduce-motion="true"] *::after {
     padding-right: 1.1rem;
   }
 
-  .settings-page main {
-    display: block;
-    column-count: 2;
-    column-gap: clamp(1rem, 1.25vw, 1.4rem);
-  }
-
-  .settings-page #back,
-  .settings-page main > header {
-    column-span: all;
-  }
-
   .settings-page #back {
     display: inline-flex;
     position: relative;
     z-index: 3;
     width: fit-content;
     pointer-events: auto;
-  }
-
-  .settings-page main > header {
-    display: block;
-  }
-
-  .settings-page main > section {
-    display: inline-block;
-    width: 100%;
-    break-inside: avoid;
-    margin-bottom: clamp(1rem, 1.25vw, 1.4rem) !important;
-    vertical-align: top;
-  }
-
-  .personal-page #personal-content:not(.hidden) {
-    display: block;
-    column-count: 2;
-    column-gap: clamp(1rem, 1.25vw, 1.4rem);
-  }
-
-  .personal-page #personal-content > section {
-    display: inline-block;
-    width: 100%;
-    break-inside: avoid;
-    margin-bottom: clamp(1rem, 1.25vw, 1.4rem) !important;
-    vertical-align: top;
   }
 
   .personal-page #personal-content > section:first-child {
@@ -1815,39 +1778,38 @@ html[data-reduce-motion="true"] *::after {
   .app-surface main,
   .app-surface main.max-w-md,
   .app-surface main.max-w-2xl {
-    max-width: min(116rem, calc(100vw - 4rem));
+    max-width: min(96rem, calc(100vw - 4rem));
   }
 
   .dashboard-surface main {
-    gap: clamp(1rem, 1.2vw, 1.5rem);
+    align-items: start;
+    gap: clamp(1rem, 1.15vw, 1.35rem);
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
   .dashboard-surface main > header {
-    grid-column: span 4;
-    grid-row: span 2;
-    min-height: 17rem;
-    padding: clamp(1.25rem, 1.6vw, 1.75rem);
-    border: 1px solid var(--mol-border);
-    border-radius: 1.75rem;
-    background:
-      radial-gradient(circle at 88% 16%, rgba(87, 212, 147, .16), transparent 30%),
-      var(--mol-surface);
-    box-shadow: 0 18px 44px rgba(2, 6, 4, .08);
+    grid-column: 1 / -1;
+    display: flex;
+    min-height: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: clamp(.75rem, 1vw, 1.1rem);
   }
 
   .dashboard-surface main > header + #today-card {
     grid-column: span 5;
+    min-height: 11rem;
   }
 
   .dashboard-surface #next-meal-card,
   .dashboard-surface #fasting-card {
     grid-column: span 3;
+    min-height: 8rem;
   }
 
   .dashboard-surface #weekly-card {
     grid-column: span 4;
-    grid-row: span 2;
+    min-height: 11rem;
   }
 
   .dashboard-surface #last-session-card,
@@ -1862,8 +1824,8 @@ html[data-reduce-motion="true"] *::after {
   }
 
   #view-rotinas {
-    grid-template-columns: minmax(22rem, 4fr) minmax(0, 8fr);
-    column-gap: 1.75rem;
+    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+    column-gap: clamp(1.5rem, 2vw, 2.25rem);
   }
 
   #view-rotinas > #rotinas-list {
@@ -1904,11 +1866,11 @@ html[data-reduce-motion="true"] *::after {
   }
 
   .progress-page main > section:nth-of-type(2) {
-    grid-column: span 3;
+    grid-column: span 4;
   }
 
   .progress-page main > section:nth-of-type(3) {
-    grid-column: span 9;
+    grid-column: span 8;
   }
 
   .progress-page main > section:nth-of-type(1) {
@@ -1917,14 +1879,6 @@ html[data-reduce-motion="true"] *::after {
 
   .progress-page main > section:nth-of-type(1) article {
     min-height: 7.25rem;
-  }
-
-  .progress-page main > section:nth-of-type(2) {
-    grid-column: span 4;
-  }
-
-  .progress-page main > section:nth-of-type(3) {
-    grid-column: span 8;
   }
 
   .progress-page main > section:nth-of-type(4),
@@ -1942,11 +1896,11 @@ html[data-reduce-motion="true"] *::after {
   }
 
   .diet-page #diet-content > section:first-child {
-    grid-column: span 4;
+    grid-column: span 5;
   }
 
   .diet-page #diet-content > section:nth-child(2) {
-    grid-column: span 8;
+    grid-column: span 7;
   }
 
   .diet-page #diet-content > section:nth-child(3) {
@@ -1963,11 +1917,11 @@ html[data-reduce-motion="true"] *::after {
 
   .diet-page #diet-edit-content > section:first-child {
     position: static;
-    grid-column: 1 / -1;
+    grid-column: span 4;
   }
 
   .diet-page #diet-edit-content > #diet-edit-list {
-    grid-column: 1 / -1;
+    grid-column: span 8;
     grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
   }
 }
