@@ -987,6 +987,9 @@ function abrirRotina(id) {
       const conselho = progressionAdvice(ex, historicoPerformance.get(ex.nome) || []);
       const conselhoTom = conselho.state === 'increase' ? 'bg-neon/10 text-neon' : conselho.state === 'reduce' ? 'bg-orange-400/10 text-orange-400' : 'mol-soft text-gray-400';
       const currentClass = indexEx === indiceExercicioAtual ? 'is-current' : '';
+      const notaExercicio = typeof ex.notas === 'string' ? ex.notas.trim() : '';
+      const notaHTML = notaExercicio ? `<section class="mb-3 rounded-xl border border-neon/15 bg-neon/5 p-3 text-neon"><div class="flex items-start gap-2"><i data-lucide="clipboard-list" class="mt-0.5 h-4 w-4 shrink-0"></i><p class="text-[11px] leading-relaxed">${escapeHTML(notaExercicio)}</p></div></section>` : '';
+      const editorNotaHTML = treinoIniciado ? '' : `<details class="mb-3 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Observações do exercício</summary><label class="mt-3 block text-[10px] font-bold uppercase tracking-wider text-gray-500" for="nota-exercicio-${indexEx}">Orientação, ajuste de máquina ou detalhe técnico</label><textarea id="nota-exercicio-${indexEx}" maxlength="500" rows="3" class="mt-2 min-h-24 w-full resize-y rounded-xl border border-white/10 mol-field p-3 text-sm text-white outline-none transition-colors focus:border-neon" placeholder="Ex.: usar máquina Technogym, polia abaixo das escápulas, atenção ao desconforto..." onblur="atualizarNotaExercicio(${indexEx}, this.value)">${escapeHTML(notaExercicio)}</textarea><p class="mt-2 text-[11px] text-gray-500">Salva automaticamente ao sair do campo.</p></details>`;
 
       return `
       <article class="workout-exercise-card ${currentClass} mol-panel rounded-2xl pt-4 pb-2 px-4 border border-white/5 mb-4">
@@ -994,8 +997,10 @@ function abrirRotina(id) {
           <div><h4 class="font-bold text-sm text-neon">${escapeHTML(ex.nome)}</h4><p class="mt-1 text-[11px] text-gray-500">Meta: ${ex.repsMin || 8}–${ex.repsMax || 12} reps · RIR ${ex.rirAlvo ?? 2} · ${ex.descansoSegundos || 90}s</p></div>
           <div class="flex gap-1"><button type="button" onclick="moverExercicio(${indexEx}, -1)" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" onclick="moverExercicio(${indexEx}, 1)" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" onclick="excluirExercicio(${indexEx})" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
         </div>
+        ${notaHTML}
         <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p></div></div></section>
         <button type="button" onclick="abrirSubstituicao(${indexEx})" class="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
+        ${editorNotaHTML}
         <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMin', this.value)" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMax', this.value)" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'rirAlvo', this.value)" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" onchange="atualizarMetaExercicio(${indexEx}, 'descansoSegundos', this.value)" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
         
         <div class="workout-set-header flex items-center gap-1 mb-2 px-1"><div class="workout-set-grid grid flex-1 grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 text-[10px] text-gray-500 font-semibold text-center tracking-wider items-center">
@@ -1092,6 +1097,26 @@ window.atualizarMetaExercicio = async (indexEx, campo, valor) => {
   salvarRascunho({ force: true });
   try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); showToast('Meta atualizada.', 'success'); }
   catch (error) { exercicio[campo] = anterior; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível salvar a meta.'); }
+};
+
+window.atualizarNotaExercicio = async (indexEx, valor) => {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  const exercicio = rotina?.exercicios?.[indexEx];
+  if (!exercicio) return;
+  const nota = String(valor || '').trim().slice(0, 500);
+  const anterior = exercicio.notas || '';
+  if (nota === anterior) return;
+  exercicio.notas = nota;
+  salvarRascunho({ force: true });
+  try {
+    await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
+    showToast(nota ? 'Observação salva.' : 'Observação removida.', 'success');
+  } catch (error) {
+    exercicio.notas = anterior;
+    abrirRotina(rotinaAbertaId);
+    console.error(error);
+    showToast('Não foi possível salvar a observação.');
+  }
 };
 
 window.copiarAnterior = (indexEx, indexSerie) => {
