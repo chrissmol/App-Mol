@@ -1629,6 +1629,40 @@ html[data-reduce-motion="true"] *::after {
     padding-right: 1.1rem;
   }
 
+  .settings-page main {
+    display: block;
+    column-count: 2;
+    column-gap: clamp(1rem, 1.25vw, 1.4rem);
+  }
+
+  .settings-page #back,
+  .settings-page main > header {
+    column-span: all;
+    display: block;
+  }
+
+  .settings-page main > section {
+    display: inline-block;
+    width: 100%;
+    break-inside: avoid;
+    margin-bottom: clamp(1rem, 1.25vw, 1.4rem) !important;
+    vertical-align: top;
+  }
+
+  .personal-page #personal-content:not(.hidden) {
+    display: block;
+    column-count: 2;
+    column-gap: clamp(1rem, 1.25vw, 1.4rem);
+  }
+
+  .personal-page #personal-content > section {
+    display: inline-block;
+    width: 100%;
+    break-inside: avoid;
+    margin-bottom: clamp(1rem, 1.25vw, 1.4rem) !important;
+    vertical-align: top;
+  }
+
   .personal-page #personal-content > section:first-child {
     grid-column: span 7;
   }
