@@ -1,7 +1,8 @@
-import { db } from '../config/firebase-config.js';
+﻿import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { FASTING_PROTOCOLS, FOOD_CATALOG, foodNutrients, mealIsOutsideFastingWindow, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
+import { DIET_PLANS } from '../data/diet-plans.js';
+import { FASTING_PROTOCOLS, FOOD_CATALOG, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -13,6 +14,7 @@ let meals = [];
 let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };
 let fasting = normalizeFastingSettings();
 let dietMode = 'view';
+let selectedDay = new Date().getDay();
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const rounded = value => Math.round(Number(value) || 0);
@@ -22,12 +24,13 @@ const goalValue = (value, fallback, max) => {
 };
 let modalOpener = null;
 let mealClock = null;
-const MEAL_NAMES = ['Café da manhã', 'Lanche da manhã', 'Almoço', 'Pré-treino', 'Pós-treino', 'Lanche da tarde', 'Jantar', 'Ceia'];
+const MEAL_NAMES = ['CafÃ© da manhÃ£', 'Lanche da manhÃ£', 'AlmoÃ§o', 'PrÃ©-treino', 'PÃ³s-treino', 'Lanche da tarde', 'Jantar', 'Ceia'];
+const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 const MEAL_COMBINATIONS = [
-  { label: 'Ovos + café', foods: [['Ovo cozido', 100], ['Café coado sem açúcar', 200]] },
-  { label: 'Pão + carne', foods: [['Pão francês', 50], ['Carne bovina magra grelhada', 100]] },
+  { label: 'Ovos + cafÃ©', foods: [['Ovo cozido', 100], ['CafÃ© coado sem aÃ§Ãºcar', 200]] },
+  { label: 'PÃ£o + carne', foods: [['PÃ£o francÃªs', 50], ['Carne bovina magra grelhada', 100]] },
   { label: 'Iogurte + aveia + banana', foods: [['Iogurte natural integral', 170], ['Aveia em flocos', 40], ['Banana', 100]] },
-  { label: 'Arroz + feijão + frango', foods: [['Arroz branco cozido', 150], ['Feijão carioca cozido', 100], ['Peito de frango grelhado', 150]] },
+  { label: 'Arroz + feijÃ£o + frango', foods: [['Arroz branco cozido', 150], ['FeijÃ£o carioca cozido', 100], ['Peito de frango grelhado', 150]] },
   { label: 'Tapioca + ovos', foods: [['Tapioca pronta', 100], ['Ovo cozido', 100]] },
   { label: 'Whey + banana', foods: [['Whey protein', 30], ['Banana', 100]] }
 ];
@@ -48,7 +51,7 @@ async function persist(nextMeals) {
   try {
     await setDoc(doc(db, 'dietas', user.uid), { userId: user.uid, refeicoes: normalizeDietMeals(nextMeals), jejum: normalizeFastingSettings(fasting), atualizadoEm: serverTimestamp() });
     meals = nextMeals; writeDietCache(); render(); return true;
-  } catch (error) { console.error('Dieta não salva:', error); showToast(error.code === 'permission-denied' ? 'A dieta excede os limites permitidos.' : 'Não foi possível salvar a dieta.'); return false; }
+  } catch (error) { console.error('Dieta nÃ£o salva:', error); showToast(error.code === 'permission-denied' ? 'A dieta excede os limites permitidos.' : 'NÃ£o foi possÃ­vel salvar a dieta.'); return false; }
 }
 
 function closeModal() { $('diet-modal').innerHTML = ''; modalOpener?.focus?.(); modalOpener = null; }
@@ -78,27 +81,44 @@ async function persistFasting(nextFasting) {
 
 function renderFastingCard() {
   const activeDays = fasting.diasSemana.length === 7 ? 'Todos os dias' : `${fasting.diasSemana.length} dia(s) por semana`;
-  $('fasting-card').innerHTML = `<div class="flex items-center justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Jejum intermitente</p><h2 class="mt-1 text-xl font-extrabold">${fasting.ativo ? escapeHTML(fasting.protocolo) : 'Desativado'}</h2><p class="mt-2 text-sm text-gray-500">${fasting.ativo ? `${escapeHTML(activeDays)} · ${escapeHTML(fasting.inicioJanela)}–${escapeHTML(fasting.fimJanela)}` : 'Configure sua janela de jejum quando quiser.'}</p></div><button type="button" id="fasting-settings" class="mol-btn mol-btn-secondary min-h-10 rounded-xl px-3 text-xs">${fasting.ativo ? 'Editar' : 'Configurar'}</button></div>`;
+  $('fasting-card').innerHTML = `<div class="flex items-center justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Jejum intermitente</p><h2 class="mt-1 text-xl font-extrabold">${fasting.ativo ? escapeHTML(fasting.protocolo) : 'Desativado'}</h2><p class="mt-2 text-sm text-gray-500">${fasting.ativo ? `${escapeHTML(activeDays)} Â· ${escapeHTML(fasting.inicioJanela)}-${escapeHTML(fasting.fimJanela)}` : 'Configure sua janela de jejum quando quiser.'}</p></div><button type="button" id="fasting-settings" class="mol-btn mol-btn-secondary min-h-10 rounded-xl px-3 text-xs">${fasting.ativo ? 'Editar' : 'Configurar'}</button></div>`;
   $('fasting-settings').onclick = openFastingForm;
+}
+
+function renderDaySelector() {
+  let selector = $('diet-day-selector');
+  if (!selector) {
+    selector = document.createElement('section');
+    selector.id = 'diet-day-selector';
+    selector.className = 'mt-6';
+    $('diet-content')?.prepend(selector);
+  }
+  selector.innerHTML = `<div class="flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Dia do plano</p><h2 class="mt-1 text-lg font-extrabold">${escapeHTML(DAY_LABELS[selectedDay])}</h2></div><button type="button" data-today class="min-h-9 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300">Hoje</button></div><div class="mt-3 grid grid-cols-7 gap-1">${DAY_LABELS.map((label, day) => `<button type="button" data-day="${day}" class="min-h-10 rounded-xl px-1 text-xs font-bold ${day === selectedDay ? 'bg-neon text-black' : 'mol-soft text-gray-400'}">${label}</button>`).join('')}</div>`;
+  selector.querySelector('[data-today]').onclick = () => { selectedDay = new Date().getDay(); render(); };
+  selector.querySelectorAll('[data-day]').forEach(button => {
+    button.onclick = () => { selectedDay = Number(button.dataset.day); render(); };
+  });
 }
 
 function render() {
   setDietMode(dietMode);
+  renderDaySelector();
   renderFastingCard();
-  const totals = nutritionTotals(meals);
+  const dayMeals = mealsForDay(meals, selectedDay);
+  const totals = nutritionTotals(dayMeals);
   $('diet-total').textContent = `${rounded(totals.kcal).toLocaleString('pt-BR')} kcal`;
   $('calorie-goal').textContent = `Meta: ${goals.kcal.toLocaleString('pt-BR')} kcal`;
   $('calorie-progress').style.width = `${Math.min(100, (totals.kcal / goals.kcal) * 100)}%`;
-  $('macro-total').innerHTML = [['Proteína', totals.protein, goals.protein], ['Carbo', totals.carbs, goals.carbs], ['Gordura', totals.fat, goals.fat]].map(([label, value, goal]) => `<div class="rounded-2xl mol-soft p-3"><strong class="block text-sm">${rounded(value)} g</strong><span class="mt-1 block text-[10px] text-gray-500">${label} · ${goal} g</span></div>`).join('');
-  const next = nextMeal(meals, new Date().toTimeString().slice(0, 5));
-  $('next-meal').innerHTML = next.meal ? `<p class="text-xs font-bold uppercase tracking-wider text-neon">Próxima refeição${next.tomorrow ? ' · amanhã' : ''}</p><div class="mt-2 flex items-end justify-between gap-4"><div><h2 class="text-xl font-extrabold">${escapeHTML(next.meal.nome)}</h2><p class="mt-1 text-sm text-gray-400">${escapeHTML(next.meal.hora)} · ${next.meal.alimentos.length} ${next.meal.alimentos.length === 1 ? 'alimento' : 'alimentos'}</p></div><button type="button" data-open-next class="min-h-10 rounded-xl bg-neon px-3 text-xs font-bold text-black">Ver</button></div>` : '<div class="text-center"><p class="font-bold">Nenhuma refeição planejada</p><p class="mt-1 text-sm text-gray-500">Adicione sua primeira refeição do dia.</p></div>';
+  $('macro-total').innerHTML = [['ProteÃ­na', totals.protein, goals.protein], ['Carbo', totals.carbs, goals.carbs], ['Gordura', totals.fat, goals.fat]].map(([label, value, goal]) => `<div class="rounded-2xl mol-soft p-3"><strong class="block text-sm">${rounded(value)} g</strong><span class="mt-1 block text-[10px] text-gray-500">${label} Â· ${goal} g</span></div>`).join('');
+  const next = nextMeal(dayMeals, selectedDay === new Date().getDay() ? new Date().toTimeString().slice(0, 5) : '00:00');
+  $('next-meal').innerHTML = next.meal ? `<p class="text-xs font-bold uppercase tracking-wider text-neon">PrÃ³xima refeiÃ§Ã£o${next.tomorrow ? ' Â· amanhÃ£' : ''}</p><div class="mt-2 flex items-end justify-between gap-4"><div><h2 class="text-xl font-extrabold">${escapeHTML(next.meal.nome)}</h2><p class="mt-1 text-sm text-gray-400">${escapeHTML(next.meal.hora)} Â· ${mealFoods(next.meal).length} ${mealFoods(next.meal).length === 1 ? 'alimento' : 'alimentos'}</p></div><button type="button" data-open-next class="min-h-10 rounded-xl bg-neon px-3 text-xs font-bold text-black">Ver</button></div>` : '<div class="text-center"><p class="font-bold">Nenhuma refeiÃ§Ã£o planejada</p><p class="mt-1 text-sm text-gray-500">Adicione sua primeira refeiÃ§Ã£o do dia.</p></div>';
   $('next-meal').querySelector('[data-open-next]')?.addEventListener('click', () => openMeal(next.meal.id));
-  $('meal-count').textContent = `${meals.length}/12`;
-  $('meal-list').innerHTML = meals.length ? [...meals].sort((a, b) => a.hora.localeCompare(b.hora)).map(meal => {
-    const total = nutritionTotals([{ alimentos: meal.alimentos }]);
-    const outsideWindow = mealIsOutsideFastingWindow(meal, fasting) ? ' · fora da janela' : '';
-    return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${meal.alimentos.length} alimento(s) · ${rounded(total.kcal)} kcal${outsideWindow}</p></div><i data-lucide="chevron-right" class="h-5 w-5 text-gray-500"></i></div></button></article>`;
-  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Sua agenda está vazia</p><p class="mt-2 text-sm text-gray-500">Adicione café da manhã, almoço, jantar ou seus próprios horários.</p><button type="button" data-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Adicionar refeição</button></div>';
+  $('meal-count').textContent = `${dayMeals.length}/${meals.length}`;
+  $('meal-list').innerHTML = dayMeals.length ? [...dayMeals].sort((a, b) => a.hora.localeCompare(b.hora)).map(meal => {
+    const total = nutritionTotals([meal]);
+    const outsideWindow = mealIsOutsideFastingWindow(meal, fasting) ? ' Â· fora da janela' : '';
+    return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${mealFoods(meal).length} alimento(s) Â· ${rounded(total.kcal)} kcal${outsideWindow}</p>${meal.observacao ? `<p class="mt-2 line-clamp-2 text-xs text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}</div><i data-lucide="chevron-right" class="h-5 w-5 text-gray-500"></i></div></button></article>`;
+  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeicao neste dia</p><p class="mt-2 text-sm text-gray-500">Use a edicao para escolher em quais dias cada refeicao aparece.</p><button type="button" data-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Adicionar refeiÃ§Ã£o</button></div>';
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
   renderEditView();
@@ -122,31 +142,62 @@ function renderEditView() {
   if (!list) return;
   const sorted = [...meals].sort((a, b) => a.hora.localeCompare(b.hora));
   list.innerHTML = sorted.length ? sorted.map(meal => {
-    const total = nutritionTotals([{ alimentos: meal.alimentos }]);
-    return `<article class="glass-card rounded-3xl p-5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${meal.alimentos.length} alimento(s) · ${rounded(total.kcal)} kcal</p></div><button type="button" data-edit-view="${escapeHTML(meal.id)}" class="min-h-10 rounded-xl mol-soft px-3 text-xs font-bold">Visualizar</button></div><div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"><button type="button" data-edit-meal="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl bg-neon px-3 text-xs font-bold text-black">Editar refeição</button><button type="button" data-edit-foods="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold">Alimentos</button><button type="button" data-delete-meal="${escapeHTML(meal.id)}" class="col-span-2 min-h-11 rounded-xl bg-red-500/10 px-3 text-xs font-bold text-red-300 sm:col-span-1">Excluir</button></div></article>`;
-  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeição para editar</p><p class="mt-2 text-sm text-gray-500">Crie sua primeira refeição e adicione quantos alimentos quiser.</p><button type="button" data-edit-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Nova refeição</button></div>';
+    const total = nutritionTotals([meal]);
+    return `<article class="glass-card rounded-3xl p-5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${mealFoods(meal).length} alimento(s) Â· ${rounded(total.kcal)} kcal</p></div><button type="button" data-edit-view="${escapeHTML(meal.id)}" class="min-h-10 rounded-xl mol-soft px-3 text-xs font-bold">Visualizar</button></div><div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"><button type="button" data-edit-meal="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl bg-neon px-3 text-xs font-bold text-black">Editar refeiÃ§Ã£o</button><button type="button" data-edit-foods="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold">Alimentos</button><button type="button" data-delete-meal="${escapeHTML(meal.id)}" class="col-span-2 min-h-11 rounded-xl bg-red-500/10 px-3 text-xs font-bold text-red-300 sm:col-span-1">Excluir</button></div></article>`;
+  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeiÃ§Ã£o para editar</p><p class="mt-2 text-sm text-gray-500">Crie sua primeira refeiÃ§Ã£o e adicione quantos alimentos quiser.</p><button type="button" data-edit-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Nova refeiÃ§Ã£o</button></div>';
   list.querySelectorAll('[data-edit-view]').forEach(button => button.onclick = () => openMeal(button.dataset.editView));
   list.querySelectorAll('[data-edit-meal]').forEach(button => button.onclick = () => openMealForm(button.dataset.editMeal));
   list.querySelectorAll('[data-edit-foods]').forEach(button => button.onclick = () => openMeal(button.dataset.editFoods));
   list.querySelectorAll('[data-delete-meal]').forEach(button => button.onclick = async () => {
     const meal = meals.find(item => item.id === button.dataset.deleteMeal);
-    if (!meal || !await confirmAction({ title: 'Excluir refeição?', message: `${meal.nome} e seus alimentos serão removidos.`, confirmText: 'Excluir', danger: true })) return;
-    if (await persist(meals.filter(item => item.id !== meal.id))) showToast('Refeição excluída.', 'success');
+    if (!meal || !await confirmAction({ title: 'Excluir refeiÃ§Ã£o?', message: `${meal.nome} e seus alimentos serÃ£o removidos.`, confirmText: 'Excluir', danger: true })) return;
+    if (await persist(meals.filter(item => item.id !== meal.id))) showToast('RefeiÃ§Ã£o excluÃ­da.', 'success');
   });
   list.querySelector('[data-edit-empty-add]')?.addEventListener('click', () => openMealForm());
 }
 
+async function applyDietPlan(plan) {
+  const confirmed = await confirmAction({
+    title: 'Substituir dieta?',
+    message: `${plan.nome} substituirÃ¡ todas as refeiÃ§Ãµes atuais. Essa aÃ§Ã£o nÃ£o altera seus treinos, perfil ou histÃ³rico.`,
+    confirmText: 'Substituir'
+  });
+  if (!confirmed) return;
+  const button = $('diet-modal')?.querySelector(`[data-import-plan="${escapeHTML(plan.id)}"]`);
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Importando...';
+  }
+  const ok = await persist(normalizeDietMeals(plan.refeicoes));
+  if (ok) {
+    closeModal();
+    setDietMode('view');
+    showToast('Plano importado na sua dieta.', 'success');
+  } else if (button) {
+    button.disabled = false;
+    button.textContent = 'Substituir dieta atual';
+  }
+}
+
+function openDietPlanImport() {
+  modal('Importar plano', `<div class="space-y-3">${DIET_PLANS.map(plan => `<article class="rounded-2xl mol-soft p-4"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm">${escapeHTML(plan.nome)}</strong><p class="mt-1 text-xs leading-relaxed text-gray-500">${escapeHTML(plan.descricao)}</p><p class="mt-2 text-xs text-gray-400">${normalizeDietMeals(plan.refeicoes).length} refeiÃ§Ã£o(Ãµes)</p></div><button type="button" data-import-plan="${escapeHTML(plan.id)}" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black">Substituir dieta atual</button></div></article>`).join('')}</div>`);
+  $('diet-modal').querySelectorAll('[data-import-plan]').forEach(button => {
+    const plan = DIET_PLANS.find(item => item.id === button.dataset.importPlan);
+    button.onclick = () => plan && applyDietPlan(plan);
+  });
+}
+
 function openFastingForm() {
   const value = normalizeFastingSettings(fasting);
-  const dayLabels = [['0','Dom'], ['1','Seg'], ['2','Ter'], ['3','Qua'], ['4','Qui'], ['5','Sex'], ['6','Sáb']];
-  modal('Jejum intermitente', `<label class="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl mol-soft p-4"><span><strong class="block text-sm">Acompanhar jejum</strong><small class="mt-1 block text-xs text-gray-500">Mostra janela alimentar e fases estimadas.</small></span><span class="relative shrink-0"><input id="fasting-enabled" type="checkbox" class="peer sr-only" ${value.ativo ? 'checked' : ''}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label><label class="mt-4 block text-xs font-bold text-gray-400">Protocolo<select id="fasting-protocol" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4">${FASTING_PROTOCOLS.map(item => `<option value="${item.id}" ${item.id === value.protocolo ? 'selected' : ''}>${item.label}</option>`).join('')}</select></label><div class="fasting-time-grid mt-4"><label class="text-xs font-bold text-gray-400">Quando começa o jejum<input id="fasting-start" type="time" aria-label="Horário em que começa o jejum" value="${escapeHTML(value.fimJanela)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label><label class="text-xs font-bold text-gray-400">Quando termina o jejum<input id="fasting-end" type="time" aria-label="Horário em que termina o jejum" value="${escapeHTML(value.inicioJanela)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label></div><p class="mt-4 text-xs font-bold uppercase tracking-wider text-neon">Dias da semana</p><div class="mt-2 grid grid-cols-4 gap-2">${dayLabels.map(([day,label]) => `<label><input class="peer sr-only" type="checkbox" data-fasting-day="${day}" ${value.diasSemana.includes(Number(day)) ? 'checked' : ''}><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><label class="mt-4 block text-xs font-bold text-gray-400">Treino durante jejum<select id="fasting-training" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"><option value="flexivel" ${value.treino === 'flexivel' ? 'selected' : ''}>Depende do dia</option><option value="jejum" ${value.treino === 'jejum' ? 'selected' : ''}>Costumo treinar em jejum</option><option value="alimentado" ${value.treino === 'alimentado' ? 'selected' : ''}>Prefiro treinar alimentado</option></select></label><label class="mt-4 flex min-h-14 cursor-pointer items-center justify-between gap-4 rounded-2xl mol-soft p-4"><span><strong class="block text-sm">Pausar hoje</strong><small class="mt-1 block text-xs text-gray-500">Mantém a configuração, mas não cobra a janela hoje.</small></span><span class="relative shrink-0"><input id="fasting-paused" type="checkbox" class="peer sr-only" ${value.pausadoHoje ? 'checked' : ''}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label><p class="mt-4 text-xs leading-relaxed text-gray-500">As fases são estimativas educacionais, não orientação médica. Interrompa o jejum se passar mal.</p><button id="save-fasting" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar jejum</button>`);
+  const dayLabels = [['0','Dom'], ['1','Seg'], ['2','Ter'], ['3','Qua'], ['4','Qui'], ['5','Sex'], ['6','SÃ¡b']];
+  modal('Jejum intermitente', `<label class="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl mol-soft p-4"><span><strong class="block text-sm">Acompanhar jejum</strong><small class="mt-1 block text-xs text-gray-500">Mostra janela alimentar e fases estimadas.</small></span><span class="relative shrink-0"><input id="fasting-enabled" type="checkbox" class="peer sr-only" ${value.ativo ? 'checked' : ''}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label><label class="mt-4 block text-xs font-bold text-gray-400">Protocolo<select id="fasting-protocol" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4">${FASTING_PROTOCOLS.map(item => `<option value="${item.id}" ${item.id === value.protocolo ? 'selected' : ''}>${item.label}</option>`).join('')}</select></label><div class="fasting-time-grid mt-4"><label class="text-xs font-bold text-gray-400">Quando comeÃ§a o jejum<input id="fasting-start" type="time" aria-label="HorÃ¡rio em que comeÃ§a o jejum" value="${escapeHTML(value.fimJanela)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label><label class="text-xs font-bold text-gray-400">Quando termina o jejum<input id="fasting-end" type="time" aria-label="HorÃ¡rio em que termina o jejum" value="${escapeHTML(value.inicioJanela)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"></label></div><p class="mt-4 text-xs font-bold uppercase tracking-wider text-neon">Dias da semana</p><div class="mt-2 grid grid-cols-4 gap-2">${dayLabels.map(([day,label]) => `<label><input class="peer sr-only" type="checkbox" data-fasting-day="${day}" ${value.diasSemana.includes(Number(day)) ? 'checked' : ''}><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><label class="mt-4 block text-xs font-bold text-gray-400">Treino durante jejum<select id="fasting-training" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"><option value="flexivel" ${value.treino === 'flexivel' ? 'selected' : ''}>Depende do dia</option><option value="jejum" ${value.treino === 'jejum' ? 'selected' : ''}>Costumo treinar em jejum</option><option value="alimentado" ${value.treino === 'alimentado' ? 'selected' : ''}>Prefiro treinar alimentado</option></select></label><label class="mt-4 flex min-h-14 cursor-pointer items-center justify-between gap-4 rounded-2xl mol-soft p-4"><span><strong class="block text-sm">Pausar hoje</strong><small class="mt-1 block text-xs text-gray-500">MantÃ©m a configuraÃ§Ã£o, mas nÃ£o cobra a janela hoje.</small></span><span class="relative shrink-0"><input id="fasting-paused" type="checkbox" class="peer sr-only" ${value.pausadoHoje ? 'checked' : ''}><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label><p class="mt-4 text-xs leading-relaxed text-gray-500">As fases sÃ£o estimativas educacionais, nÃ£o orientaÃ§Ã£o mÃ©dica. Interrompa o jejum se passar mal.</p><button id="save-fasting" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar jejum</button>`);
   $('fasting-protocol').onchange = () => { $('fasting-start').disabled = $('fasting-protocol').value !== 'custom'; };
   $('fasting-protocol').onchange();
   $('save-fasting').onclick = async () => {
     const days = [...$('diet-modal').querySelectorAll('[data-fasting-day]:checked')].map(input => Number(input.dataset.fastingDay));
     const next = normalizeFastingSettings({ ativo: $('fasting-enabled').checked, protocolo: $('fasting-protocol').value, inicioJanela: $('fasting-end').value, fimJanela: $('fasting-start').value, diasSemana: days, treino: $('fasting-training').value, pausadoHoje: $('fasting-paused').checked });
     if (next.ativo && !next.diasSemana.length) return showToast('Escolha ao menos um dia da semana.');
-    $('save-fasting').disabled = true; $('save-fasting').textContent = 'Salvando…';
+    $('save-fasting').disabled = true; $('save-fasting').textContent = 'Salvandoâ¬¦';
     if (await persistFasting(next)) { closeModal(); showToast('Jejum atualizado.', 'success'); }
     else { $('save-fasting').disabled = false; $('save-fasting').textContent = 'Salvar jejum'; }
   };
@@ -155,56 +206,69 @@ function openFastingForm() {
 function openMealForm(mealId = null) {
   const existing = meals.find(item => item.id === mealId);
   const value = existing || { id: newId(), nome: '', hora: '12:00', alimentos: [] };
-  modal(existing ? 'Editar refeição' : 'Nova refeição', `<p class="text-xs font-bold uppercase tracking-wider text-neon">Escolha um momento do dia ou personalize</p><div id="meal-name-options" class="mt-3 flex gap-2 overflow-x-auto pb-2">${MEAL_NAMES.map(name => `<button type="button" data-meal-name="${escapeHTML(name)}" class="shrink-0 rounded-full mol-soft px-3 py-2 text-xs font-bold text-gray-300">${escapeHTML(name)}</button>`).join('')}</div><label class="mt-3 block text-xs font-bold text-gray-400">Nome<input id="meal-name" maxlength="60" autocomplete="off" value="${escapeHTML(value.nome)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white" placeholder="Ex.: Café da manhã"></label><label class="mt-4 block text-xs font-bold text-gray-400">Horário<input id="meal-time" type="time" value="${escapeHTML(value.hora)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white"></label><button id="save-meal" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar refeição</button>`);
+  modal(existing ? 'Editar refeiÃ§Ã£o' : 'Nova refeiÃ§Ã£o', `<p class="text-xs font-bold uppercase tracking-wider text-neon">Escolha um momento do dia ou personalize</p><div id="meal-name-options" class="mt-3 flex gap-2 overflow-x-auto pb-2">${MEAL_NAMES.map(name => `<button type="button" data-meal-name="${escapeHTML(name)}" class="shrink-0 rounded-full mol-soft px-3 py-2 text-xs font-bold text-gray-300">${escapeHTML(name)}</button>`).join('')}</div><label class="mt-3 block text-xs font-bold text-gray-400">Nome<input id="meal-name" maxlength="60" autocomplete="off" value="${escapeHTML(value.nome)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white" placeholder="Ex.: CafÃ© da manhÃ£"></label><label class="mt-4 block text-xs font-bold text-gray-400">HorÃ¡rio<input id="meal-time" type="time" value="${escapeHTML(value.hora)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white"></label><p class="mt-4 text-xs font-bold uppercase tracking-wider text-neon">Dias da semana</p><div class="mt-2 grid grid-cols-4 gap-2">${DAY_LABELS.map((label, day) => `<label><input class="peer sr-only" type="checkbox" data-meal-day="${day}" ${(value.diasSemana || [0,1,2,3,4,5,6]).includes(day) ? 'checked' : ''}><span class="flex min-h-10 items-center justify-center rounded-xl bg-white/5 px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><label class="mt-4 block text-xs font-bold text-gray-400">Observacao<textarea id="meal-note" maxlength="500" class="mt-2 min-h-24 w-full rounded-xl mol-field px-4 py-3 text-white" placeholder="Ex.: feijao opcional, sabado sem jantar, usar 300 g em alguns dias">${escapeHTML(value.observacao || '')}</textarea></label><button id="save-meal" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar refeiÃ§Ã£o</button>`);
   $('meal-name').focus();
   $('meal-name-options').querySelectorAll('[data-meal-name]').forEach(button => button.onclick = () => { $('meal-name').value = button.dataset.mealName; });
   $('save-meal').onclick = async () => {
-    const updated = { ...value, nome: $('meal-name').value.trim(), hora: $('meal-time').value };
+    const days = [...$('diet-modal').querySelectorAll('[data-meal-day]:checked')].map(input => Number(input.dataset.mealDay));
+    if (!days.length) return showToast('Escolha ao menos um dia da semana.');
+    const updated = { ...value, nome: $('meal-name').value.trim(), hora: $('meal-time').value, diasSemana: days, observacao: $('meal-note')?.value.trim() || '' };
     const error = validateMeal(updated); if (error) return showToast(error);
-    if (!existing && meals.length >= 12) return showToast('O limite é de 12 refeições.');
+    if (!existing && meals.length >= 12) return showToast('O limite Ã© de 12 refeiÃ§Ãµes.');
     const next = clone(meals); const index = next.findIndex(item => item.id === updated.id); if (index >= 0) next[index] = updated; else next.push(updated);
-    $('save-meal').disabled = true; $('save-meal').textContent = 'Salvando…'; if (await persist(next)) { closeModal(); showToast('Refeição salva.', 'success'); } else { $('save-meal').disabled = false; $('save-meal').textContent = 'Salvar refeição'; }
+    $('save-meal').disabled = true; $('save-meal').textContent = 'Salvandoâ¬¦'; if (await persist(next)) { closeModal(); showToast('RefeiÃ§Ã£o salva.', 'success'); } else { $('save-meal').disabled = false; $('save-meal').textContent = 'Salvar refeiÃ§Ã£o'; }
   };
+}
+
+function foodCard(food, removable = true) {
+  const nutrients = foodNutrients(food);
+  return `<article class="rounded-2xl mol-soft p-4"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm">${escapeHTML(food.nome)}</strong><p class="mt-1 text-xs text-gray-500">${food.gramas} g Â· ${rounded(nutrients.kcal)} kcal Â· P ${rounded(nutrients.protein)} Â· C ${rounded(nutrients.carbs)} Â· G ${rounded(nutrients.fat)}</p></div>${removable ? `<button type="button" data-remove-food="${escapeHTML(food.id)}" class="min-h-10 text-xs font-bold text-red-300">Remover</button>` : ''}</div></article>`;
+}
+
+function optionGroupsHTML(meal) {
+  const groups = mealOptionGroups(meal);
+  if (!groups.length) return '';
+  return groups.map(group => `<section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">${escapeHTML(group.nome)}${group.modo === 'alternativas' ? '  escolha uma' : ''}</p><div class="mt-2 space-y-2">${group.opcoes.map(option => `<article class="rounded-2xl border border-white/10 p-3"><strong class="text-sm text-neon">${escapeHTML(option.nome)}</strong><div class="mt-2 space-y-2">${option.alimentos.map(food => foodCard(food, false)).join('')}</div></article>`).join('')}</div></section>`).join('');
 }
 
 function openMeal(mealId) {
   const meal = meals.find(item => item.id === mealId); if (!meal) return;
-  const total = nutritionTotals([{ alimentos: meal.alimentos }]);
-  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div><button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Combinações rápidas</p><div id="meal-combinations" class="mt-2 flex gap-2 overflow-x-auto pb-1">${MEAL_COMBINATIONS.map((item, index) => `<button type="button" data-combination="${index}" class="shrink-0 rounded-xl mol-soft px-3 py-2 text-xs font-bold text-gray-300">+ ${item.label}</button>`).join('')}</div></section><div id="meal-foods" class="mt-4 space-y-2"></div><div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl mol-soft text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>`);
-  $('meal-foods').innerHTML = meal.alimentos.length ? meal.alimentos.map(food => { const nutrients = foodNutrients(food); return `<article class="rounded-2xl mol-soft p-4"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm">${escapeHTML(food.nome)}</strong><p class="mt-1 text-xs text-gray-500">${food.gramas} g · ${rounded(nutrients.kcal)} kcal · P ${rounded(nutrients.protein)} · C ${rounded(nutrients.carbs)} · G ${rounded(nutrients.fat)}</p></div><button type="button" data-remove-food="${escapeHTML(food.id)}" class="min-h-10 text-xs font-bold text-red-300">Remover</button></div></article>`; }).join('') : '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento nesta refeição.</p>';
+  const total = nutritionTotals([meal]);
+  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} Â· ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div>${meal.observacao ? `<p class="mt-4 rounded-2xl mol-soft p-4 text-sm text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}<button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">CombinaÃ§Ãµes rÃ¡pidas</p><div id="meal-combinations" class="mt-2 flex gap-2 overflow-x-auto pb-1">${MEAL_COMBINATIONS.map((item, index) => `<button type="button" data-combination="${index}" class="shrink-0 rounded-xl mol-soft px-3 py-2 text-xs font-bold text-gray-300">+ ${item.label}</button>`).join('')}</div></section><div id="meal-foods" class="mt-4 space-y-2"></div>${optionGroupsHTML(meal)}<div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl mol-soft text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>`);
+  $('meal-foods').innerHTML = meal.alimentos.length ? meal.alimentos.map(food => foodCard(food)).join('') : '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento fixo nesta refeiÃ§Ã£o.</p>';
   $('add-food').onclick = () => openFoodSearch(meal.id); $('edit-meal').onclick = () => openMealForm(meal.id);
   $('meal-combinations').querySelectorAll('[data-combination]').forEach(button => button.onclick = async () => {
     const combination = MEAL_COMBINATIONS[Number(button.dataset.combination)]; const next = clone(meals); const target = next.find(item => item.id === meal.id);
     if (!combination || !target) return;
     const foods = combination.foods.map(([name, grams]) => { const food = catalogFood(name); return food ? { id: newId(), ...food, gramas: grams } : null; }).filter(Boolean);
-    if (target.alimentos.length + foods.length > 50) return showToast('Essa refeição atingiu o limite de 50 alimentos.');
+    if (target.alimentos.length + foods.length > 50) return showToast('Essa refeiÃ§Ã£o atingiu o limite de 50 alimentos.');
     target.alimentos.push(...foods);
-    if (await persist(next)) { closeModal(); openMeal(meal.id); showToast(`${combination.label} adicionados à refeição.`, 'success'); }
+    if (await persist(next)) { closeModal(); openMeal(meal.id); showToast(`${combination.label} adicionados Ã  refeiÃ§Ã£o.`, 'success'); }
   });
-  $('delete-meal').onclick = async () => { if (!await confirmAction({ title: 'Excluir refeição?', message: `${meal.nome} e seus alimentos serão removidos.`, confirmText: 'Excluir', danger: true })) return; const next = meals.filter(item => item.id !== meal.id); if (await persist(next)) { closeModal(); showToast('Refeição excluída.', 'success'); } };
+  $('delete-meal').onclick = async () => { if (!await confirmAction({ title: 'Excluir refeiÃ§Ã£o?', message: `${meal.nome} e seus alimentos serÃ£o removidos.`, confirmText: 'Excluir', danger: true })) return; const next = meals.filter(item => item.id !== meal.id); if (await persist(next)) { closeModal(); showToast('RefeiÃ§Ã£o excluÃ­da.', 'success'); } };
   $('meal-foods').querySelectorAll('[data-remove-food]').forEach(button => button.onclick = async () => { const next = clone(meals); const target = next.find(item => item.id === meal.id); target.alimentos = target.alimentos.filter(food => food.id !== button.dataset.removeFood); if (await persist(next)) { closeModal(); openMeal(meal.id); showToast('Alimento removido.', 'success'); } });
   $('add-food').focus();
 }
 
 function chooseMealForFood() {
-  if (!meals.length) return showToast('Crie uma refeição antes de adicionar alimentos.');
+  if (!meals.length) return showToast('Crie uma refeiÃ§Ã£o antes de adicionar alimentos.');
   if (meals.length === 1) return openFoodSearch(meals[0].id);
-  modal('Escolha a refeição', meals.map(meal => `<button type="button" data-target-meal="${escapeHTML(meal.id)}" class="mb-2 min-h-12 w-full rounded-xl mol-soft px-4 text-left text-sm font-bold">${escapeHTML(meal.hora)} · ${escapeHTML(meal.nome)}</button>`).join(''));
+  modal('Escolha a refeiÃ§Ã£o', meals.map(meal => `<button type="button" data-target-meal="${escapeHTML(meal.id)}" class="mb-2 min-h-12 w-full rounded-xl mol-soft px-4 text-left text-sm font-bold">${escapeHTML(meal.hora)} Â· ${escapeHTML(meal.nome)}</button>`).join(''));
   $('diet-modal').querySelectorAll('[data-target-meal]').forEach(button => button.onclick = () => openFoodSearch(button.dataset.targetMeal));
   $('diet-modal').querySelector('[data-target-meal]')?.focus();
 }
 
 function openFoodSearch(mealId) {
-  modal('Buscar alimento', `<label class="flex min-h-12 items-center gap-3 rounded-xl mol-soft px-4"><i data-lucide="search" class="h-4 w-4 text-gray-500"></i><span class="sr-only">Buscar alimento</span><input id="food-query" type="search" placeholder="Ex.: arroz, frango, banana" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></label><button id="custom-food" type="button" class="mt-3 min-h-11 w-full rounded-xl border border-neon/30 text-xs font-bold text-neon">Cadastrar alimento personalizado</button><p class="mt-3 text-[11px] leading-relaxed text-gray-500">Catálogo local com valores médios por 100 g. Confira o rótulo quando usar um produto específico.</p><div id="food-results" class="mt-4 space-y-2"></div>`);
-  const paint = () => { const term = $('food-query').value.trim().toLocaleLowerCase('pt-BR'); const list = searchFoodCatalog(term); $('food-results').innerHTML = list.map((food, index) => `<button type="button" data-food-index="${index}" class="min-h-14 w-full rounded-2xl mol-soft p-3 text-left"><strong class="text-sm">${escapeHTML(food.nome)}</strong><span class="mt-1 block text-xs text-gray-500">${food.kcal100} kcal · P ${food.proteina100} · C ${food.carbo100} · G ${food.gordura100} por 100 g</span></button>`).join('') || '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento encontrado.</p>'; $('food-results').querySelectorAll('[data-food-index]').forEach((button, index) => button.onclick = () => openFoodForm(mealId, list[index])); };
+  modal('Buscar alimento', `<label class="flex min-h-12 items-center gap-3 rounded-xl mol-soft px-4"><i data-lucide="search" class="h-4 w-4 text-gray-500"></i><span class="sr-only">Buscar alimento</span><input id="food-query" type="search" placeholder="Ex.: arroz, frango, banana" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></label><button id="custom-food" type="button" class="mt-3 min-h-11 w-full rounded-xl border border-neon/30 text-xs font-bold text-neon">Cadastrar alimento personalizado</button><p class="mt-3 text-[11px] leading-relaxed text-gray-500">CatÃ¡logo local com valores mÃ©dios por 100 g. Confira o rÃ³tulo quando usar um produto especÃ­fico.</p><div id="food-results" class="mt-4 space-y-2"></div>`);
+  const paint = () => { const term = $('food-query').value.trim().toLocaleLowerCase('pt-BR'); const list = searchFoodCatalog(term); $('food-results').innerHTML = list.map((food, index) => `<button type="button" data-food-index="${index}" class="min-h-14 w-full rounded-2xl mol-soft p-3 text-left"><strong class="text-sm">${escapeHTML(food.nome)}</strong><span class="mt-1 block text-xs text-gray-500">${food.kcal100} kcal Â· P ${food.proteina100} Â· C ${food.carbo100} Â· G ${food.gordura100} por 100 g</span></button>`).join('') || '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento encontrado.</p>'; $('food-results').querySelectorAll('[data-food-index]').forEach((button, index) => button.onclick = () => openFoodForm(mealId, list[index])); };
   $('food-query').oninput = paint; $('custom-food').onclick = () => openFoodForm(mealId, null); paint(); $('food-query').focus(); window.lucide?.createIcons();
 }
 
 function openFoodForm(mealId, catalogFood) {
   const food = catalogFood || { nome: '', kcal100: 0, proteina100: 0, carbo100: 0, gordura100: 0 };
-  modal(catalogFood ? 'Definir porção' : 'Novo alimento', `<label class="block text-xs font-bold text-gray-400">Alimento<input id="food-name" maxlength="80" value="${escapeHTML(food.nome)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><label class="mt-4 block text-xs font-bold text-gray-400">Porção (g)<input id="food-grams" type="number" min="1" max="5000" step="1" value="100" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><p class="mt-5 text-xs font-bold uppercase tracking-wider text-neon">Valores por 100 g</p><div class="mt-3 grid grid-cols-2 gap-3">${[['food-kcal','Kcal',food.kcal100,1000],['food-protein','Proteína',food.proteina100,100],['food-carbs','Carboidrato',food.carbo100,100],['food-fat','Gordura',food.gordura100,100]].map(([id,label,value,max]) => `<label class="text-xs text-gray-400">${label}<input id="${id}" type="number" min="0" max="${max}" step="0.1" value="${value}" class="mt-1 min-h-11 w-full rounded-xl mol-field px-3"></label>`).join('')}</div><button id="save-food" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button>`);
+  modal(catalogFood ? 'Definir porÃ§Ã£o' : 'Novo alimento', `<label class="block text-xs font-bold text-gray-400">Alimento<input id="food-name" maxlength="80" value="${escapeHTML(food.nome)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><label class="mt-4 block text-xs font-bold text-gray-400">PorÃ§Ã£o (g)<input id="food-grams" type="number" min="1" max="5000" step="1" value="100" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><p class="mt-5 text-xs font-bold uppercase tracking-wider text-neon">Valores por 100 g</p><div class="mt-3 grid grid-cols-2 gap-3">${[['food-kcal','Kcal',food.kcal100,1000],['food-protein','ProteÃ­na',food.proteina100,100],['food-carbs','Carboidrato',food.carbo100,100],['food-fat','Gordura',food.gordura100,100]].map(([id,label,value,max]) => `<label class="text-xs text-gray-400">${label}<input id="${id}" type="number" min="0" max="${max}" step="0.1" value="${value}" class="mt-1 min-h-11 w-full rounded-xl mol-field px-3"></label>`).join('')}</div><button id="save-food" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button>`);
   $(catalogFood ? 'food-grams' : 'food-name').focus();
-  $('save-food').onclick = async () => { const value = { id: newId(), nome: $('food-name').value.trim(), gramas: Number($('food-grams').value), kcal100: Number($('food-kcal').value), proteina100: Number($('food-protein').value), carbo100: Number($('food-carbs').value), gordura100: Number($('food-fat').value) }; const error = validateFood(value); if (error) return showToast(error); const next = clone(meals); const target = next.find(item => item.id === mealId); if (!target) return; if (target.alimentos.length >= 50) return showToast('O limite é de 50 alimentos por refeição.'); target.alimentos.push(value); $('save-food').disabled = true; if (await persist(next)) { closeModal(); openMeal(mealId); showToast('Alimento adicionado.', 'success'); } else $('save-food').disabled = false; };
+  $('save-food').onclick = async () => { const value = { id: newId(), nome: $('food-name').value.trim(), gramas: Number($('food-grams').value), kcal100: Number($('food-kcal').value), proteina100: Number($('food-protein').value), carbo100: Number($('food-carbs').value), gordura100: Number($('food-fat').value) }; const error = validateFood(value); if (error) return showToast(error); const next = clone(meals); const target = next.find(item => item.id === mealId); if (!target) return; if (target.alimentos.length >= 50) return showToast('O limite Ã© de 50 alimentos por refeiÃ§Ã£o.'); target.alimentos.push(value); $('save-food').disabled = true; if (await persist(next)) { closeModal(); openMeal(mealId); showToast('Alimento adicionado.', 'success'); } else $('save-food').disabled = false; };
 }
 
 function showDietContent() {
@@ -242,20 +306,20 @@ async function load() {
         carbs: goalValue(profile.macroGoals?.carbs, 250, 1000),
         fat: goalValue(profile.macroGoals?.fat, 70, 1000)
       };
-    } else console.warn('Metas nutricionais não carregadas; usando valores locais:', profileResult.reason?.message);
+    } else console.warn('Metas nutricionais nÃ£o carregadas; usando valores locais:', profileResult.reason?.message);
     writeDietCache();
     showDietContent();
   } catch (error) {
-    console.error('Dieta não carregada:', error);
+    console.error('Dieta nÃ£o carregada:', error);
     document.body.setAttribute('aria-busy', 'false');
     if (cached) {
-      showToast('Sem conexão com a dieta. Exibindo os últimos dados desta sessão.');
+      showToast('Sem conexÃ£o com a dieta. Exibindo os Ãºltimos dados desta sessÃ£o.');
       return;
     }
     $('add-meal').disabled = true;
     const message = error?.code === 'permission-denied'
-      ? 'Sua dieta ainda não está liberada pelas regras do banco.'
-      : 'Não foi possível carregar sua dieta.';
+      ? 'Sua dieta ainda nÃ£o estÃ¡ liberada pelas regras do banco.'
+      : 'NÃ£o foi possÃ­vel carregar sua dieta.';
     $('diet-status').innerHTML = `<p>${message}</p><button id="retry-diet" type="button" class="mt-4 min-h-10 rounded-xl bg-neon px-4 text-xs font-bold text-black">Tentar novamente</button>`;
     $('retry-diet').onclick = load;
     showToast(message);
@@ -264,6 +328,7 @@ async function load() {
 
 $('add-meal').onclick = () => openMealForm(); $('food-search').onclick = chooseMealForFood;
 $('edit-add-meal').onclick = () => openMealForm();
+$('import-diet-plan').onclick = openDietPlanImport;
 $('diet-mode-view').onclick = () => setDietMode('view');
 $('diet-mode-edit').onclick = () => setDietMode('edit');
 watchProtectedPage(account => { user = account; void load(); });

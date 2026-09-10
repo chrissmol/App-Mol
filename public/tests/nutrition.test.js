@@ -4,6 +4,8 @@ import {
   fastingPhase,
   fastingStatus,
   foodNutrients,
+  mealFoods,
+  mealsForDay,
   mealIsOutsideFastingWindow,
   nextMeal,
   normalizeDietMeals,
@@ -31,6 +33,27 @@ describe('nutrição', () => {
     const normalized = normalizeDietMeals([{ nome: 'Almoço', itens: [{ nome: 'Arroz', porcao: 120, calorias: 128 }] }]);
     expect(normalized[0]).toMatchObject({ nome: 'Almoço', hora: '12:00' });
     expect(normalized[0].alimentos[0]).toMatchObject({ nome: 'Arroz', gramas: 120, kcal100: 128 });
+  });
+
+  it('filtra refeicoes por dia e soma apenas a primeira alternativa por padrao', () => {
+    const [meal] = normalizeDietMeals([{
+      nome: 'Lanche',
+      diasSemana: [1, 3],
+      observacao: 'Escolha uma opcao.',
+      gruposOpcoes: [{
+        nome: 'Opcoes',
+        modo: 'alternativas',
+        opcoes: [
+          { nome: 'Salgada', alimentos: [{ nome: 'Pao', gramas: 100, kcal100: 200 }] },
+          { nome: 'Doce', alimentos: [{ nome: 'Aveia', gramas: 100, kcal100: 400 }] }
+        ]
+      }]
+    }]);
+    expect(mealsForDay([meal], 1)).toHaveLength(1);
+    expect(mealsForDay([meal], 2)).toHaveLength(0);
+    expect(mealFoods(meal).map(food => food.nome)).toEqual(['Pao']);
+    expect(nutritionTotals([meal]).kcal).toBe(200);
+    expect(meal.observacao).toBe('Escolha uma opcao.');
   });
 
   it('neutraliza horários e nutrientes corrompidos', () => {

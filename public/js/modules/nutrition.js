@@ -49,6 +49,11 @@ const bounded = (value, min, max, fallback = 0) => {
   return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
 };
 const validTime = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || '')) ? String(value) : '12:00';
+const validDays = value => {
+  const days = Array.isArray(value) ? [...new Set(value.map(Number).filter(day => Number.isInteger(day) && day >= 0 && day <= 6))] : [0, 1, 2, 3, 4, 5, 6];
+  return days.length ? days.slice(0, 7) : [0, 1, 2, 3, 4, 5, 6];
+};
+const cleanText = (value, fallback, max) => String(value || fallback).trim().slice(0, max) || fallback;
 const timeToMinutes = value => {
   const time = validTime(value);
   const [hours, minutes] = time.split(':').map(Number);
@@ -144,28 +149,61 @@ export function foodNutrients(food) {
     fat: bounded(food?.gordura100, 0, 100) * factor
   };
 }
+export function normalizeDietFood(foodValue, foodIndex = 0) {
+  const food = foodValue && typeof foodValue === 'object' ? foodValue : {};
+  return {
+    id: String(food.id || `legacy-food-${foodIndex}`).slice(0, 100),
+    nome: cleanText(food.nome, 'Alimento', 80),
+    gramas: bounded(food.gramas ?? food.porcao, 1, 5000, 100),
+    kcal100: bounded(food.kcal100 ?? food.calorias, 0, 1000),
+    proteina100: bounded(food.proteina100 ?? food.proteinas, 0, 100),
+    carbo100: bounded(food.carbo100 ?? food.carboidratos, 0, 100),
+    gordura100: bounded(food.gordura100 ?? food.gorduras, 0, 100)
+  };
+}
+export function mealOptionGroups(meal) {
+  return (Array.isArray(meal?.gruposOpcoes) ? meal.gruposOpcoes : []).slice(0, 8).map((groupValue, groupIndex) => {
+    const group = groupValue && typeof groupValue === 'object' ? groupValue : {};
+    return {
+      id: String(group.id || `option-group-${groupIndex}`).slice(0, 100),
+      nome: cleanText(group.nome, 'Opcoes', 60),
+      modo: group.modo === 'somar' ? 'somar' : 'alternativas',
+      opcoes: (Array.isArray(group.opcoes) ? group.opcoes : []).slice(0, 8).map((optionValue, optionIndex) => {
+        const option = optionValue && typeof optionValue === 'object' ? optionValue : {};
+        return {
+          id: String(option.id || `option-${optionIndex}`).slice(0, 100),
+          nome: cleanText(option.nome, 'Opcao', 60),
+          alimentos: (Array.isArray(option.alimentos) ? option.alimentos : []).slice(0, 50).map(normalizeDietFood)
+        };
+      }).filter(option => option.alimentos.length)
+    };
+  }).filter(group => group.opcoes.length);
+}
+export function mealFoods(meal) {
+  const base = Array.isArray(meal?.alimentos) ? meal.alimentos : [];
+  const options = mealOptionGroups(meal).flatMap(group => group.modo === 'somar' ? group.opcoes.flatMap(option => option.alimentos) : (group.opcoes[0]?.alimentos || []));
+  return [...base, ...options];
+}
+export function mealAppliesToDay(meal, day = new Date().getDay()) {
+  return validDays(meal?.diasSemana).includes(Number(day));
+}
+export function mealsForDay(meals, day = new Date().getDay()) {
+  return (Array.isArray(meals) ? meals : []).filter(meal => mealAppliesToDay(meal, day));
+}
 export function nutritionTotals(meals) {
-  return (Array.isArray(meals) ? meals : []).flatMap(meal => Array.isArray(meal?.alimentos) ? meal.alimentos : []).reduce((total, food) => { const value = foodNutrients(food); Object.keys(total).forEach(key => { total[key] += value[key]; }); return total; }, { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+  return (Array.isArray(meals) ? meals : []).flatMap(mealFoods).reduce((total, food) => { const value = foodNutrients(food); Object.keys(total).forEach(key => { total[key] += value[key]; }); return total; }, { kcal: 0, protein: 0, carbs: 0, fat: 0 });
 }
 export function normalizeDietMeals(meals) {
   return (Array.isArray(meals) ? meals : []).slice(0, 12).map((mealValue, mealIndex) => {
     const meal = mealValue && typeof mealValue === 'object' ? mealValue : {};
     return {
       id: String(meal.id || `legacy-meal-${mealIndex}`).slice(0, 100),
-      nome: String(meal.nome || 'Refeição').trim().slice(0, 60) || 'Refeição',
+      nome: cleanText(meal.nome, 'Refeicao', 60),
       hora: validTime(meal.hora),
-      alimentos: (Array.isArray(meal.alimentos) ? meal.alimentos : Array.isArray(meal.itens) ? meal.itens : []).slice(0, 50).map((foodValue, foodIndex) => {
-        const food = foodValue && typeof foodValue === 'object' ? foodValue : {};
-        return {
-          id: String(food.id || `legacy-food-${foodIndex}`).slice(0, 100),
-          nome: String(food.nome || 'Alimento').trim().slice(0, 80) || 'Alimento',
-          gramas: bounded(food.gramas ?? food.porcao, 1, 5000, 100),
-          kcal100: bounded(food.kcal100 ?? food.calorias, 0, 1000),
-          proteina100: bounded(food.proteina100 ?? food.proteinas, 0, 100),
-          carbo100: bounded(food.carbo100 ?? food.carboidratos, 0, 100),
-          gordura100: bounded(food.gordura100 ?? food.gorduras, 0, 100)
-        };
-      })
+      diasSemana: validDays(meal.diasSemana),
+      observacao: String(meal.observacao || '').trim().slice(0, 500),
+      alimentos: (Array.isArray(meal.alimentos) ? meal.alimentos : Array.isArray(meal.itens) ? meal.itens : []).slice(0, 50).map(normalizeDietFood),
+      gruposOpcoes: mealOptionGroups(meal)
     };
   });
 }
