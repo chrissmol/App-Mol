@@ -2333,3 +2333,126 @@ html[data-reduce-motion="true"] *::after {
     grid-column: 1 / -1;
   }
 }
+
+/* Ajuste final do padrao visual pedido: Home e Treino tambem seguem Perfil.
+   Nada de painel lateral improvisado; cabecalho em cima, cards abaixo. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .dashboard-surface main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--mol-desktop-gap);
+    align-items: start;
+  }
+
+  .dashboard-surface main > header {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    display: flex;
+    flex-direction: row;
+    min-height: auto;
+    max-width: none;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 0 0 .25rem;
+  }
+
+  .dashboard-surface main > header > .min-w-0 {
+    max-width: 48rem;
+  }
+
+  .dashboard-surface #dashboard-avatar-frame {
+    margin-top: .35rem;
+  }
+
+  .dashboard-surface main > #today-card,
+  .dashboard-surface #weekly-card,
+  .dashboard-surface #next-meal-card,
+  .dashboard-surface #fasting-card,
+  .dashboard-surface #last-session-card,
+  .dashboard-surface #weight-card,
+  .dashboard-surface #insights-card,
+  .dashboard-surface main > section:not([id]) {
+    grid-column: span 4;
+    grid-row: auto;
+    min-height: 0;
+    margin: 0 !important;
+  }
+
+  body.dashboard-surface main > #today-card {
+    grid-column: span 8;
+  }
+
+  .workout-page main {
+    width: min(74rem, calc(100vw - var(--mol-sidebar-width) - 4rem));
+    max-width: min(74rem, calc(100vw - var(--mol-sidebar-width) - 4rem));
+    margin-left: calc(var(--mol-sidebar-width) + 2rem);
+    margin-right: 2rem;
+    padding: clamp(2rem, 2.6vw, 3rem);
+  }
+
+  #view-rotinas {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--mol-desktop-gap);
+    align-items: start;
+  }
+
+  #view-rotinas.hidden {
+    display: none;
+  }
+
+  #view-rotinas > header {
+    grid-column: 1 / -1;
+    max-width: 48rem;
+    margin: 0 0 .25rem;
+  }
+
+  #view-rotinas > .mb-6 {
+    grid-column: span 4;
+    margin: 0 !important;
+  }
+
+  #view-rotinas > #busca-rotinas {
+    grid-column: span 8;
+    align-self: end;
+    margin: 0 !important;
+  }
+
+  #view-rotinas > h2 {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    margin: .5rem 0 0 !important;
+  }
+
+  #view-rotinas > #rotinas-list {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+    gap: var(--mol-desktop-gap);
+    margin: 0 !important;
+  }
+
+  #view-rotinas > #rotinas-list > * {
+    margin: 0 !important;
+  }
+
+  .diet-page main > header {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+
+  .diet-page main > header > .mt-4 {
+    width: min(100%, 48rem);
+    align-items: flex-start;
+  }
+
+  .diet-page #add-meal {
+    margin-top: .25rem;
+  }
+
+  .diet-page #diet-mode-tabs {
+    width: min(100%, 32rem);
+  }
+}
