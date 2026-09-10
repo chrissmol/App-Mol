@@ -2145,3 +2145,191 @@ html[data-reduce-motion="true"] *::after {
     grid-template-columns: 1fr;
   }
 }
+
+/* Padrao desktop final: telas internas seguem o Perfil.
+   Cabecalho primeiro, cards em uma grade clara abaixo. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .app-surface main,
+  .app-surface main.max-w-md,
+  .app-surface main.max-w-2xl,
+  .dashboard-surface main {
+    width: min(100%, 74rem);
+    max-width: 74rem;
+  }
+
+  body.has-app-nav main,
+  body.has-app-nav main.max-w-md,
+  body.has-app-nav main.max-w-2xl,
+  body.has-app-nav.dashboard-surface main {
+    width: min(74rem, calc(100vw - var(--mol-sidebar-width) - 4rem));
+    max-width: min(74rem, calc(100vw - var(--mol-sidebar-width) - 4rem));
+  }
+
+  .diet-page main,
+  .progress-page main,
+  .history-page main,
+  .settings-page main,
+  .personal-page main,
+  .evolution-page main,
+  .admin-page main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--mol-desktop-gap);
+    align-items: start;
+  }
+
+  .diet-page main > header,
+  .progress-page main > header,
+  .history-page main > header,
+  .settings-page main > header,
+  .personal-page main > header,
+  .evolution-page main > header,
+  .admin-page main > header {
+    grid-column: 1 / -1;
+    max-width: 48rem;
+    margin: 0 0 .25rem;
+  }
+
+  .settings-page #back,
+  .personal-page main > #back,
+  .evolution-page main > #back,
+  .history-page main > #back,
+  .progress-page main > #back,
+  .admin-page main > .mol-brand {
+    grid-column: 1 / -1;
+    width: fit-content;
+    margin: 0;
+  }
+
+  .diet-page #diet-status,
+  .personal-page #page-status,
+  .evolution-page #page-status,
+  .admin-page #admin-status {
+    grid-column: 1 / -1;
+    max-width: none;
+    margin: 0;
+  }
+
+  .diet-page #diet-mode-tabs,
+  .progress-page main > div[role="group"] {
+    grid-column: 1 / -1;
+    width: min(100%, 32rem);
+    max-width: none;
+    margin: 0;
+  }
+
+  .diet-page #diet-content:not(.hidden),
+  .diet-page #diet-edit-content:not(.hidden),
+  .personal-page #personal-content:not(.hidden),
+  .evolution-page #evolution-content:not(.hidden),
+  .admin-page #admin-content:not(.hidden) {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--mol-desktop-gap);
+    align-items: start;
+    margin-top: 0;
+  }
+
+  .diet-page #diet-content > *,
+  .diet-page #diet-edit-content > *,
+  .progress-page main > section,
+  .history-page main > section,
+  .settings-page main > section,
+  .personal-page #personal-content > *,
+  .evolution-page #evolution-content > *,
+  .admin-page #admin-content > section {
+    min-width: 0;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .diet-page #diet-content > #diet-day-selector,
+  .diet-page #diet-content > section:nth-of-type(2),
+  .diet-page #diet-content > section:nth-of-type(3) {
+    grid-column: span 4;
+    grid-row: auto;
+  }
+
+  .diet-page #diet-content > section:nth-of-type(2) > .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diet-page #diet-content > section:nth-of-type(4),
+  .diet-page #diet-content > p:last-child,
+  .diet-page #diet-edit-content > #diet-edit-list {
+    grid-column: 1 / -1;
+  }
+
+  .diet-page #diet-edit-content > section:first-child {
+    grid-column: 1 / -1;
+    position: static;
+  }
+
+  .diet-page #meal-list,
+  .diet-page #diet-edit-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(21rem, 100%), 1fr));
+    gap: var(--mol-desktop-gap);
+  }
+
+  .progress-page main > section:first-of-type,
+  .history-page main > section[aria-label="Resumo do histÃ³rico"],
+  .evolution-page #evolution-content > section:nth-of-type(2) {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--mol-desktop-gap);
+  }
+
+  .progress-page main > section:nth-of-type(2),
+  .progress-page main > section:nth-of-type(3),
+  .progress-page main > section:nth-of-type(4),
+  .progress-page main > section:nth-of-type(5),
+  .history-page main > section[aria-labelledby="calendar-title"],
+  .history-page main > section[aria-labelledby="sessions-title"],
+  .settings-page main > section,
+  .personal-page #personal-content > section,
+  .evolution-page #evolution-content > section,
+  .admin-page #admin-content > section {
+    grid-column: span 6;
+    grid-row: auto;
+  }
+
+  .progress-page main > section:nth-of-type(6),
+  .profile-page #profile-content > nav,
+  .evolution-page #evolution-content > section:nth-of-type(7),
+  .admin-page #admin-content > section:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .history-page main > section[aria-labelledby="sessions-title"] {
+    align-self: stretch;
+  }
+
+  .history-page #sessions,
+  .diet-page #meal-list,
+  .diet-page #diet-edit-list {
+    align-content: start;
+  }
+
+  .history-page main > section:nth-of-type(1) {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--mol-desktop-gap);
+  }
+
+  .history-page main > section:nth-of-type(2),
+  .history-page main > section:nth-of-type(3) {
+    grid-column: span 6;
+    grid-row: auto;
+  }
+
+  .settings-page main > section[aria-labelledby="account-title"],
+  .personal-page #personal-content > section:nth-child(4),
+  .evolution-page #evolution-content > section:nth-of-type(10) {
+    grid-column: 1 / -1;
+  }
+}
