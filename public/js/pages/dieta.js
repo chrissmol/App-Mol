@@ -15,6 +15,11 @@ let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };
 let fasting = normalizeFastingSettings();
 let dietMode = 'view';
 let selectedDay = new Date().getDay();
+const requestedParams = new URLSearchParams(window.location.search);
+const requestedMealId = requestedParams.get('meal');
+let pendingRequestedMealId = requestedMealId;
+const requestedDay = Number(requestedParams.get('day'));
+if (Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6) selectedDay = requestedDay;
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const rounded = value => Math.round(Number(value) || 0);
@@ -147,7 +152,7 @@ function renderEditView() {
   }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeição para editar</p><p class="mt-2 text-sm text-gray-500">Crie sua primeira refeição e adicione quantos alimentos quiser.</p><button type="button" data-edit-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Nova refeição</button></div>';
   list.querySelectorAll('[data-edit-view]').forEach(button => button.onclick = () => openMeal(button.dataset.editView));
   list.querySelectorAll('[data-edit-meal]').forEach(button => button.onclick = () => openMealForm(button.dataset.editMeal));
-  list.querySelectorAll('[data-edit-foods]').forEach(button => button.onclick = () => openMeal(button.dataset.editFoods));
+  list.querySelectorAll('[data-edit-foods]').forEach(button => button.onclick = () => openMeal(button.dataset.editFoods, { editable: true }));
   list.querySelectorAll('[data-delete-meal]').forEach(button => button.onclick = async () => {
     const meal = meals.find(item => item.id === button.dataset.deleteMeal);
     if (!meal || !await confirmAction({ title: 'Excluir refeição?', message: `${meal.nome} e seus alimentos serão removidos.`, confirmText: 'Excluir', danger: true })) return;
@@ -231,11 +236,14 @@ function optionGroupsHTML(meal) {
   return groups.map(group => `<section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">${escapeHTML(group.nome)}${group.modo === 'alternativas' ? '  escolha uma' : ''}</p><div class="mt-2 space-y-2">${group.opcoes.map(option => `<article class="rounded-2xl border border-white/10 p-3"><strong class="text-sm text-neon">${escapeHTML(option.nome)}</strong><div class="mt-2 space-y-2">${option.alimentos.map(food => foodCard(food, false)).join('')}</div></article>`).join('')}</div></section>`).join('');
 }
 
-function openMeal(mealId) {
+function openMeal(mealId, { editable = dietMode === 'edit' } = {}) {
   const meal = meals.find(item => item.id === mealId); if (!meal) return;
   const total = nutritionTotals([meal]);
-  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div>${meal.observacao ? `<p class="mt-4 rounded-2xl mol-soft p-4 text-sm text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}<button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Combinações rápidas</p><div id="meal-combinations" class="mt-2 flex gap-2 overflow-x-auto pb-1">${MEAL_COMBINATIONS.map((item, index) => `<button type="button" data-combination="${index}" class="shrink-0 rounded-xl mol-soft px-3 py-2 text-xs font-bold text-gray-300">+ ${item.label}</button>`).join('')}</div></section><div id="meal-foods" class="mt-4 space-y-2"></div>${optionGroupsHTML(meal)}<div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl mol-soft text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>`);
-  $('meal-foods').innerHTML = meal.alimentos.length ? meal.alimentos.map(food => foodCard(food)).join('') : '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento fixo nesta refeição.</p>';
+  const editTools = editable ? `<button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Combinações rápidas</p><div id="meal-combinations" class="mt-2 flex gap-2 overflow-x-auto pb-1">${MEAL_COMBINATIONS.map((item, index) => `<button type="button" data-combination="${index}" class="shrink-0 rounded-xl mol-soft px-3 py-2 text-xs font-bold text-gray-300">+ ${item.label}</button>`).join('')}</div></section>` : '';
+  const editActions = editable ? '<div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl mol-soft text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>' : '';
+  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div>${meal.observacao ? `<p class="mt-4 rounded-2xl mol-soft p-4 text-sm text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}${editTools}<div id="meal-foods" class="mt-4 space-y-2"></div>${optionGroupsHTML(meal)}${editActions}`);
+  $('meal-foods').innerHTML = meal.alimentos.length ? meal.alimentos.map(food => foodCard(food, editable)).join('') : '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento fixo nesta refeição.</p>';
+  if (!editable) return;
   $('add-food').onclick = () => openFoodSearch(meal.id); $('edit-meal').onclick = () => openMealForm(meal.id);
   $('meal-combinations').querySelectorAll('[data-combination]').forEach(button => button.onclick = async () => {
     const combination = MEAL_COMBINATIONS[Number(button.dataset.combination)]; const next = clone(meals); const target = next.find(item => item.id === meal.id);
@@ -243,10 +251,10 @@ function openMeal(mealId) {
     const foods = combination.foods.map(([name, grams]) => { const food = catalogFood(name); return food ? { id: newId(), ...food, gramas: grams } : null; }).filter(Boolean);
     if (target.alimentos.length + foods.length > 50) return showToast('Essa refeição atingiu o limite de 50 alimentos.');
     target.alimentos.push(...foods);
-    if (await persist(next)) { closeModal(); openMeal(meal.id); showToast(`${combination.label} adicionados à refeição.`, 'success'); }
+    if (await persist(next)) { closeModal(); openMeal(meal.id, { editable: true }); showToast(`${combination.label} adicionados à refeição.`, 'success'); }
   });
   $('delete-meal').onclick = async () => { if (!await confirmAction({ title: 'Excluir refeição?', message: `${meal.nome} e seus alimentos serão removidos.`, confirmText: 'Excluir', danger: true })) return; const next = meals.filter(item => item.id !== meal.id); if (await persist(next)) { closeModal(); showToast('Refeição excluída.', 'success'); } };
-  $('meal-foods').querySelectorAll('[data-remove-food]').forEach(button => button.onclick = async () => { const next = clone(meals); const target = next.find(item => item.id === meal.id); target.alimentos = target.alimentos.filter(food => food.id !== button.dataset.removeFood); if (await persist(next)) { closeModal(); openMeal(meal.id); showToast('Alimento removido.', 'success'); } });
+  $('meal-foods').querySelectorAll('[data-remove-food]').forEach(button => button.onclick = async () => { const next = clone(meals); const target = next.find(item => item.id === meal.id); target.alimentos = target.alimentos.filter(food => food.id !== button.dataset.removeFood); if (await persist(next)) { closeModal(); openMeal(meal.id, { editable: true }); showToast('Alimento removido.', 'success'); } });
   $('add-food').focus();
 }
 
@@ -271,12 +279,22 @@ function openFoodForm(mealId, catalogFood) {
   $('save-food').onclick = async () => { const value = { id: newId(), nome: $('food-name').value.trim(), gramas: Number($('food-grams').value), kcal100: Number($('food-kcal').value), proteina100: Number($('food-protein').value), carbo100: Number($('food-carbs').value), gordura100: Number($('food-fat').value) }; const error = validateFood(value); if (error) return showToast(error); const next = clone(meals); const target = next.find(item => item.id === mealId); if (!target) return; if (target.alimentos.length >= 50) return showToast('O limite é de 50 alimentos por refeição.'); target.alimentos.push(value); $('save-food').disabled = true; if (await persist(next)) { closeModal(); openMeal(mealId); showToast('Alimento adicionado.', 'success'); } else $('save-food').disabled = false; };
 }
 
+function openRequestedMeal() {
+  if (!pendingRequestedMealId) return;
+  const target = meals.find(meal => meal.id === pendingRequestedMealId);
+  if (!target) return;
+  pendingRequestedMealId = null;
+  setDietMode('view');
+  window.setTimeout(() => openMeal(target.id, { editable: false }), 0);
+}
+
 function showDietContent() {
   $('diet-status').classList.add('hidden');
   $('diet-content').classList.remove('hidden');
   $('add-meal').disabled = false;
   document.body.setAttribute('aria-busy', 'false');
   render();
+  openRequestedMeal();
   clearInterval(mealClock);
   mealClock = setInterval(render, 60000);
 }

@@ -4,7 +4,7 @@ import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase
 import { sessionMetrics } from '../modules/workout-analytics.js';
 import { dateOf, estimatedWorkoutMinutes, monday, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../modules/dashboard-analytics.js';
 import { avatarTier, profileStats } from '../modules/profile-analytics.js';
-import { fastingStatus, foodNutrients, nextMeal, normalizeDietMeals, normalizeFastingSettings } from '../modules/nutrition.js';
+import { fastingStatus, foodNutrients, mealFoods, nextMeal, normalizeDietMeals, normalizeFastingSettings } from '../modules/nutrition.js';
 import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -115,14 +115,18 @@ function setToday(routines, user) {
 function setNextMeal(meals) {
   const card = $('next-meal-card');
   if (!card) return;
-  const now = new Date().toTimeString().slice(0, 5);
+  const today = new Date();
+  const now = today.toTimeString().slice(0, 5);
   const normalized = normalizeDietMeals(meals);
   const { meal, tomorrow } = nextMeal(normalized, now);
   if (!meal) { card.dataset.available = 'false'; card.classList.add('hidden'); return; }
   card.dataset.available = 'true';
   $('next-meal-name').textContent = meal.nome || 'Refeição';
-  const nutrients = (meal.alimentos || []).reduce((sum, food) => sum + foodNutrients(food).kcal, 0);
-  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${meal.alimentos.length} alimento(s) · ${Math.round(nutrients)} kcal`;
+  const foods = mealFoods(meal);
+  const nutrients = foods.reduce((sum, food) => sum + foodNutrients(food).kcal, 0);
+  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${foods.length} alimento(s) · ${Math.round(nutrients)} kcal`;
+  const targetDay = (today.getDay() + (tomorrow ? 1 : 0)) % 7;
+  card.querySelector('a')?.setAttribute('href', `./pages/dieta.html?meal=${encodeURIComponent(meal.id)}&day=${targetDay}`);
   card.classList.remove('hidden');
 }
 
