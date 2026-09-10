@@ -1959,3 +1959,189 @@ html[data-reduce-motion="true"] *::after {
   .pt-8 { padding-top: 1.25rem; }
   .pb-6, .pb-7 { padding-bottom: 1rem; }
 }
+
+/* Desktop web: layout de monitor, com proporcoes previsiveis e leitura por mouse/teclado. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  :root {
+    --mol-desktop-gap: clamp(1rem, 1.2vw, 1.35rem);
+    --mol-desktop-content: min(76rem, calc(100vw - var(--mol-sidebar-width) - 4rem));
+  }
+
+  .app-surface main,
+  .app-surface main.max-w-md,
+  .app-surface main.max-w-2xl,
+  .dashboard-surface main {
+    box-sizing: border-box;
+    width: min(100%, 76rem);
+    max-width: 76rem;
+    padding: clamp(2rem, 2.6vw, 3rem);
+  }
+
+  body.has-app-nav main,
+  body.has-app-nav main.max-w-md,
+  body.has-app-nav main.max-w-2xl,
+  body.has-app-nav.dashboard-surface main {
+    width: var(--mol-desktop-content);
+    max-width: var(--mol-desktop-content);
+    margin-left: calc(var(--mol-sidebar-width) + 2rem);
+    margin-right: 2rem;
+  }
+
+  .app-surface main > header,
+  .dashboard-surface main > header {
+    max-width: 46rem;
+  }
+
+  .app-surface .glass-card,
+  .app-surface .mol-panel,
+  .app-surface .mol-soft {
+    min-width: 0;
+  }
+
+  .app-surface .truncate,
+  .app-surface .line-clamp-2 {
+    display: block;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+  }
+
+  .dashboard-surface main {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .dashboard-surface main > header {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+
+  .dashboard-surface #today-card {
+    grid-column: span 5;
+  }
+
+  .dashboard-surface #weekly-card,
+  .dashboard-surface main > section:not([id]) {
+    grid-column: span 4;
+  }
+
+  .dashboard-surface #last-session-card,
+  .dashboard-surface #weight-card,
+  .dashboard-surface #insights-card,
+  .dashboard-surface #next-meal-card,
+  .dashboard-surface #fasting-card {
+    grid-column: span 4;
+  }
+
+  .diet-page main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--mol-desktop-gap);
+    align-items: start;
+  }
+
+  .diet-page main > header {
+    grid-column: span 5;
+  }
+
+  .diet-page #diet-mode-tabs {
+    grid-column: span 4;
+    align-self: end;
+  }
+
+  .diet-page #diet-status {
+    grid-column: span 3;
+    align-self: end;
+  }
+
+  .diet-page #diet-content:not(.hidden),
+  .diet-page #diet-edit-content:not(.hidden) {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+    gap: var(--mol-desktop-gap);
+    align-items: start;
+    margin-top: 0;
+  }
+
+  .diet-page #diet-content > #diet-day-selector {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .diet-page #diet-content > section:nth-of-type(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .diet-page #diet-content > section:nth-of-type(2) > .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diet-page #diet-content > section:nth-of-type(3) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .diet-page #diet-content > section:nth-of-type(4),
+  .diet-page #diet-content > p:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .diet-page #diet-content > p:last-child {
+    width: 100%;
+    max-width: none;
+  }
+
+  .diet-page #meal-list,
+  .diet-page #diet-edit-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+    gap: var(--mol-desktop-gap);
+  }
+
+  .diet-page #meal-list > *,
+  .diet-page #diet-edit-list > * {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .diet-page #meal-list > :only-child,
+  .diet-page #diet-edit-list > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .diet-page #diet-edit-content > section:first-child {
+    grid-column: 1;
+    position: sticky;
+    top: 1.5rem;
+  }
+
+  .diet-page #diet-edit-content > #diet-edit-list {
+    grid-column: 2;
+  }
+
+  .progress-page main,
+  .history-page main,
+  .profile-page main,
+  .settings-page main,
+  .personal-page main,
+  .evolution-page main,
+  .admin-page main {
+    gap: var(--mol-desktop-gap);
+  }
+
+  .progress-page main > section:first-of-type {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .settings-page main,
+  .evolution-page main {
+    max-width: min(76rem, calc(100vw - 4rem));
+  }
+
+  .evolution-page #evolution-content > section:nth-of-type(2) {
+    grid-template-columns: 1fr;
+  }
+}
