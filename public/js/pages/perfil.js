@@ -1,8 +1,6 @@
-import { auth, db } from '../config/firebase-config.js';
-import { signOut } from 'firebase/auth';
+import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { doc, getDoc } from 'firebase/firestore';
-import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -87,21 +85,6 @@ watchProtectedPage(account => {
     renderIdentity(account);
     setPageReady('Não foi possível atualizar o perfil agora. Confira sua conexão.');
   });
-});
-
-$('btn-logout').addEventListener('click', async () => {
-  const confirmed = await confirmAction({ title: 'Sair da conta?', message: 'Você precisará entrar novamente para acessar seus dados.', confirmText: 'Sair', danger: true });
-  if (!confirmed) return;
-  const button = $('btn-logout');
-  const original = button.innerHTML;
-  setButtonLoading(button, true, original);
-  try { await withTimeout(signOut(auth), 'A saída da conta', 10000); }
-  catch (error) {
-    console.error('Não foi possível sair:', error);
-    showToast('Não foi possível sair da conta. Tente novamente.');
-    setButtonLoading(button, false, original);
-    renderIcons();
-  }
 });
 
 renderIcons();
