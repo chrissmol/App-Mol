@@ -35,6 +35,20 @@ let substituirExercicioIndex = null;
 const requestedWorkout = new URLSearchParams(window.location.search);
 
 const draftKey = (id) => `mol-workout-draft-${id}`;
+const routinesCacheKey = id => `mol-workout-routines-${id}`;
+function readRoutinesCache(id) {
+  try {
+    const cached = JSON.parse(getLocalItem(routinesCacheKey(id)) || 'null');
+    return Array.isArray(cached?.routines) ? cached.routines.map(item => ({ id: item.id, ...normalizeRoutineRecord(item) })) : null;
+  } catch {
+    removeLocalItems(routinesCacheKey(id));
+    return null;
+  }
+}
+function writeRoutinesCache() {
+  if (!usuarioAtual) return;
+  setLocalItem(routinesCacheKey(usuarioAtual.uid), JSON.stringify({ routines: rotinasReais, updatedAt: Date.now() }));
+}
 function lerRascunho(id) {
   try { return JSON.parse(getLocalItem(draftKey(id)) || 'null'); }
   catch { removeLocalItems(draftKey(id)); return null; }
@@ -203,12 +217,19 @@ watchProtectedPage(user => {
 });
 
 async function carregarRotinasDoBanco() {
-  rotinasList.innerHTML = '<p class="text-sm text-gray-500 text-center mt-4">Carregando seus treinos...</p>';
+  const cachedRoutines = readRoutinesCache(usuarioAtual.uid);
+  if (cachedRoutines) {
+    rotinasReais = cachedRoutines;
+    renderRotinas();
+  } else {
+    rotinasList.innerHTML = '<p class="text-sm text-gray-500 text-center mt-4">Carregando seus treinos...</p>';
+  }
   try {
     const q = query(collection(db, "treinos"), where("userId", "==", usuarioAtual.uid));
     const querySnapshot = await getDocs(q);
     rotinasReais = [];
     querySnapshot.forEach(item => { rotinasReais.push({ id: item.id, ...normalizeRoutineRecord(item.data()) }); });
+    writeRoutinesCache();
     renderRotinas();
     let draft = lerRascunho(usuarioAtual.uid);
     if (draft && !isRecoverableWorkoutDraft(draft, rotinasReais.map(routine => routine.id))) { limparRascunho(); draft = null; }
@@ -230,6 +251,7 @@ async function carregarRotinasDoBanco() {
     else if (requestedRoutineId && rotinasReais.some(routine => routine.id === requestedRoutineId)) await iniciarRotinaComCheckin(requestedRoutineId);
   } catch (error) {
     console.error("Erro ao buscar:", error);
+    if (cachedRoutines) return;
     rotinasList.innerHTML = '<div class="my-10 text-center"><p class="text-sm text-red-400">Não foi possível carregar suas rotinas.</p><button id="retry-routines" type="button" class="mt-4 min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-white">Tentar novamente</button></div>';
     document.getElementById('retry-routines')?.addEventListener('click', carregarRotinasDoBanco);
     showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas.');
@@ -643,6 +665,7 @@ btnSalvarNova.addEventListener('click', async () => {
     const novaRotina = { userId: usuarioAtual.uid, nome, descricao: 'Treino Personalizado', horario, diasSemana, exercicios: [], criadoEm: new Date() };
     const reference = await addDoc(collection(db, 'treinos'), { ...novaRotina, criadoEm: serverTimestamp() });
     rotinasReais = [...rotinasReais, { id: reference.id, ...novaRotina }];
+    writeRoutinesCache();
     inputNomeRotina.value = '';
     if (inputHorarioRotina) inputHorarioRotina.value = '';
     routineDays.querySelectorAll('input').forEach(input => input.checked = false);

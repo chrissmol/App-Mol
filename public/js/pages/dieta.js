@@ -5,7 +5,7 @@ import { DIET_PLANS } from '../data/diet-plans.js';
 import { FASTING_PROTOCOLS, FOOD_CATALOG, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { getSessionItem, setSessionItem } from '../utils/storage.js';
+import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
 const $ = id => document.getElementById(id);
@@ -44,13 +44,15 @@ const catalogFood = name => FOOD_CATALOG.find(food => food.nome === name);
 const dietCacheKey = uid => `mol-diet-cache-${uid}`;
 function readDietCache(uid) {
   try {
-    const cached = JSON.parse(getSessionItem(dietCacheKey(uid)) || 'null');
+    const cached = JSON.parse(getSessionItem(dietCacheKey(uid)) || getLocalItem(dietCacheKey(uid)) || 'null');
     return cached && Array.isArray(cached.meals) ? { meals: normalizeDietMeals(cached.meals), goals: cached.goals || null, fasting: normalizeFastingSettings(cached.fasting) } : null;
   } catch { return null; }
 }
 function writeDietCache() {
   if (!user) return;
-  setSessionItem(dietCacheKey(user.uid), JSON.stringify({ meals, goals, fasting, updatedAt: Date.now() }));
+  const value = JSON.stringify({ meals, goals, fasting, updatedAt: Date.now() });
+  setSessionItem(dietCacheKey(user.uid), value);
+  setLocalItem(dietCacheKey(user.uid), value);
 }
 
 async function persist(nextMeals) {
@@ -352,7 +354,6 @@ async function load() {
     console.error('Dieta não carregada:', error);
     document.body.setAttribute('aria-busy', 'false');
     if (cached) {
-      showToast('Sem conexão com a dieta. Exibindo os últimos dados desta sessão.');
       return;
     }
     $('add-meal').disabled = true;
