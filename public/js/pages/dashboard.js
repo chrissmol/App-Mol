@@ -286,6 +286,7 @@ watchProtectedPage(async user => {
   $('user-name').textContent = user.displayName?.trim().split(/\s+/)[0] || 'Atleta';
   setupDashboardCards();
   const cachedDashboard = readDashboardDataCache(user.uid);
+  const hasDashboardCache = !!cachedDashboard;
   if (cachedDashboard) {
     if (Array.isArray(cachedDashboard.routines)) setToday(cachedDashboard.routines, user);
     if (Array.isArray(cachedDashboard.sessions)) setWeek(cachedDashboard.sessions, cachedDashboard.goal || 1);
@@ -328,7 +329,7 @@ watchProtectedPage(async user => {
       if (profileData.dashboardCards && remoteDate >= localDate) dashboardCards = normalizeCards(profileData.dashboardCards);
       appModules = normalizeAppModules(profileData.appModules);
     }
-  } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); showToast('O perfil demorou para responder; usando dados deste dispositivo.'); }
+  } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
   applyDashboardCards();
   if (appModules.dieta) void loadNextMeal(user.uid);
   const fullName = String(user.displayName || profileData.name || profileData.nome || '');
@@ -346,7 +347,7 @@ watchProtectedPage(async user => {
       console.error('Erro ao carregar rotinas:', error);
       $('today-workout-title').textContent = 'Treinos indisponíveis';
       $('today-workout-subtitle').textContent = 'Não foi possível atualizar suas rotinas agora.';
-      showToast('Não foi possível carregar suas rotinas agora.');
+      if (!hasDashboardCache) showToast('Não foi possível carregar suas rotinas agora.');
     }
   };
   const loadSessions = async () => {
@@ -359,7 +360,7 @@ watchProtectedPage(async user => {
       console.error('Erro ao carregar sessões:', error.code, error.message);
       $('weekly-title').textContent = 'Histórico indisponível';
       $('week-days').innerHTML = '<p class="col-span-7 text-center text-xs text-gray-500">Tente novamente mais tarde.</p>';
-      showToast(error.code === 'permission-denied' ? 'Sem permissão para ler sessões. Revise as regras do Firestore.' : 'O histórico não pôde ser carregado agora.');
+      if (!hasDashboardCache) showToast(error.code === 'permission-denied' ? 'Sem permissão para ler sessões. Revise as regras do Firestore.' : 'O histórico não pôde ser carregado agora.');
     }
   };
   const loadWeights = async () => {

@@ -5,7 +5,7 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
 import { dateFrom, monthCalendar, workoutStats } from '../modules/evolution-analytics.js';
 import { profileAchievements } from '../modules/profile-analytics.js';
-import { removeSessionItems } from '../utils/storage.js';
+import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
 
@@ -19,6 +19,21 @@ let activeDays = new Set();
 let now = new Date();
 let visibleMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 let selectedCalendarDay = null;
+const evolutionCacheKey = uid => `mol-evolution-cache-${uid}`;
+
+function safeJSON(value, fallback = null) {
+  try { return value ? JSON.parse(value) : fallback; }
+  catch { return fallback; }
+}
+
+function applyEvolutionData(data = {}) {
+  latestProfile = data.profile || {};
+  currentGoal = Math.max(1, Math.min(7, Number(latestProfile.metaSemanal) || 3));
+  sessions = Array.isArray(data.sessions) ? data.sessions : [];
+  weights = Array.isArray(data.weights) ? data.weights : [];
+  renderAll();
+  setPageState('ready');
+}
 
 function setPageState(state, message = '') {
   $('page-status').classList.toggle('hidden', state === 'ready');
@@ -184,22 +199,26 @@ function renderAll() {
 
 async function load() {
   if (!currentUser) return;
-  setPageState('loading');
+  const cached = safeJSON(getSessionItem(evolutionCacheKey(currentUser.uid)), null);
+  if (cached && typeof cached === 'object') applyEvolutionData(cached);
+  else setPageState('loading');
   try {
     const [profileSnapshot, weightSnapshot, sessionSnapshot] = await Promise.all([
       getDoc(doc(db, 'users', currentUser.uid)),
       getDocs(query(collection(db, 'pesos'), where('userId', '==', currentUser.uid))),
       getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)))
     ]);
-    latestProfile = profileSnapshot.data() || {};
-    currentGoal = Math.max(1, Math.min(7, Number(latestProfile.metaSemanal) || 3));
-    sessions = sessionSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
-    weights = weightSnapshot.docs.map(item => ({ id: item.id, ...item.data() }));
-    renderAll();
-    setPageState('ready');
+    const data = {
+      profile: profileSnapshot.data() || {},
+      sessions: sessionSnapshot.docs.map(item => ({ id: item.id, ...item.data() })),
+      weights: weightSnapshot.docs.map(item => ({ id: item.id, ...item.data() }))
+    };
+    setSessionItem(evolutionCacheKey(currentUser.uid), JSON.stringify(data));
+    applyEvolutionData(data);
   } catch (error) {
     console.error('Não foi possível carregar evolução:', error);
-    setPageState('error', 'Não foi possível carregar seus dados agora.');
+    if (cached) setPageState('ready');
+    else setPageState('error', 'Não foi possível carregar seus dados agora.');
   }
 }
 

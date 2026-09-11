@@ -4,13 +4,19 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { parsePersonalData } from '../modules/personal-data.js';
-import { removeSessionItems } from '../utils/storage.js';
+import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
 
 const $ = id => document.getElementById(id);
 let currentUser;
 let currentProfile = {};
+const profileCacheKey = uid => `mol-profile-cache-${uid}`;
+
+function safeJSON(value, fallback = null) {
+  try { return value ? JSON.parse(value) : fallback; }
+  catch { return fallback; }
+}
 
 function setPageState(state, message = '') {
   $('page-status').classList.toggle('hidden', state === 'ready');
@@ -38,15 +44,24 @@ function fillProfile(profile) {
 
 async function loadProfile() {
   if (!currentUser) return;
-  setPageState('loading');
+  const cachedProfile = safeJSON(getSessionItem(profileCacheKey(currentUser.uid)), null);
+  if (cachedProfile && typeof cachedProfile === 'object') {
+    currentProfile = cachedProfile;
+    fillProfile(currentProfile);
+    setPageState('ready');
+  } else {
+    setPageState('loading');
+  }
   try {
     const snapshot = await getDoc(doc(db, 'users', currentUser.uid));
     currentProfile = snapshot.data() || {};
+    setSessionItem(profileCacheKey(currentUser.uid), JSON.stringify(currentProfile));
     fillProfile(currentProfile);
     setPageState('ready');
   } catch (error) {
     console.error('Dados pessoais não carregados:', error);
-    setPageState('error', 'Não foi possível carregar seu perfil agora.');
+    if (cachedProfile) setPageState('ready');
+    else setPageState('error', 'Não foi possível carregar seu perfil agora.');
   }
 }
 
