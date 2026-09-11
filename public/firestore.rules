@@ -110,11 +110,12 @@ service cloud.firestore {
     }
 
     function validRoutine() {
-      return request.resource.data.keys().hasOnly(['userId', 'nome', 'descricao', 'diasSemana', 'exercicios', 'criadoEm', 'ultimoTreinoEm'])
+      return request.resource.data.keys().hasOnly(['userId', 'nome', 'descricao', 'horario', 'diasSemana', 'exercicios', 'criadoEm', 'ultimoTreinoEm'])
         && request.resource.data.nome is string
         && request.resource.data.nome.size() >= 1
         && request.resource.data.nome.size() <= 80
         && (!('descricao' in request.resource.data) || (request.resource.data.descricao is string && request.resource.data.descricao.size() <= 240))
+        && (!('horario' in request.resource.data) || (request.resource.data.horario is string && (request.resource.data.horario == '' || request.resource.data.horario.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'))))
         && (!('diasSemana' in request.resource.data) || (request.resource.data.diasSemana is list && request.resource.data.diasSemana.size() <= 7))
         && request.resource.data.exercicios is list
         && request.resource.data.exercicios.size() <= 60;

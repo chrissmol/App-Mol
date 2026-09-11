@@ -65,8 +65,10 @@ describe('regras do Firestore', () => {
   it('valida dono, nome e limite estrutural das rotinas', async () => {
     const owner = user('user-a');
     await assertSucceeds(setDoc(doc(owner, 'treinos', 'rotina-a'), routine('user-a')));
+    await assertSucceeds(setDoc(doc(owner, 'treinos', 'rotina-com-horario'), { ...routine('user-a'), horario: '18:30' }));
     await assertFails(setDoc(doc(owner, 'treinos', 'rotina-b'), routine('user-b')));
     await assertFails(setDoc(doc(owner, 'treinos', 'sem-nome'), { ...routine('user-a'), nome: '' }));
+    await assertFails(setDoc(doc(owner, 'treinos', 'horario-invalido'), { ...routine('user-a'), horario: '25:99' }));
     await assertFails(setDoc(doc(owner, 'treinos', 'grande'), { ...routine('user-a'), exercicios: Array.from({ length: 61 }, () => ({})) }));
     await assertFails(setDoc(doc(owner, 'treinos', 'admin'), { ...routine('user-a'), admin: true }));
     await assertFails(getDoc(doc(user('user-b'), 'treinos', 'rotina-a')));

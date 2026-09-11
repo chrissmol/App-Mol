@@ -15,7 +15,7 @@ export const MODULE_DEFINITIONS = [
   { id: 'treino', label: 'Treinos', description: 'Rotinas, séries, descanso, histórico e execução na academia.', icon: 'dumbbell', required: true },
   { id: 'dieta', label: 'Dieta', description: 'Refeições, jejum e acompanhamento nutricional.', icon: 'apple' },
   { id: 'progresso', label: 'Progresso', description: 'Métricas, volume, tendências e evolução por exercício.', icon: 'chart-no-axes-combined' },
-  { id: 'evolucao', label: 'Evolução corporal', description: 'Peso, medidas e fotos de evolução.', icon: 'scale' },
+  { id: 'evolucao', label: 'Evolução corporal', description: 'Peso, medidas, consistência e evolução corporal.', icon: 'scale' },
   { id: 'conquistas', label: 'Conquistas', description: 'Badges, marcos, gamificação e molduras do perfil.', icon: 'trophy' },
 ];
 

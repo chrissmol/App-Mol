@@ -71,10 +71,12 @@ export function normalizeRoutineRecord(value = {}) {
   const source = value && typeof value === 'object' ? value : {};
   const nome = typeof source.nome === 'string' ? source.nome.trim().slice(0, 80) : '';
   const diasSemana = [...new Set((Array.isArray(source.diasSemana) ? source.diasSemana : []).map(Number).filter(day => Number.isInteger(day) && day >= 0 && day <= 6))];
+  const horario = /^([01]\d|2[0-3]):[0-5]\d$/.test(String(source.horario || '')) ? source.horario : '';
   return {
     ...source,
     nome: nome || 'Rotina sem nome',
     descricao: typeof source.descricao === 'string' ? source.descricao.slice(0, 240) : '',
+    horario,
     diasSemana,
     exercicios: normalizeRoutineExercises(source.exercicios)
   };

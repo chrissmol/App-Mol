@@ -15,8 +15,8 @@ setupAppShell();
 const renderIcons = (root = document) => window.lucide?.createIcons({ root });
 
 let usuarioAtual = null;
-let rotinasReais = []; 
-let rotinaAbertaId = null; 
+let rotinasReais = [];
+let rotinaAbertaId = null;
 
 let tempoSegundos = 0;
 let timerInterval = null;
@@ -172,6 +172,7 @@ const exerciciosList = document.getElementById('exercicios-list');
 const bibliotecaList = document.getElementById('biblioteca-list');
 const detalheTitulo = document.getElementById('detalhe-titulo');
 const inputNomeRotina = document.getElementById('input-nome-rotina');
+const inputHorarioRotina = document.getElementById('input-horario-rotina');
 const routineDays = document.getElementById('routine-days');
 
 const btnNovaRotina = document.getElementById('btn-nova-rotina');
@@ -258,7 +259,7 @@ btnExplorar?.addEventListener('click', () => {
 inputBuscaRotina?.addEventListener('input', renderRotinas);
 
 if (btnVoltar) {
-  btnVoltar.addEventListener('click', async () => { 
+  btnVoltar.addEventListener('click', async () => {
     if (treinoIniciado && rotinaAbertaId) {
       const confirmar = await confirmAction({ title: 'Encerrar treino?', message: 'Todos os dados preenchidos nesta sessão serão descartados.', confirmText: 'Encerrar', danger: true });
       if (!confirmar) return; // Se cancelar, não faz nada
@@ -280,9 +281,9 @@ if (btnVoltar) {
 
     limparRascunho(); pararCronometro();
     pararDescanso();
-    esconderTudo(); 
-    viewRotinas.classList.remove('hidden'); 
-    rotinaAbertaId = null; 
+    esconderTudo();
+    viewRotinas.classList.remove('hidden');
+    rotinaAbertaId = null;
     carregarRotinasDoBanco();
   });
 }
@@ -502,7 +503,7 @@ function renderRotinas() {
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
-          <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercícios</p>
+          <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercícios${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
         </div>
         <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="text-gray-500 hover:text-red-400 transition-colors p-1" aria-label="Excluir ${escapeHTML(rotina.nome)}">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -575,19 +576,23 @@ window.iniciarTreinoDaEdicao = async () => {
 
 window.salvarNomeRotina = async () => {
   const input = document.getElementById('input-editar-nome-rotina');
+  const timeInput = document.getElementById('input-editar-horario-rotina');
   const nome = input?.value.trim();
+  const horario = timeInput?.value || '';
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina || !nome) return showToast('Digite um nome para a rotina.');
   if (nome.length > 60) return showToast('Use no máximo 60 caracteres no nome da rotina.');
-  if (nome === rotina.nome) return;
+  if (horario && !/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) return showToast('Use um horário válido ou deixe em branco.');
+  if (nome === rotina.nome && horario === (rotina.horario || '')) return;
   try {
-    await updateDoc(doc(db, 'treinos', rotinaAbertaId), { nome });
+    await updateDoc(doc(db, 'treinos', rotinaAbertaId), { nome, horario });
     rotina.nome = nome;
+    rotina.horario = horario;
     detalheTitulo.textContent = nome;
-    showToast('Nome da rotina atualizado.', 'success');
+    showToast('Rotina atualizada.', 'success');
   } catch (error) {
     console.error(error);
-    showToast('Não foi possível salvar o nome.');
+    showToast('Não foi possível salvar a rotina.');
   }
 };
 
@@ -634,10 +639,12 @@ btnSalvarNova.addEventListener('click', async () => {
   btnSalvarNova.textContent = "Salvando...";
   try {
     const diasSemana = [...routineDays.querySelectorAll('input:checked')].map(input => Number(input.value));
-    const novaRotina = { userId: usuarioAtual.uid, nome, descricao: 'Treino Personalizado', diasSemana, exercicios: [], criadoEm: new Date() };
+    const horario = inputHorarioRotina?.value || '';
+    const novaRotina = { userId: usuarioAtual.uid, nome, descricao: 'Treino Personalizado', horario, diasSemana, exercicios: [], criadoEm: new Date() };
     const reference = await addDoc(collection(db, 'treinos'), { ...novaRotina, criadoEm: serverTimestamp() });
     rotinasReais = [...rotinasReais, { id: reference.id, ...novaRotina }];
     inputNomeRotina.value = '';
+    if (inputHorarioRotina) inputHorarioRotina.value = '';
     routineDays.querySelectorAll('input').forEach(input => input.checked = false);
     esconderTudo();
     viewRotinas.classList.remove('hidden');
@@ -830,7 +837,7 @@ function renderizarBiblioteca(filtro = '') {
     if (button.dataset.exerciseAction === 'detail') window.abrirDetalheExercicio(exercise.nome);
     if (button.dataset.exerciseAction === 'add') window.escolherExercicio(exercise.nome);
   });
-  
+
   renderIcons();
 }
 
@@ -910,7 +917,7 @@ function abrirRotina(id) {
     return;
   }
   detalheTitulo.textContent = rotina.nome;
-  
+
   let totalSeries = 0;
   let seriesFeitas = 0;
   let volumeTotal = 0;
@@ -973,8 +980,8 @@ function abrirRotina(id) {
       </div>
     </div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão · tela ativa</p><button type="button" onclick="alternarModoCompacto()" aria-pressed="${modoCompacto}" class="min-h-9 rounded-xl mol-soft px-3 text-[10px] font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
   ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button type="button" onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
-  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
-  
+  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><label for="input-editar-horario-rotina" class="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">Horário do treino <span class="font-normal normal-case tracking-normal text-gray-500">(opcional)</span><input id="input-editar-horario-rotina" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-white"></label><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
+
   if (!rotina.exercicios || rotina.exercicios.length === 0) {
     exerciciosList.innerHTML = `
       ${painelMetricasHTML}
@@ -983,7 +990,7 @@ function abrirRotina(id) {
     `;
   } else {
     let exerciciosHtml = rotina.exercicios.map((ex, indexEx) => {
-      let contadorNormal = 0; 
+      let contadorNormal = 0;
       const conselho = progressionAdvice(ex, historicoPerformance.get(ex.nome) || []);
       const conselhoTom = conselho.state === 'increase' ? 'bg-neon/10 text-neon' : conselho.state === 'reduce' ? 'bg-orange-400/10 text-orange-400' : 'mol-soft text-gray-400';
       const currentClass = indexEx === indiceExercicioAtual ? 'is-current' : '';
@@ -1002,7 +1009,7 @@ function abrirRotina(id) {
         <button type="button" onclick="abrirSubstituicao(${indexEx})" class="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
         ${editorNotaHTML}
         <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMin', this.value)" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMax', this.value)" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'rirAlvo', this.value)" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" onchange="atualizarMetaExercicio(${indexEx}, 'descansoSegundos', this.value)" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
-        
+
         <div class="workout-set-header flex items-center gap-1 mb-2 px-1"><div class="workout-set-grid grid flex-1 grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 text-[10px] text-gray-500 font-semibold text-center tracking-wider items-center">
           <button type="button" onclick="mostrarInfoTreino('serie')" class="min-h-8 rounded-md active:bg-white/10">SÉRIE</button>
           <button type="button" onclick="mostrarInfoTreino('anterior')" class="min-h-8 rounded-md active:bg-white/10">ANTERIOR</button>
@@ -1016,10 +1023,10 @@ function abrirRotina(id) {
           ${ex.series.map((serie, indexSerie) => {
             let label = '';
             let corFundo = 'mol-field text-white';
-            
+
             if (serie.tipo === 'N' || serie.tipo === '1') {
               contadorNormal++;
-              label = contadorNormal; 
+              label = contadorNormal;
             } else if (serie.tipo === 'W') {
               label = 'W'; corFundo = 'text-orange-400 bg-orange-400/10';
             } else if (serie.tipo === 'F') {
@@ -1031,7 +1038,7 @@ function abrirRotina(id) {
             const anteriorSerie = valorAnteriorDaSerie(ex, indexSerie);
             const temAnterior = anteriorSerie?.kg != null && Number(anteriorSerie.reps) > 0;
             const textoAnterior = temAnterior ? `${anteriorSerie.kg}kg x ${anteriorSerie.reps}` : '-';
-            
+
             const bgLinha = serie.concluida ? 'bg-neon/10' : 'mol-soft';
             const bgBotaoCheck = serie.concluida ? 'bg-neon text-black' : 'mol-field border border-white/10 text-transparent';
             const bgInput = serie.concluida ? 'bg-transparent text-white' : 'mol-field text-white';
@@ -1039,20 +1046,20 @@ function abrirRotina(id) {
             return `
             <div class="relative flex items-center gap-1 mb-1">
               <div class="workout-set-grid flex-1 ${bgLinha} grid items-center grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 py-1.5 px-1 rounded transition-colors">
-                
+
                 <div class="set-type-badge is-editable mx-auto cursor-pointer text-xs font-bold transition-colors ${corFundo}"
                      onclick="abrirModalTipoSerie(${indexEx}, ${indexSerie})">
                   ${label}
                 </div>
-                
+
                 <button type="button" onclick="copiarAnterior(${indexEx}, ${indexSerie})" class="min-w-0 text-center text-gray-400 text-[11px] font-medium flex min-h-10 w-full items-center justify-center rounded-lg active:bg-white/10" aria-label="Copiar carga anterior">
                   <span>${textoAnterior}</span>
                 </button>
-                
+
                 <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da série ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                
+
                 <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir série ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">
                   <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-white' : 'text-gray-600'}"></i>
                 </button>
@@ -1076,7 +1083,7 @@ function abrirRotina(id) {
   }
   const inputEditarNome = document.getElementById('input-editar-nome-rotina');
   if (inputEditarNome) inputEditarNome.value = rotina.nome;
-  
+
   esconderTudo();
   viewDetalhe.classList.remove('hidden');
   viewDetalhe.classList.toggle('workout-compact', treinoIniciado && modoCompacto);
@@ -1208,7 +1215,7 @@ window.finalizarEConcluirTreino = async () => {
     });
     batch.update(doc(db, "treinos", rotinaAbertaId), {
       exercicios: exerciciosLimpos,
-      ultimoTreinoEm: serverTimestamp() 
+      ultimoTreinoEm: serverTimestamp()
     });
     await batch.commit();
 
@@ -1222,7 +1229,7 @@ window.finalizarEConcluirTreino = async () => {
     pararCronometro();
     pararDescanso();
     mostrarResumoTreino({ series: totais.completed, volume: resumoVolume, exercicios: sessaoConcluida.filter(ex => ex.series?.some(serie => serie.concluida)).length, duracao: duracaoConcluida, exerciciosDetalhados: sessaoConcluida });
-    
+
     esconderTudo();
     viewRotinas.classList.remove('hidden');
     carregarRotinasDoBanco();
@@ -1239,7 +1246,7 @@ window.adicionarSerie = async (indexEx) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[indexEx]) return;
   if (rotina.exercicios[indexEx].series.length >= WORKOUT_STRUCTURE_LIMITS.setsPerExercise) return showToast(`Cada exercício pode ter até ${WORKOUT_STRUCTURE_LIMITS.setsPerExercise} séries.`);
-  rotina.exercicios[indexEx].series.push({ tipo: 'N', kg: '', reps: '', concluida: false }); 
+  rotina.exercicios[indexEx].series.push({ tipo: 'N', kg: '', reps: '', concluida: false });
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
@@ -1252,7 +1259,7 @@ async function excluirSerie(indexEx, indexSerie) {
   if (!rotina?.exercicios?.[indexEx]?.series?.[indexSerie]) return;
   if (rotina.exercicios[indexEx].series.length === 1) return showToast('O exercício precisa manter ao menos uma série. Para removê-lo, use a lixeira do exercício.');
   if (!await confirmAction({ title: 'Excluir série?', message: 'Os dados preenchidos nesta série serão removidos.', confirmText: 'Excluir', danger: true })) return;
-  rotina.exercicios[indexEx].series.splice(indexSerie, 1); 
+  rotina.exercicios[indexEx].series.splice(indexSerie, 1);
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
@@ -1283,7 +1290,7 @@ window.excluirExercicio = async (indexEx) => {
 
 const modalTipoSerie = document.getElementById('modal-tipo-serie');
 const modalTipoSerieContent = document.getElementById('modal-tipo-serie-content');
-let editandoSerie = { ex: null, serie: null }; 
+let editandoSerie = { ex: null, serie: null };
 let focoAntesDoModal = null;
 
 function fecharModalTipoSerie() {
@@ -1312,7 +1319,7 @@ window.mudarTipoSerie = async (novoTipo) => {
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
-    abrirRotina(rotinaAbertaId); 
+    abrirRotina(rotinaAbertaId);
   } catch (error) { console.error(error); showToast('Não foi possível alterar o tipo da série.'); await carregarRotinasDoBanco(); }
 };
 

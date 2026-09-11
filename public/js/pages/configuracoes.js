@@ -127,11 +127,13 @@ const languageChoices = [
   ...supportedLanguages.map(language => [language.code, 'languages', language.label])
 ];
 const modulePresetChoices = [
-  ['complete', 'sparkles', 'Completo', 'Treino, dieta, progresso, evolução e conquistas.'],
-  ['training', 'dumbbell', 'Modo carverna', 'Interface bruta e direta: abrir, treinar e registrar.'],
-  ['trainingDiet', 'apple', 'Treino + dieta', 'Mantém treino e alimentação, sem excesso.'],
+  ['complete', 'sparkles', 'Completo', 'Tudo ativo: treino, dieta, progresso, evolução e conquistas.'],
+  ['training', 'dumbbell', 'Modo caverna', 'Só o essencial para abrir, treinar e registrar.'],
+  ['trainingDiet', 'apple', 'Treino + dieta', 'Mantém treino e alimentação, sem módulos extras.'],
+  ['custom', 'sliders-horizontal', 'Personalizado', 'Você escolhe exatamente o que aparece no app.'],
 ];
 let appModules = normalizeAppModules();
+let selectedModulePreset = null;
 
 function applyAppearance() {
   appearance = applyAccessibilityPreferences(appearance);
@@ -198,21 +200,30 @@ function moduleToggleTemplate(module) {
 }
 
 function renderAppModules() {
-  const preset = presetFromModules(appModules);
+  const preset = selectedModulePreset || presetFromModules(appModules);
   $('module-presets').innerHTML = modulePresetChoices.map(([id, icon, label, description]) => {
     const selected = preset === id;
     return `<button type="button" data-preset="${id}" aria-pressed="${selected}" class="rounded-2xl border ${selected ? 'border-neon bg-neon/10 text-neon' : 'border-white/10 mol-soft text-gray-300'} p-3 text-left transition-colors"><i data-lucide="${icon}" class="h-4 w-4"></i><strong class="mt-2 block text-sm">${label}</strong><small class="mt-1 block text-xs leading-relaxed text-gray-500">${description}</small></button>`;
   }).join('');
-  $('module-toggles').innerHTML = MODULE_DEFINITIONS.map(moduleToggleTemplate).join('');
-  $('module-status').textContent = preset === 'custom' ? 'Modo personalizado salvo na sua conta.' : 'Modo salvo na sua conta e aplicado ao navegar.';
+  $('module-toggles').classList.toggle('hidden', preset !== 'custom');
+  $('module-toggles').innerHTML = preset === 'custom' ? MODULE_DEFINITIONS.map(moduleToggleTemplate).join('') : '';
+  $('module-status').textContent = preset === 'custom' ? 'Personalizado: escolha abaixo o que quer ver no app.' : 'Modo salvo na sua conta e aplicado ao navegar.';
   $('module-presets').querySelectorAll('[data-preset]').forEach(button => {
     button.onclick = () => {
+      if (button.dataset.preset === 'custom') {
+        selectedModulePreset = 'custom';
+        appModules = normalizeAppModules(appModules);
+        renderAppModules();
+        return;
+      }
+      selectedModulePreset = null;
       appModules = normalizeAppModules(MODULE_PRESETS[button.dataset.preset]);
       persistAppModules();
     };
   });
   $('module-toggles').querySelectorAll('[data-module]').forEach(input => {
     input.onchange = () => {
+      selectedModulePreset = 'custom';
       appModules = normalizeAppModules({ ...appModules, [input.dataset.module]: input.checked });
       persistAppModules();
     };
@@ -222,6 +233,7 @@ function renderAppModules() {
 
 async function persistAppModules() {
   appModules = normalizeAppModules(appModules);
+  if (presetFromModules(appModules) !== 'custom') selectedModulePreset = null;
   renderAppModules();
   try {
     appModules = await saveAppModules(appModules);
@@ -237,14 +249,10 @@ async function persistAppModules() {
 const reminderPreferences = getReminderPreferences();
 $('trusted-device').checked = offlinePersistenceEnabled;
 $('reminders-enabled').checked = reminderPreferences.enabled;
-$('workout-time').value = reminderPreferences.workoutTime;
-$('meal-time').value = reminderPreferences.mealTime;
 
 function persistReminderControls() {
   saveReminderPreferences({
-    enabled: $('reminders-enabled').checked,
-    workoutTime: $('workout-time').value,
-    mealTime: $('meal-time').value
+    enabled: $('reminders-enabled').checked
   });
 }
 
@@ -286,8 +294,6 @@ $('reminders-enabled').onchange = async () => {
     showToast(error.message || 'Não foi possível ativar os lembretes.');
   }
 };
-$('workout-time').onchange = persistReminderControls;
-$('meal-time').onchange = persistReminderControls;
 $('test-reminder').onclick = async () => {
   try { await sendTestReminder(); showToast('Lembrete enviado.', 'success'); }
   catch (error) { showToast(error.message || 'Não foi possível enviar o lembrete.'); }

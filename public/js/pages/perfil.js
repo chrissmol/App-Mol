@@ -1,16 +1,15 @@
 import { auth, db } from '../config/firebase-config.js';
 import { signOut } from 'firebase/auth';
 import { watchProtectedPage } from '../modules/auth.js';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { avatarTier, formatTrainingTime, profileAchievements, profileMilestone, profileStats, readProfileCache } from '../modules/profile-analytics.js';
-import { getSessionItem, setSessionItem } from '../utils/storage.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 
 setupAppShell();
 const $ = id => document.getElementById(id);
 const renderIcons = () => window.lucide?.createIcons();
+const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
 const withTimeout = (promise, label, milliseconds = 12000) => {
   let timer;
   return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })]).finally(() => clearTimeout(timer));
@@ -26,84 +25,43 @@ function renderIdentity(account, profile = {}) {
   avatar.alt = name ? `Foto de ${name}` : 'Foto do perfil';
   avatar.onerror = () => { avatar.classList.add('hidden'); fallback.classList.remove('hidden'); };
   if (photoURL) { avatar.src = photoURL; avatar.classList.remove('hidden'); fallback.classList.add('hidden'); }
-  $('admin-link')?.classList.toggle('hidden', String(account.email || '').toLowerCase() !== 'chrisouzamol@gmail.com');
-  $('admin-link')?.classList.toggle('flex', String(account.email || '').toLowerCase() === 'chrisouzamol@gmail.com');
-}
-
-function renderStats(stats) {
-  const tier = avatarTier(stats.workouts);
-  const frame = $('avatar-frame');
-  if (frame) { frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim() + ` avatar-frame--${tier.id}`; frame.setAttribute('aria-label', `Moldura de ${tier.label}`); }
-  $('journey-workouts').textContent = stats.workouts;
-  $('journey-sets').textContent = stats.sets.toLocaleString('pt-BR');
-  $('journey-volume').textContent = Math.round(stats.volume).toLocaleString('pt-BR');
-  $('journey-time').textContent = formatTrainingTime(stats.seconds);
-  $('consistency-title').textContent = `${stats.weekly} de ${stats.goal} treino${stats.goal === 1 ? '' : 's'} nesta semana`;
-  $('consistency-progress').style.width = `${stats.percent}%`;
-  $('consistency-message').textContent = stats.weekly >= stats.goal ? `Meta semanal concluída. ${profileMilestone(stats.workouts)}` : `${stats.goal - stats.weekly} treino${stats.goal - stats.weekly === 1 ? '' : 's'} para concluir a meta. ${profileMilestone(stats.workouts)}`;
-  renderAchievements(stats);
-  $('profile-content').classList.remove('hidden');
-  renderIcons();
+  const canMonitor = String(account.email || '').toLowerCase() === ADMIN_EMAIL;
+  $('admin-link')?.classList.toggle('hidden', !canMonitor);
+  $('admin-link')?.classList.toggle('flex', canMonitor);
 }
 
 function applyProfileModules(profile = {}) {
   const modules = normalizeAppModules(profile.appModules);
-  $('journey-card')?.classList.toggle('hidden', modules.progresso === false);
-  $('consistency-card')?.classList.toggle('hidden', modules.progresso === false);
-  $('achievements-card')?.classList.toggle('hidden', modules.conquistas === false);
   $('profile-evolution-link')?.classList.toggle('hidden', modules.evolucao === false);
   $('profile-evolution-link')?.classList.toggle('flex', modules.evolucao !== false);
-}
-
-function renderAchievements(stats) {
-  const badges = profileAchievements(stats);
-  const unlocked = badges.filter(badge => badge.unlocked);
-  const preview = (unlocked.length ? unlocked.slice(-3) : badges.slice(0, 3));
-  $('achievements-count').textContent = `${unlocked.length} de ${badges.length}`;
-  $('profile-achievements').innerHTML = preview.map(badge => `<div class="flex min-w-0 items-center gap-3 rounded-2xl bg-white/5 p-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.icon}" class="h-4 w-4"></i></span><span class="min-w-0"><strong class="block truncate text-sm">${badge.title}</strong><small class="block truncate text-xs text-gray-500">${badge.unlocked ? 'Desbloqueada' : badge.progressLabel}</small></span></div>`).join('');
 }
 
 function setReady(message = '') {
   $('profile-status').classList.toggle('hidden', !message);
   if (message) $('profile-status').textContent = message;
+  $('profile-content').classList.remove('hidden');
   document.body.setAttribute('aria-busy', 'false');
+  renderIcons();
 }
 
 async function loadProfile(account) {
   renderIdentity(account);
-  const cacheKey = `mol-profile-cache-${account.uid}`;
-  const cached = readProfileCache(getSessionItem(cacheKey));
-  if (cached) renderStats(cached);
-
-  const profilePromise = withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil');
-  const sessionsPromise = cached ? null : withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'O histórico');
-  const [profileResult, sessionsResult] = await Promise.allSettled([profilePromise, sessionsPromise]);
-  const profile = profileResult.status === 'fulfilled' && profileResult.value.exists() ? profileResult.value.data() : {};
-  applyProfileModules(profile);
-  renderIdentity(account, profile);
-  if (cached) {
-    const goal = Math.max(1, Math.min(7, Number(profile.metaSemanal) || cached.goal || 3));
-    renderStats({ ...cached, goal, percent: Math.min(100, Math.round((cached.weekly / goal) * 100)) });
+  try {
+    const snapshot = await withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil');
+    const profile = snapshot.exists() ? snapshot.data() : {};
+    applyProfileModules(profile);
+    renderIdentity(account, profile);
+    setReady();
+  } catch (error) {
+    console.error('Perfil não carregado:', error);
+    setReady('Não foi possível atualizar todos os dados do perfil agora.');
   }
-
-  if (!cached && sessionsResult.status === 'fulfilled' && sessionsResult.value) {
-    const stats = profileStats(sessionsResult.value.docs.map(item => item.data()), profile.metaSemanal || 3);
-    setSessionItem(cacheKey, JSON.stringify({ savedAt: Date.now(), stats }));
-    renderStats(stats);
-  }
-
-  const profileFailed = profileResult.status === 'rejected';
-  const sessionsFailed = !cached && sessionsResult.status === 'rejected';
-  if (!cached && sessionsFailed) renderStats(profileStats([], profile.metaSemanal || 3));
-  if (profileFailed || sessionsFailed) setReady('Alguns dados não puderam ser atualizados. Confira sua conexão e tente novamente mais tarde.');
-  else setReady();
 }
 
 watchProtectedPage(account => {
   loadProfile(account).catch(error => {
     console.error('Perfil não carregado:', error);
     renderIdentity(account);
-    renderStats(profileStats([], 3));
     setReady('Não foi possível atualizar o perfil agora. Confira sua conexão.');
   });
 });

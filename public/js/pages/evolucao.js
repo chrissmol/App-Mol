@@ -10,8 +10,6 @@ import { removeSessionItems } from '../utils/storage.js';
 setupAppShell();
 
 const $ = id => document.getElementById(id);
-const PHOTO_LIMIT = 5;
-const PHOTO_BYTES_LIMIT = 650 * 1024;
 let currentUser;
 let currentGoal = 3;
 let latestProfile = {};
@@ -171,92 +169,6 @@ function renderMeasurements() {
   }).join('')}` : '';
 }
 
-function validPhotos() {
-  return (Array.isArray(latestProfile.fotosProgresso) ? latestProfile.fotosProgresso : []).slice(0, PHOTO_LIMIT).filter(photo => photo && typeof photo.id === 'string' && photo.id.length <= 100 && typeof photo.dataUrl === 'string' && photo.dataUrl.length <= 140 * 1024 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(photo.dataUrl));
-}
-
-function photoBytes(photos) {
-  return new Blob(photos.map(photo => photo.dataUrl)).size;
-}
-
-function renderProgressPhotos() {
-  const photos = validPhotos();
-  const used = photoBytes(photos);
-  $('photo-storage').textContent = `${photos.length} de ${PHOTO_LIMIT} fotos · aproximadamente ${Math.round(used / 1024)} KB usados`;
-  $('progress-photos').innerHTML = '';
-  if (!photos.length) {
-    $('progress-photos').innerHTML = '<p class="col-span-3 text-sm text-gray-500">Nenhuma foto registrada.</p>';
-    return;
-  }
-  photos.forEach(photo => {
-    const article = document.createElement('article');
-    article.className = 'relative overflow-hidden rounded-xl bg-white/5';
-    const image = document.createElement('img');
-    image.className = 'aspect-square w-full object-cover';
-    image.src = photo.dataUrl;
-    image.alt = `Foto de progresso de ${dateFrom(photo.criadoEm)?.toLocaleDateString('pt-BR') || 'data não informada'}`;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.dataset.deletePhoto = photo.id;
-    button.className = 'absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm';
-    button.setAttribute('aria-label', 'Remover foto');
-    button.textContent = '×';
-    article.append(image, button);
-    $('progress-photos').appendChild(article);
-  });
-}
-
-async function compressPhoto(file) {
-  if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Escolha uma imagem em JPG, PNG ou WebP.');
-  if (file.size > 15 * 1024 * 1024) throw new Error('A imagem original deve ter no máximo 15 MB.');
-  let source = null;
-  if (typeof createImageBitmap === 'function') {
-    try { source = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
-    catch {
-      try { source = await createImageBitmap(file); }
-      catch { source = null; }
-    }
-  }
-  if (!source) source = await new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => resolve({ width: image.width, height: image.height, draw: (context, width, height) => context.drawImage(image, 0, 0, width, height), close: () => URL.revokeObjectURL(url) });
-    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível abrir a foto.')); };
-    image.src = url;
-  });
-  const scale = Math.min(1, 720 / Math.max(source.width, source.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(source.width * scale));
-  canvas.height = Math.max(1, Math.round(source.height * scale));
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Não foi possível processar a foto neste navegador.');
-  if (source.draw) source.draw(context, canvas.width, canvas.height);
-  else context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  source.close?.();
-  const canvasBlob = (quality) => new Promise(resolve => {
-    if (typeof canvas.toBlob === 'function') { canvas.toBlob(resolve, 'image/jpeg', quality); return; }
-    try {
-      const [, data] = canvas.toDataURL('image/jpeg', quality).split(',');
-      const bytes = atob(data); const values = new Uint8Array(bytes.length);
-      for (let index = 0; index < bytes.length; index += 1) values[index] = bytes.charCodeAt(index);
-      resolve(new Blob([values], { type: 'image/jpeg' }));
-    } catch { resolve(null); }
-  });
-  let quality = 0.78;
-  let image = await canvasBlob(quality);
-  while (image && image.size > 90 * 1024 && quality > 0.32) {
-    quality -= 0.08;
-    image = await canvasBlob(quality);
-  }
-  if (!image || image.size > 90 * 1024) throw new Error('A foto ficou grande demais. Escolha uma imagem mais simples.');
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Não foi possível ler a foto.'));
-    reader.readAsDataURL(image);
-  });
-}
-
 function renderAll() {
   now = new Date();
   const stats = workoutStats(sessions, currentGoal, now);
@@ -267,7 +179,7 @@ function renderAll() {
   renderWeight();
   renderBodyComparison();
   renderMeasurements();
-  renderProgressPhotos();
+
 }
 
 async function load() {
@@ -395,45 +307,6 @@ $('save-measures').onclick = async () => {
     showToast('Medidas registradas.', 'success');
   } catch { showToast('Não foi possível registrar as medidas.'); }
   finally { setButtonLoading(button, false); }
-};
-
-$('save-photo').onclick = async () => {
-  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
-  const file = $('progress-photo').files[0];
-  if (!file) return showToast('Escolha uma foto primeiro.');
-  const photos = validPhotos();
-  if (photos.length >= PHOTO_LIMIT) return showToast('Remova uma foto antes de adicionar outra.');
-  const button = $('save-photo');
-  setButtonLoading(button, true);
-  try {
-    const dataUrl = await compressPhoto(file);
-    const next = [...photos, { id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, dataUrl, criadoEm: new Date().toISOString() }];
-    if (photoBytes(next) > PHOTO_BYTES_LIMIT) throw new Error('O espaço reservado para fotos está cheio. Remova uma foto antes de continuar.');
-    await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: next }, { merge: true });
-    $('progress-photo').value = '';
-    await load();
-    showToast('Foto adicionada.', 'success');
-  } catch (error) {
-    console.error('Foto de evolução não salva:', error);
-    const message = error?.code === 'permission-denied'
-      ? 'O perfil ainda não tem permissão para salvar fotos. Atualize a página e tente novamente.'
-      : (error.message || 'Não foi possível salvar a foto.');
-    showToast(message);
-  }
-  finally { setButtonLoading(button, false); }
-};
-
-$('progress-photos').onclick = async event => {
-  const id = event.target.closest('[data-delete-photo]')?.dataset.deletePhoto;
-  if (!id) return;
-  const confirmed = await confirmAction({ title: 'Remover esta foto?', message: 'A foto será excluída permanentemente do seu perfil.', confirmText: 'Remover', danger: true });
-  if (!confirmed) return;
-  const photos = validPhotos().filter(photo => photo.id !== id);
-  try {
-    await setDoc(doc(db, 'users', currentUser.uid), { fotosProgresso: photos }, { merge: true });
-    await load();
-    showToast('Foto removida.', 'success');
-  } catch { showToast('Não foi possível remover a foto.'); }
 };
 
 window.lucide?.createIcons();
