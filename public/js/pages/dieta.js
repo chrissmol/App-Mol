@@ -23,6 +23,13 @@ if (Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6) se
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const rounded = value => Math.round(Number(value) || 0);
+function withTimeout(promise, label, milliseconds = 9000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 const goalValue = (value, fallback, max) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 && parsed <= max ? parsed : fallback;
@@ -332,8 +339,8 @@ async function load() {
   }
   try {
     const [dietResult, profileResult] = await Promise.allSettled([
-      getDoc(doc(db, 'dietas', user.uid)),
-      getDoc(doc(db, 'users', user.uid))
+      withTimeout(getDoc(doc(db, 'dietas', user.uid)), 'A dieta'),
+      withTimeout(getDoc(doc(db, 'users', user.uid)), 'O perfil')
     ]);
     if (dietResult.status === 'rejected') throw dietResult.reason;
     const dietData = dietResult.value.data() || {};

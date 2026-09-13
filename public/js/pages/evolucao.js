@@ -20,6 +20,13 @@ let now = new Date();
 let visibleMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 let selectedCalendarDay = null;
 const evolutionCacheKey = uid => `mol-evolution-cache-${uid}`;
+function withTimeout(promise, label, milliseconds = 9000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 
 function safeJSON(value, fallback = null) {
   try { return value ? JSON.parse(value) : fallback; }
@@ -204,9 +211,9 @@ async function load() {
   else setPageState('loading');
   try {
     const [profileSnapshot, weightSnapshot, sessionSnapshot] = await Promise.all([
-      getDoc(doc(db, 'users', currentUser.uid)),
-      getDocs(query(collection(db, 'pesos'), where('userId', '==', currentUser.uid))),
-      getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)))
+      withTimeout(getDoc(doc(db, 'users', currentUser.uid)), 'O perfil'),
+      withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', currentUser.uid))), 'Os pesos'),
+      withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid))), 'As sessões')
     ]);
     const data = {
       profile: profileSnapshot.data() || {},

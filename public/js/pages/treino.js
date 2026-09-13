@@ -34,6 +34,13 @@ let modoCompacto = getLocalItem('mol-workout-compact') === 'true';
 let substituirExercicioIndex = null;
 const requestedWorkout = new URLSearchParams(window.location.search);
 
+function withTimeout(promise, label, milliseconds = 9000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 const draftKey = (id) => `mol-workout-draft-${id}`;
 const routinesCacheKey = id => `mol-workout-routines-${id}`;
 function readRoutinesCache(id) {
@@ -88,7 +95,7 @@ function carregarPreferenciasBiblioteca() {
 }
 async function carregarPreferenciasDaConta() {
   try {
-    const snapshot = await getDoc(doc(db, 'users', usuarioAtual.uid));
+    const snapshot = await withTimeout(getDoc(doc(db, 'users', usuarioAtual.uid)), 'As preferências da conta');
     const prefs = snapshot.data()?.exerciseLibraryPreferences;
     if (!prefs) return;
     applyLibraryPreferences(prefs);
@@ -98,7 +105,7 @@ async function carregarPreferenciasDaConta() {
 }
 async function carregarUltimasPerformances() {
   try {
-    const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid)));
+    const snapshot = await withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid))), 'As últimas performances');
     const performance = buildExercisePerformanceHistory(snapshot.docs.map(item => item.data()));
     ultimaPerformance.clear();
     historicoPerformance.clear();
@@ -226,7 +233,7 @@ async function carregarRotinasDoBanco() {
   }
   try {
     const q = query(collection(db, "treinos"), where("userId", "==", usuarioAtual.uid));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await withTimeout(getDocs(q), 'As rotinas');
     rotinasReais = [];
     querySnapshot.forEach(item => { rotinasReais.push({ id: item.id, ...normalizeRoutineRecord(item.data()) }); });
     writeRoutinesCache();

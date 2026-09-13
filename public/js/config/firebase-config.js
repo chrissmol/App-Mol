@@ -42,7 +42,10 @@ const browserAuthDependencies = typeof window === 'undefined'
       popupRedirectResolver: browserPopupRedirectResolver
     };
 export const auth = initializeAuth(app, browserAuthDependencies);
-export const authReady = auth.authStateReady().catch(error => {
+export const authReady = Promise.race([
+  auth.authStateReady(),
+  new Promise(resolve => setTimeout(resolve, 4000))
+]).catch(error => {
   console.warn('[Mol] Estado inicial da autenticação não pôde ser restaurado:', error.message);
 });
 export const offlinePersistenceEnabled = isTrustedDevice();

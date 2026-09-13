@@ -12,6 +12,13 @@ const $ = id => document.getElementById(id);
 let currentUser;
 let currentProfile = {};
 const profileCacheKey = uid => `mol-profile-cache-${uid}`;
+function withTimeout(promise, label, milliseconds = 9000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 
 function safeJSON(value, fallback = null) {
   try { return value ? JSON.parse(value) : fallback; }
@@ -53,7 +60,7 @@ async function loadProfile() {
     setPageState('loading');
   }
   try {
-    const snapshot = await getDoc(doc(db, 'users', currentUser.uid));
+    const snapshot = await withTimeout(getDoc(doc(db, 'users', currentUser.uid)), 'O perfil');
     currentProfile = snapshot.data() || {};
     setSessionItem(profileCacheKey(currentUser.uid), JSON.stringify(currentProfile));
     fillProfile(currentProfile);
