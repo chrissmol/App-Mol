@@ -5,7 +5,7 @@ import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { activateDialog, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
+import { SET_METHODS, cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, defaultMethodDetails, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, setMethod, setSummary, validateContextualSet, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
 import { matchesExerciseSearch, progressionAdvice, rankExerciseSubstitutes } from '../modules/workout-coach.js';
 import { estimate1RM } from '../modules/workout-analytics.js';
 import { detailedExerciseGroup as grupoDetalhado, exerciseEquipment as equipamentoDo, exerciseGuidance as orientacaoDo } from '../modules/exercise-presentation.js';
@@ -144,6 +144,31 @@ function completarComAnteriorSeVazio({ exercicio, indexSerie, kg, reps, rir }) {
     rir: rir || (anterior?.rir ?? ''),
     usadoAnterior: (!kg || !reps) && Boolean(anterior),
   };
+}
+
+const methodMeta = {
+  [SET_METHODS.DROP_SET]: { label: 'Drop Set', badge: 'DS', tone: 'text-blue-400 bg-blue-400/10' },
+  [SET_METHODS.REST_PAUSE]: { label: 'Rest-Pause', badge: 'RP', tone: 'text-neon bg-neon/10' },
+  [SET_METHODS.MYO_REPS]: { label: 'Myo-Reps', badge: 'MY', tone: 'text-neon bg-neon/10' },
+  [SET_METHODS.CLUSTER]: { label: 'Cluster', badge: 'CL', tone: 'text-neon bg-neon/10' },
+  [SET_METHODS.ISOMETRIC]: { label: 'Isometria', badge: 'ISO', tone: 'text-orange-400 bg-orange-400/10' }
+};
+
+function isAdvancedSet(serie) { return setMethod(serie) !== SET_METHODS.NORMAL; }
+
+function syncSetLegacyFields(serie) {
+  const method = setMethod(serie);
+  const details = serie.details || {};
+  if (method === SET_METHODS.DROP_SET) {
+    serie.kg = details.primary?.kg ?? '';
+    serie.reps = details.primary?.reps ?? '';
+  } else if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER || method === SET_METHODS.ISOMETRIC) {
+    serie.kg = details.kg ?? '';
+    serie.reps = method === SET_METHODS.ISOMETRIC ? (details.reps ?? '') : ((details.blocks || []).filter(Boolean)[0] ?? '');
+  } else if (method === SET_METHODS.MYO_REPS) {
+    serie.kg = details.activation?.kg ?? '';
+    serie.reps = details.activation?.reps ?? '';
+  }
 }
 
 async function manterTelaAtiva() {
@@ -1195,6 +1220,30 @@ function abrirRotina(id) {
               label = 'D'; corFundo = 'text-blue-400 bg-blue-400/10';
             }
 
+            const metodo = setMethod(serie);
+            if (metodo !== SET_METHODS.NORMAL) {
+              const meta = methodMeta[metodo] || methodMeta[SET_METHODS.DROP_SET];
+              const bgLinhaMetodo = serie.concluida ? 'bg-neon/10' : 'mol-soft';
+              const bgBotaoCheckMetodo = serie.concluida ? 'bg-neon text-black' : 'mol-field border border-white/10 text-transparent';
+              return `
+              <div class="relative flex items-stretch gap-1 mb-1">
+                <button type="button" onclick="abrirEditorMetodoSerie(${indexEx}, ${indexSerie})" class="${bgLinhaMetodo} flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-3 text-left active:bg-white/10">
+                  <span class="set-type-badge shrink-0 text-[10px] font-extrabold ${meta.tone}">${meta.badge}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-neon">${meta.label}</span>
+                    <strong class="mt-1 block truncate text-sm text-white">${escapeHTML(setSummary(serie))}</strong>
+                  </span>
+                  <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-gray-500"></i>
+                </button>
+                <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir ${meta.label}" class="flex h-auto w-11 shrink-0 items-center justify-center rounded-xl ${bgBotaoCheckMetodo} transition-colors active:scale-95">
+                  <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-white' : 'text-gray-600'}"></i>
+                </button>
+                <button type="button" onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir série" class="flex h-auto w-9 shrink-0 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>`;
+            }
+
             const anteriorSerie = valorAnteriorDaSerie(ex, indexSerie);
             const temAnterior = anteriorSerie?.kg != null && Number(anteriorSerie.reps) > 0;
             const textoAnterior = temAnterior ? `${anteriorSerie.kg}kg x ${anteriorSerie.reps}` : '-';
@@ -1304,6 +1353,26 @@ window.concluirSerie = async (indexEx, indexSerie) => {
   if (!treinoIniciado) return showToast('Você está editando a rotina. Toque em Iniciar para registrar séries.');
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   const serie = rotina.exercicios[indexEx].series[indexSerie];
+
+  if (isAdvancedSet(serie)) {
+    if (serie.concluida) {
+      serie.concluida = false;
+    } else {
+      const validacao = validateContextualSet(serie);
+      if (!validacao.valid) {
+        showToast(validacao.message);
+        window.abrirEditorMetodoSerie(indexEx, indexSerie);
+        return;
+      }
+      serie.details = validacao.values.details;
+      syncSetLegacyFields(serie);
+      serie.concluida = true;
+    }
+    salvarRascunho({ force: true });
+    abrirRotina(rotinaAbertaId);
+    if (serie.concluida) iniciarDescanso(indexEx, indexSerie);
+    return;
+  }
 
   const inputKg = document.getElementById(`kg-${indexEx}-${indexSerie}`).value.trim();
   const inputReps = document.getElementById(`reps-${indexEx}-${indexSerie}`).value.trim();
@@ -1473,7 +1542,10 @@ window.excluirSerie = excluirSerie;
 
 window.mudarTipoSerie = async (novoTipo) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
-  rotina.exercicios[editandoSerie.ex].series[editandoSerie.serie].tipo = novoTipo;
+  const serie = rotina.exercicios[editandoSerie.ex].series[editandoSerie.serie];
+  serie.tipo = novoTipo;
+  serie.method = novoTipo === 'D' ? SET_METHODS.DROP_SET : SET_METHODS.NORMAL;
+  serie.details = defaultMethodDetails(serie.method, serie);
 
   fecharModalTipoSerie();
 
@@ -1483,12 +1555,100 @@ window.mudarTipoSerie = async (novoTipo) => {
   } catch (error) { console.error(error); showToast('Não foi possível alterar o tipo da série.'); await carregarRotinasDoBanco(); }
 };
 
+function instalarOpcoesContextuais() {
+  const list = modalTipoSerieContent?.querySelector('.space-y-2');
+  const remove = modalTipoSerie?.querySelector('[data-remove-series]');
+  if (!list || !remove || modalTipoSerie.querySelector('[data-series-method]')) return;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div class="h-px bg-white/10 my-2"></div>
+    <p class="px-4 pt-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">Métodos contextuais</p>
+    ${Object.entries(methodMeta).map(([method, meta]) => `<button type="button" data-series-method="${method}" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors"><span class="font-extrabold w-10 text-sm ${meta.tone}">${meta.badge}</span><span class="font-medium text-white text-base">${meta.label}</span></button>`).join('')}
+  `;
+  [...wrapper.children].forEach(child => list.insertBefore(child, remove.previousElementSibling));
+}
+
+window.mudarMetodoSerie = async (method) => {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  const serie = rotina?.exercicios?.[editandoSerie.ex]?.series?.[editandoSerie.serie];
+  if (!serie || !methodMeta[method]) return;
+  serie.tipo = method === SET_METHODS.DROP_SET ? 'D' : 'N';
+  serie.method = method;
+  serie.details = defaultMethodDetails(method, serie);
+  syncSetLegacyFields(serie);
+  fecharModalTipoSerie();
+  salvarRascunho({ force: true });
+  try {
+    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
+    abrirRotina(rotinaAbertaId);
+    window.abrirEditorMetodoSerie(editandoSerie.ex, editandoSerie.serie);
+  } catch (error) { console.error(error); showToast('Não foi possível alterar o método da série.'); await carregarRotinasDoBanco(); }
+};
+
+function numberField(name, label, value, attrs = '') {
+  return `<label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">${label}<input name="${name}" value="${value ?? ''}" type="number" inputmode="decimal" ${attrs} class="mt-1 min-h-12 w-full rounded-xl mol-field px-3 text-sm font-bold text-white outline-none focus:border-neon"></label>`;
+}
+
+function valuesFromForm(form, names) {
+  return Object.fromEntries(names.map(name => [name, form.elements[name]?.value?.trim() ?? '']));
+}
+
+window.abrirEditorMetodoSerie = (indexEx, indexSerie) => {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  const exercicio = rotina?.exercicios?.[indexEx];
+  const serie = exercicio?.series?.[indexSerie];
+  if (!serie) return;
+  const method = setMethod(serie);
+  const meta = methodMeta[method];
+  if (!meta) return;
+  const details = { ...defaultMethodDetails(method, serie), ...(serie.details || {}) };
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-0';
+  modal.innerHTML = `<form class="mx-auto w-full max-w-md rounded-t-3xl mol-dialog-surface p-6 animate-slide-up" data-method-form><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-wider text-neon">${meta.label}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(exercicio.nome)}</h2><div data-method-fields class="mt-5 space-y-4"></div><label class="mt-4 block text-[10px] font-bold uppercase tracking-wider text-gray-500">Observação<textarea name="note" maxlength="240" class="mt-1 min-h-20 w-full rounded-xl mol-field p-3 text-sm text-white outline-none focus:border-neon">${escapeHTML(details.note || '')}</textarea></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Fechar</button><button type="submit" class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Salvar</button></div></form>`;
+  const fields = modal.querySelector('[data-method-fields]');
+  if (method === SET_METHODS.DROP_SET) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série principal</p><div class="grid grid-cols-2 gap-2">${numberField('primaryKg', 'Carga inicial', details.primary?.kg, 'min="0" max="2000" step="0.25"')}${numberField('primaryReps', 'Reps', details.primary?.reps, 'min="1" max="1000" step="1"')}</div></section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Drops</p><div class="space-y-2">${[0,1,2].map(i => `<div class="grid grid-cols-2 gap-2">${numberField(`dropKg${i}`, `Drop ${i + 1} kg`, details.drops?.[i]?.kg, 'min="0" max="2000" step="0.25"')}${numberField(`dropReps${i}`, 'Reps', details.drops?.[i]?.reps, 'min="1" max="1000" step="1"')}</div>`).join('')}</div>${numberField('restSeconds', 'Descanso entre drops (s)', details.restSeconds ?? 0, 'min="0" max="3600" step="5"')}</section>`;
+  if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-2 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</div><p class="mb-2 mt-4 text-xs font-bold uppercase tracking-wider text-neon">Blocos</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`block${i}`, `${i + 1}`, details.blocks?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
+  if (method === SET_METHODS.MYO_REPS) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série de ativação</p><div class="grid grid-cols-2 gap-2">${numberField('activationKg', 'Carga', details.activation?.kg, 'min="0" max="2000" step="0.25"')}${numberField('activationReps', 'Reps', details.activation?.reps, 'min="1" max="1000" step="1"')}</div>${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Mini-séries</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`mini${i}`, `+${i + 1}`, details.miniSets?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
+  if (method === SET_METHODS.ISOMETRIC) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-3 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('reps', 'Reps', details.reps, 'min="1" max="1000" step="1"')}${numberField('holdSeconds', 'Isometria (s)', details.holdSeconds, 'min="1" max="3600" step="1"')}</div></section>`;
+  document.body.appendChild(modal);
+  modal.querySelector('[data-close]').onclick = () => modal.remove();
+  modal.addEventListener('click', event => { if (event.target === modal) modal.remove(); });
+  modal.querySelector('form').onsubmit = async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const note = form.elements.note?.value?.trim().slice(0, 240) || '';
+    if (method === SET_METHODS.DROP_SET) {
+      const values = valuesFromForm(form, ['primaryKg', 'primaryReps', 'restSeconds', 'dropKg0', 'dropReps0', 'dropKg1', 'dropReps1', 'dropKg2', 'dropReps2']);
+      serie.details = { primary: { kg: values.primaryKg, reps: values.primaryReps }, drops: [0,1,2].map(i => ({ kg: values[`dropKg${i}`], reps: values[`dropReps${i}`] })).filter(item => item.kg || item.reps), restSeconds: values.restSeconds || 0, note };
+    } else if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) {
+      const values = valuesFromForm(form, ['kg', 'restSeconds', ...[0,1,2,3,4,5].map(i => `block${i}`)]);
+      serie.details = { kg: values.kg, blocks: [0,1,2,3,4,5].map(i => values[`block${i}`]).filter(Boolean), restSeconds: values.restSeconds || (method === SET_METHODS.REST_PAUSE ? 20 : 15), note };
+    } else if (method === SET_METHODS.MYO_REPS) {
+      const values = valuesFromForm(form, ['activationKg', 'activationReps', 'restSeconds', ...[0,1,2,3,4,5].map(i => `mini${i}`)]);
+      serie.details = { activation: { kg: values.activationKg, reps: values.activationReps }, miniSets: [0,1,2,3,4,5].map(i => values[`mini${i}`]).filter(Boolean), restSeconds: values.restSeconds || 15, note };
+    } else if (method === SET_METHODS.ISOMETRIC) {
+      const values = valuesFromForm(form, ['kg', 'reps', 'holdSeconds']);
+      serie.details = { kg: values.kg, reps: values.reps, holdSeconds: values.holdSeconds, note };
+    }
+    const validacao = validateContextualSet(serie);
+    if (!validacao.valid) return showToast(validacao.message);
+    serie.details = validacao.values.details;
+    syncSetLegacyFields(serie);
+    salvarRascunho({ force: true });
+    try { await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); modal.remove(); abrirRotina(rotinaAbertaId); showToast('Método salvo.', 'success'); }
+    catch (error) { console.error(error); showToast('Não foi possível salvar o método.'); }
+  };
+  renderIcons(modal);
+};
+
 window.removerSerieAberta = () => {
   excluirSerie(editandoSerie.ex, editandoSerie.serie);
   fecharModalTipoSerie();
 };
 
+instalarOpcoesContextuais();
 modalTipoSerie.querySelectorAll('[data-series-type]').forEach(button => button.addEventListener('click', () => window.mudarTipoSerie(button.dataset.seriesType)));
+modalTipoSerie.querySelectorAll('[data-series-method]').forEach(button => button.addEventListener('click', () => window.mudarMetodoSerie(button.dataset.seriesMethod)));
 modalTipoSerie.querySelector('[data-remove-series]')?.addEventListener('click', () => window.removerSerieAberta());
 
 modalTipoSerie.addEventListener('click', (e) => {

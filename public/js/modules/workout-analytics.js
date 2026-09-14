@@ -1,3 +1,5 @@
+import { setVolume } from './workout-session.js';
+
 export function completedSets(session) {
   return (Array.isArray(session?.exercicios) ? session.exercicios : []).slice(0, 60).flatMap(ex => (Array.isArray(ex?.series) ? ex.series : []).slice(0, 60).filter(set => set?.concluida === true).map(set => ({ ...set, exercicio: String(ex.nome || '').slice(0, 80), grupo: String(ex.grupo || 'Outros').slice(0, 40) })));
 }
@@ -27,10 +29,7 @@ export function normalizedGroup(value) {
 
 export function sessionMetrics(session) {
   const sets = completedSets(session);
-  const volume = sets.reduce((sum, set) => {
-    const weight = Number(set.kg); const repetitions = Number(set.reps);
-    return sum + (Number.isFinite(weight) && weight >= 0 && Number.isFinite(repetitions) && repetitions > 0 ? weight * repetitions : 0);
-  }, 0);
+  const volume = sets.reduce((sum, set) => sum + setVolume(set), 0);
   const duration = Number(session?.duracaoSegundos);
   return { sets: sets.length, volume, durationSeconds: Number.isFinite(duration) ? Math.max(0, duration) : 0 };
 }

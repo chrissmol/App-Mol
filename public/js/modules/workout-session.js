@@ -12,6 +12,15 @@ export const WORKOUT_STRUCTURE_LIMITS = Object.freeze({
   setsPerExercise: 60
 });
 
+export const SET_METHODS = Object.freeze({
+  NORMAL: 'NORMAL',
+  DROP_SET: 'DROP_SET',
+  REST_PAUSE: 'REST_PAUSE',
+  MYO_REPS: 'MYO_REPS',
+  CLUSTER: 'CLUSTER',
+  ISOMETRIC: 'ISOMETRIC'
+});
+
 export function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -21,6 +30,115 @@ function boundedNumber(value, { min, max, integer = false }) {
   const number = Number(value);
   if (!Number.isFinite(number) || number < min || number > max || (integer && !Number.isInteger(number))) return null;
   return number;
+}
+
+function normalizeLoadRepPair(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  return {
+    kg: boundedNumber(source.kg, { min: 0, max: WORKOUT_LIMITS.weight }) ?? '',
+    reps: boundedNumber(source.reps, { min: 1, max: WORKOUT_LIMITS.reps, integer: true }) ?? ''
+  };
+}
+
+export function setMethod(set = {}) {
+  const method = String(set.method || '').toUpperCase();
+  if (Object.values(SET_METHODS).includes(method)) return method;
+  return String(set.tipo || '').toUpperCase() === 'D' ? SET_METHODS.DROP_SET : SET_METHODS.NORMAL;
+}
+
+export function defaultMethodDetails(method, set = {}) {
+  const kg = boundedNumber(set.kg, { min: 0, max: WORKOUT_LIMITS.weight }) ?? '';
+  const reps = boundedNumber(set.reps, { min: 1, max: WORKOUT_LIMITS.reps, integer: true }) ?? '';
+  if (method === SET_METHODS.DROP_SET) return { primary: { kg, reps }, drops: [{ kg: '', reps: '' }], restSeconds: 0, note: '' };
+  if (method === SET_METHODS.REST_PAUSE) return { kg, blocks: [reps || '', '', ''], restSeconds: 20, note: '' };
+  if (method === SET_METHODS.MYO_REPS) return { activation: { kg, reps }, miniSets: ['', '', '', ''], restSeconds: 15, note: '' };
+  if (method === SET_METHODS.CLUSTER) return { kg, blocks: [3, 3, 3, 3], restSeconds: 15, note: '' };
+  if (method === SET_METHODS.ISOMETRIC) return { kg, reps, holdSeconds: 20, note: '' };
+  return {};
+}
+
+function normalizeSetDetails(method, details, set = {}) {
+  const source = details && typeof details === 'object' ? details : defaultMethodDetails(method, set);
+  const restSeconds = boundedNumber(source.restSeconds, { min: 0, max: WORKOUT_LIMITS.rest, integer: true }) ?? 0;
+  const note = typeof source.note === 'string' ? source.note.slice(0, 240) : '';
+  if (method === SET_METHODS.DROP_SET) return {
+    primary: normalizeLoadRepPair(source.primary || set),
+    drops: (Array.isArray(source.drops) ? source.drops : []).slice(0, 5).map(normalizeLoadRepPair),
+    restSeconds,
+    note
+  };
+  if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) return {
+    kg: boundedNumber(source.kg ?? set.kg, { min: 0, max: WORKOUT_LIMITS.weight }) ?? '',
+    blocks: (Array.isArray(source.blocks) ? source.blocks : []).slice(0, 8).map(value => boundedNumber(value, { min: 1, max: WORKOUT_LIMITS.reps, integer: true }) ?? ''),
+    restSeconds: restSeconds || (method === SET_METHODS.REST_PAUSE ? 20 : 15),
+    note
+  };
+  if (method === SET_METHODS.MYO_REPS) return {
+    activation: normalizeLoadRepPair(source.activation || set),
+    miniSets: (Array.isArray(source.miniSets) ? source.miniSets : []).slice(0, 8).map(value => boundedNumber(value, { min: 1, max: WORKOUT_LIMITS.reps, integer: true }) ?? ''),
+    restSeconds: restSeconds || 15,
+    note
+  };
+  if (method === SET_METHODS.ISOMETRIC) return {
+    kg: boundedNumber(source.kg ?? set.kg, { min: 0, max: WORKOUT_LIMITS.weight }) ?? '',
+    reps: boundedNumber(source.reps ?? set.reps, { min: 1, max: WORKOUT_LIMITS.reps, integer: true }) ?? '',
+    holdSeconds: boundedNumber(source.holdSeconds, { min: 1, max: WORKOUT_LIMITS.rest, integer: true }) ?? '',
+    note
+  };
+  return {};
+}
+
+export function setSummary(set = {}) {
+  const method = setMethod(set);
+  const details = normalizeSetDetails(method, set.details, set);
+  if (method === SET_METHODS.DROP_SET) {
+    const parts = [details.primary, ...(details.drops || [])].filter(item => item.kg !== '' && item.reps !== '').map(item => `${item.kg} kg × ${item.reps}`);
+    return parts.join(' → ') || 'Configure o drop set';
+  }
+  if (method === SET_METHODS.REST_PAUSE) {
+    const blocks = (details.blocks || []).filter(item => item !== '');
+    return details.kg !== '' && blocks.length ? `${details.kg} kg · ${blocks.join(' + ')} · ${details.restSeconds}s` : 'Configure o rest-pause';
+  }
+  if (method === SET_METHODS.MYO_REPS) {
+    const minis = (details.miniSets || []).filter(item => item !== '');
+    return details.activation.kg !== '' && details.activation.reps !== '' ? `${details.activation.kg} kg · ${[details.activation.reps, ...minis].join(' + ')}` : 'Configure o myo-reps';
+  }
+  if (method === SET_METHODS.CLUSTER) {
+    const blocks = (details.blocks || []).filter(item => item !== '');
+    return details.kg !== '' && blocks.length ? `${details.kg} kg · ${blocks.join(' + ')} · ${details.restSeconds}s` : 'Configure o cluster';
+  }
+  if (method === SET_METHODS.ISOMETRIC) {
+    return details.kg !== '' && details.reps !== '' && details.holdSeconds !== '' ? `${details.kg} kg · ${details.reps} reps + ${details.holdSeconds}s` : 'Configure a isometria';
+  }
+  return `${set.kg || '-'} kg × ${set.reps || '-'}`;
+}
+
+export function validateContextualSet(set = {}) {
+  const method = setMethod(set);
+  if (method === SET_METHODS.NORMAL) return validateSet(set);
+  const details = normalizeSetDetails(method, set.details, set);
+  const pairs = method === SET_METHODS.DROP_SET ? [details.primary, ...(details.drops || [])] : [];
+  if (method === SET_METHODS.DROP_SET && pairs.filter(item => item.kg !== '' || item.reps !== '').some(item => item.kg === '' || item.reps === '')) return { valid: false, message: 'Complete carga e repetições em cada etapa do drop set.' };
+  if (method === SET_METHODS.DROP_SET && pairs.filter(item => item.kg !== '' && item.reps !== '').length < 2) return { valid: false, message: 'O drop set precisa da série principal e pelo menos um drop.' };
+  if ((method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) && (details.kg === '' || (details.blocks || []).filter(item => item !== '').length < 2)) return { valid: false, message: 'Complete a carga e pelo menos dois blocos.' };
+  if (method === SET_METHODS.MYO_REPS && (details.activation.kg === '' || details.activation.reps === '' || (details.miniSets || []).filter(item => item !== '').length < 1)) return { valid: false, message: 'Complete a ativação e pelo menos uma mini-série.' };
+  if (method === SET_METHODS.ISOMETRIC && (details.kg === '' || details.reps === '' || details.holdSeconds === '')) return { valid: false, message: 'Complete carga, repetições e tempo de isometria.' };
+  return { valid: true, values: { details } };
+}
+
+export function setVolume(set = {}) {
+  const method = setMethod(set);
+  if (method === SET_METHODS.NORMAL) {
+    const weight = Number(set.kg); const repetitions = Number(set.reps);
+    return Number.isFinite(weight) && weight >= 0 && Number.isFinite(repetitions) && repetitions > 0 ? weight * repetitions : 0;
+  }
+  const details = normalizeSetDetails(method, set.details, set);
+  const pairVolume = item => Number(item.kg) >= 0 && Number(item.reps) > 0 ? Number(item.kg) * Number(item.reps) : 0;
+  if (method === SET_METHODS.DROP_SET) return [details.primary, ...(details.drops || [])].reduce((sum, item) => sum + pairVolume(item), 0);
+  if (method === SET_METHODS.MYO_REPS) return Number(details.activation.kg) >= 0 ? Number(details.activation.kg) * [details.activation.reps, ...(details.miniSets || [])].reduce((sum, reps) => sum + (Number(reps) || 0), 0) : 0;
+  if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) return Number(details.kg) >= 0 ? Number(details.kg) * (details.blocks || []).reduce((sum, reps) => sum + (Number(reps) || 0), 0) : 0;
+  if (method === SET_METHODS.ISOMETRIC) return Number(details.kg) >= 0 && Number(details.reps) > 0 ? Number(details.kg) * Number(details.reps) : 0;
+  return 0;
 }
 
 export function normalizeRoutineExercises(exercises) {
@@ -44,6 +162,8 @@ export function normalizeRoutineExercises(exercises) {
       return {
         ...source,
         tipo: ['N', 'W', 'D', 'F'].includes(String(source.tipo).toUpperCase()) ? String(source.tipo).toUpperCase() : 'N',
+        method: setMethod(source),
+        details: normalizeSetDetails(setMethod(source), source.details, source),
         kg: kg ?? '',
         reps: reps ?? '',
         rir: rir ?? '',
@@ -133,7 +253,8 @@ export function cleanRoutineExercises(exercises) {
       concluida: false,
       kg: '',
       reps: '',
-      rir: ''
+      rir: '',
+      details: defaultMethodDetails(setMethod(set), set)
     }))
   }));
 }
@@ -149,8 +270,7 @@ export function workoutTotals(exercises) {
     total: sets.length,
     completed: completed.length,
     volume: completed.reduce((sum, set) => {
-      const weight = Number(set.kg); const repetitions = Number(set.reps);
-      return sum + (Number.isFinite(weight) && weight >= 0 && Number.isFinite(repetitions) && repetitions > 0 ? weight * repetitions : 0);
+      return sum + setVolume(set);
     }, 0)
   };
 }
