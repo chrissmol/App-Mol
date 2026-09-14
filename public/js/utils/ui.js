@@ -168,6 +168,9 @@ export function enhanceSelects(root = document) {
  */
 export function activateDialog(modal, { initialFocus, onCancel } = {}) {
   const opener = document.activeElement;
+  window.__molDialogStack = (window.__molDialogStack || 0) + 1;
+  document.documentElement.classList.add('modal-open');
+  document.body.classList.add('modal-open');
   let closed = false;
   modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
   modal.setAttribute('aria-modal', 'true');
@@ -177,6 +180,11 @@ export function activateDialog(modal, { initialFocus, onCancel } = {}) {
   const close = () => {
     if (closed) return;
     closed = true;
+    window.__molDialogStack = Math.max(0, (window.__molDialogStack || 1) - 1);
+    if (window.__molDialogStack === 0) {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+    }
     modal.removeEventListener('keydown', handleKeydown);
     modal.remove();
     opener?.focus?.();

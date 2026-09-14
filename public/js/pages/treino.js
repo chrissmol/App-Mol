@@ -89,7 +89,7 @@ function salvarPreferenciasBiblioteca() {
   const preferences = normalizeExerciseLibraryPreferences({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados });
   ({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados } = preferences);
   setLocalItem(bibliotecaKey(), JSON.stringify(preferences));
-  if (usuarioAtual) setDoc(doc(db, 'users', usuarioAtual.uid), { exerciseLibraryPreferences: preferences }, { merge: true }).catch(error => console.warn('PreferÃªncias locais nÃ£o sincronizadas:', error.message));
+  if (usuarioAtual) setDoc(doc(db, 'users', usuarioAtual.uid), { exerciseLibraryPreferences: preferences }, { merge: true }).catch(error => console.warn('Preferências locais não sincronizadas:', error.message));
 }
 function carregarPreferenciasBiblioteca() {
   try { applyLibraryPreferences(JSON.parse(getLocalItem(bibliotecaKey()) || '{}')); }
@@ -97,17 +97,17 @@ function carregarPreferenciasBiblioteca() {
 }
 async function carregarPreferenciasDaConta() {
   try {
-    const snapshot = await withTimeout(getDoc(doc(db, 'users', usuarioAtual.uid)), 'As preferÃªncias da conta');
+    const snapshot = await withTimeout(getDoc(doc(db, 'users', usuarioAtual.uid)), 'As preferências da conta');
     const prefs = snapshot.data()?.exerciseLibraryPreferences;
     if (!prefs) return;
     applyLibraryPreferences(prefs);
     setLocalItem(bibliotecaKey(), JSON.stringify({ favoritosExercicios, recentesExercicios, exerciciosPersonalizados }));
     renderizarBiblioteca(inputBuscaExercicio?.value || '');
-  } catch (error) { console.warn('PreferÃªncias da conta nÃ£o carregadas:', error.message); }
+  } catch (error) { console.warn('Preferências da conta não carregadas:', error.message); }
 }
 async function carregarUltimasPerformances() {
   try {
-    const snapshot = await withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid))), 'As Ãºltimas performances');
+    const snapshot = await withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', usuarioAtual.uid))), 'As últimas performances');
     const performance = buildExercisePerformanceHistory(snapshot.docs.map(item => item.data()));
     ultimaPerformance.clear();
     historicoPerformance.clear();
@@ -115,7 +115,7 @@ async function carregarUltimasPerformances() {
     performance.history.forEach((value, key) => historicoPerformance.set(key, value));
     renderizarBiblioteca(inputBuscaExercicio?.value || '');
   } catch (error) {
-    console.warn('Ãšltimas performances nÃ£o carregadas:', error.message);
+    console.warn('Últimas performances não carregadas:', error.message);
   }
 }
 function registrarRecente(nome) { recentesExercicios = [nome, ...recentesExercicios.filter(item => item !== nome)].slice(0, 12); salvarPreferenciasBiblioteca(); }
@@ -156,60 +156,60 @@ const methodMeta = {
 
 const WORKOUT_TEMPLATES = {
   'Upper / Lower': {
-    description: '4 dias Â· superior/inferior com base forte',
+    description: '4 dias · superior/inferior com base forte',
     days: [1, 2, 4, 5],
     exercises: [
       ['Supino Reto (Barra)', 'Peito', 8, 10, 2, 120],
       ['Remada Curvada (Barra)', 'Costas', 8, 10, 2, 120],
       ['Desenvolvimento Militar (Barra)', 'Ombros', 6, 10, 2, 120],
-      ['Agachamento Livre', 'QuadrÃ­ceps', 6, 10, 2, 150],
+      ['Agachamento Livre', 'Quadríceps', 6, 10, 2, 150],
       ['Levantamento Terra Romeno', 'Posterior', 8, 12, 2, 120],
-      ['Rosca Direta (Barra)', 'BraÃ§os', 10, 12, 1, 75]
+      ['Rosca Direta (Barra)', 'Braços', 10, 12, 1, 75]
     ]
   },
   'Push Pull Legs': {
-    description: '6 dias Â· push, pull e legs editÃ¡vel',
+    description: '6 dias · push, pull e legs editável',
     days: [1, 2, 3, 4, 5, 6],
     exercises: [
       ['Supino Inclinado (Halter)', 'Peito', 8, 12, 2, 90],
       ['Desenvolvimento com Halteres', 'Ombros', 8, 12, 2, 90],
-      ['TrÃ­ceps Pulley', 'BraÃ§os', 10, 15, 1, 60],
-      ['Puxada Alta (Frente / TriÃ¢ngulo)', 'Costas', 8, 12, 2, 90],
-      ['Remada Baixa (TriÃ¢ngulo)', 'Costas', 8, 12, 2, 90],
-      ['Leg Press 45Â° com Pegada Alta e Fechada', 'QuadrÃ­ceps', 10, 15, 2, 120]
+      ['Tríceps Pulley', 'Braços', 10, 15, 1, 60],
+      ['Puxada Alta (Frente / Triângulo)', 'Costas', 8, 12, 2, 90],
+      ['Remada Baixa (Triângulo)', 'Costas', 8, 12, 2, 90],
+      ['Leg Press 45° com Pegada Alta e Fechada', 'Quadríceps', 10, 15, 2, 120]
     ]
   },
   'Full Body 3x': {
-    description: '3 dias Â· simples, eficiente e fÃ¡cil de manter',
+    description: '3 dias · simples, eficiente e fácil de manter',
     days: [1, 3, 5],
     exercises: [
       ['Agachamento Goblet com Halter', 'Pernas', 10, 12, 2, 90],
       ['Supino Reto (Halter)', 'Peito', 8, 12, 2, 90],
       ['Remada Curvada (Halter)', 'Costas', 8, 12, 2, 90],
-      ['ElevaÃ§Ã£o Lateral', 'Ombros', 12, 15, 1, 60],
-      ['Prancha', 'AbdÃ´men', 20, 45, 2, 60]
+      ['Elevação Lateral', 'Ombros', 12, 15, 1, 60],
+      ['Prancha', 'Abdômen', 20, 45, 2, 60]
     ]
   },
-  'ForÃ§a 5x5': {
-    description: '3 dias Â· cargas progressivas e poucas variaÃ§Ãµes',
+  'Força 5x5': {
+    description: '3 dias · cargas progressivas e poucas variações',
     days: [1, 3, 5],
     sets: 5,
     exercises: [
-      ['Agachamento Livre', 'QuadrÃ­ceps', 5, 5, 2, 180],
+      ['Agachamento Livre', 'Quadríceps', 5, 5, 2, 180],
       ['Supino Reto (Barra)', 'Peito', 5, 5, 2, 180],
       ['Remada Curvada (Barra)', 'Costas', 5, 5, 2, 150],
       ['Desenvolvimento Militar (Barra)', 'Ombros', 5, 5, 2, 150]
     ]
   },
   'Casa / Sem academia': {
-    description: 'Viagem Â· peso corporal, halteres e elÃ¡stico',
+    description: 'Viagem · peso corporal, halteres e elástico',
     days: [1, 3, 5],
     exercises: [
-      ['FlexÃ£o de BraÃ§o', 'Peito', 8, 20, 2, 60],
-      ['Agachamento Livre', 'QuadrÃ­ceps', 12, 25, 2, 60],
+      ['Flexão de Braço', 'Peito', 8, 20, 2, 60],
+      ['Agachamento Livre', 'Quadríceps', 12, 25, 2, 60],
       ['Remada Curvada (Halter)', 'Costas', 10, 15, 2, 75],
-      ['ElevaÃ§Ã£o Lateral', 'Ombros', 12, 20, 1, 60],
-      ['Prancha', 'AbdÃ´men', 20, 60, 2, 45]
+      ['Elevação Lateral', 'Ombros', 12, 20, 1, 60],
+      ['Prancha', 'Abdômen', 20, 60, 2, 45]
     ]
   }
 };
@@ -238,13 +238,13 @@ async function manterTelaAtiva() {
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => { wakeLock = null; }, { once: true });
     }
-  } catch (error) { console.warn('Tela ativa indisponÃ­vel:', error.message); }
+  } catch (error) { console.warn('Tela ativa indisponível:', error.message); }
 }
 
 async function liberarTelaAtiva() {
   if (!wakeLock) return;
   try { await wakeLock.release(); }
-  catch (error) { console.warn('Bloqueio de tela nÃ£o liberado:', error.message); }
+  catch (error) { console.warn('Bloqueio de tela não liberado:', error.message); }
   finally { wakeLock = null; }
 }
 
@@ -253,7 +253,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && treinoIniciado) void manterTelaAtiva();
 });
 
-// Evita perder sÃ©ries preenchidas ao trocar de pÃ¡gina ou fechar o app.
+// Evita perder séries preenchidas ao trocar de página ou fechar o app.
 window.addEventListener('pagehide', () => salvarRascunho({ force: true }));
 window.addEventListener('beforeunload', event => {
   if (!treinoIniciado) return;
@@ -397,9 +397,9 @@ async function carregarRotinasDoBanco() {
   } catch (error) {
     console.error("Erro ao buscar:", error);
     if (cachedRoutines) return;
-    rotinasList.innerHTML = '<div class="my-10 text-center"><p class="text-sm text-red-400">NÃ£o foi possÃ­vel carregar suas rotinas.</p><button id="retry-routines" type="button" class="mt-4 min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-white">Tentar novamente</button></div>';
+    rotinasList.innerHTML = '<div class="my-10 text-center"><p class="text-sm text-red-400">Não foi possível carregar suas rotinas.</p><button id="retry-routines" type="button" class="mt-4 min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-white">Tentar novamente</button></div>';
     document.getElementById('retry-routines')?.addEventListener('click', carregarRotinasDoBanco);
-    showToast(error.code === 'permission-denied' ? 'Sem permissÃ£o para ler treinos. Revise as regras do Firestore.' : 'NÃ£o foi possÃ­vel carregar suas rotinas.');
+    showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas.');
   }
 }
 
@@ -420,7 +420,7 @@ function renderWorkoutTemplates() {
     list.className = 'space-y-3';
     viewExplorar.appendChild(list);
   }
-  list.innerHTML = `<p class="text-sm text-gray-400">Comece com uma estrutura editÃ¡vel e ajuste depois.</p>${Object.entries(WORKOUT_TEMPLATES).map(([name, template]) => `<button type="button" data-template-name="${escapeHTML(name)}" class="w-full rounded-2xl border border-white/10 mol-panel p-4 text-left active:scale-[.98]"><span class="block font-bold">${escapeHTML(name)}</span><span class="mt-1 block text-xs text-gray-500">${escapeHTML(template.description)}</span><span class="mt-3 inline-flex rounded-full bg-neon/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neon">${template.exercises.length} exercÃ­cios</span></button>`).join('')}`;
+  list.innerHTML = `<p class="text-sm text-gray-400">Comece com uma estrutura editável e ajuste depois.</p>${Object.entries(WORKOUT_TEMPLATES).map(([name, template]) => `<button type="button" data-template-name="${escapeHTML(name)}" class="w-full rounded-2xl border border-white/10 mol-panel p-4 text-left active:scale-[.98]"><span class="block font-bold">${escapeHTML(name)}</span><span class="mt-1 block text-xs text-gray-500">${escapeHTML(template.description)}</span><span class="mt-3 inline-flex rounded-full bg-neon/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neon">${template.exercises.length} exercícios</span></button>`).join('')}`;
   list.querySelectorAll('[data-template-name]').forEach(button => button.addEventListener('click', () => void window.criarTemplate(button.dataset.templateName)));
 }
 
@@ -436,10 +436,10 @@ inputBuscaRotina?.addEventListener('input', renderRotinas);
 if (btnVoltar) {
   btnVoltar.addEventListener('click', async () => {
     if (treinoIniciado && rotinaAbertaId) {
-      const confirmar = await confirmAction({ title: 'Encerrar treino?', message: 'Todos os dados preenchidos nesta sessÃ£o serÃ£o descartados.', confirmText: 'Encerrar', danger: true });
-      if (!confirmar) return; // Se cancelar, nÃ£o faz nada
+      const confirmar = await confirmAction({ title: 'Encerrar treino?', message: 'Todos os dados preenchidos nesta sessão serão descartados.', confirmText: 'Encerrar', danger: true });
+      if (!confirmar) return; // Se cancelar, não faz nada
 
-      // Reseta os rascunhos da sessÃ£o atual no banco para nÃ£o acumular lixo
+      // Reseta os rascunhos da sessão atual no banco para não acumular lixo
       const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
       if (rotina && rotina.exercicios) {
         const exerciciosLimpos = cleanRoutineExercises(rotina.exercicios);
@@ -656,7 +656,7 @@ function resumoComparativo(volume) {
     [100, 'um halter pesado']
   ];
   const match = comparisons.find(([threshold]) => volume >= threshold);
-  return match ? `Seu volume foi equivalente a levantar ${match[1]} (comparaÃ§Ã£o divertida).` : 'Cada quilo conta â€” hoje vocÃª colocou a forÃ§a em movimento.';
+  return match ? `Seu volume foi equivalente a levantar ${match[1]} (comparação divertida).` : 'Cada quilo conta — hoje você colocou a força em movimento.';
 }
 
 function novosRecordesDaSessao(exercicios) {
@@ -690,28 +690,28 @@ async function compartilharResumoTreino(summary) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080; canvas.height = 1350;
   const context = canvas.getContext('2d');
-  if (!context) return showToast('NÃ£o foi possÃ­vel criar a imagem do resumo.');
+  if (!context) return showToast('Não foi possível criar a imagem do resumo.');
   const background = context.createLinearGradient(0, 0, 1080, 1350);
   const fillCard = (x, y, width, height, radius = 26) => { context.beginPath(); if (context.roundRect) context.roundRect(x, y, width, height, radius); else context.rect(x, y, width, height); context.fill(); };
   background.addColorStop(0, '#0b1710'); background.addColorStop(1, '#050806');
   context.fillStyle = background; context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = '#57d493'; context.font = '700 34px Inter, sans-serif'; context.fillText('ã€½ MOL', 72, 100);
-  context.fillStyle = '#f8fafc'; context.font = '800 62px Inter, sans-serif'; context.fillText('Treino concluÃ­do', 72, 205);
-  context.fillStyle = '#8b9a91'; context.font = '400 30px Inter, sans-serif'; context.fillText('Seu esforÃ§o de hoje ficou registrado.', 72, 255);
-  const cards = [['SÃ‰RIES', summary.series], ['VOLUME', `${Math.round(summary.volume).toLocaleString('pt-BR')} kg`], ['DURAÃ‡ÃƒO', `${summary.minutos} min`], ['EXERCÃCIOS', summary.exercicios], ['NOVOS RECORDES', summary.records]];
+  context.fillStyle = '#57d493'; context.font = '700 34px Inter, sans-serif'; context.fillText('MOL', 72, 100);
+  context.fillStyle = '#f8fafc'; context.font = '800 62px Inter, sans-serif'; context.fillText('Treino concluído', 72, 205);
+  context.fillStyle = '#8b9a91'; context.font = '400 30px Inter, sans-serif'; context.fillText('Seu esforço de hoje ficou registrado.', 72, 255);
+  const cards = [['SÉRIES', summary.series], ['VOLUME', `${Math.round(summary.volume).toLocaleString('pt-BR')} kg`], ['DURAÇÃO', `${summary.minutos} min`], ['EXERCÍCIOS', summary.exercicios], ['NOVOS RECORDES', summary.records]];
   cards.forEach(([label, value], index) => { const x = 72 + (index % 2) * 480; const y = 350 + Math.floor(index / 2) * 190; context.fillStyle = '#142219'; fillCard(x, y, 420, 140); context.fillStyle = '#8b9a91'; context.font = '700 22px Inter, sans-serif'; context.fillText(label, x + 28, y + 42); context.fillStyle = index === 1 || index === 4 ? '#57d493' : '#f8fafc'; context.font = '800 42px Inter, sans-serif'; context.fillText(String(value), x + 28, y + 98); });
   context.fillStyle = '#1d3b28'; fillCard(72, 890, 936, 190);
-  context.fillStyle = '#57d493'; context.font = '700 24px Inter, sans-serif'; context.fillText('COMPARAÃ‡ÃƒO MOL', 104, 945);
+  context.fillStyle = '#57d493'; context.font = '700 24px Inter, sans-serif'; context.fillText('COMPARAÇÃO MOL', 104, 945);
   context.fillStyle = '#f8fafc'; context.font = '600 30px Inter, sans-serif';
   const comparison = summary.comparison; const words = comparison.match(/.{1,48}(?:\s|$)/g) || [comparison];
   words.slice(0, 3).forEach((line, index) => context.fillText(line.trim(), 104, 995 + index * 38));
   context.fillStyle = '#52645a'; context.font = '400 22px Inter, sans-serif'; context.fillText(new Date().toLocaleDateString('pt-BR'), 72, 1240);
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png')); if (!blob) return showToast('NÃ£o foi possÃ­vel exportar a imagem.');
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png')); if (!blob) return showToast('Não foi possível exportar a imagem.');
   const file = new File([blob], 'mol-resumo-treino.png', { type: 'image/png' });
   try {
     if (navigator.canShare?.({ files: [file] })) { await navigator.share({ title: 'Meu treino no Mol', files: [file] }); return; }
     const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = file.name; link.click(); URL.revokeObjectURL(url); showToast('Imagem do resumo baixada.', 'success');
-  } catch (error) { if (error?.name !== 'AbortError') showToast('NÃ£o foi possÃ­vel compartilhar o resumo.'); }
+  } catch (error) { if (error?.name !== 'AbortError') showToast('Não foi possível compartilhar o resumo.'); }
 }
 
 function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDetalhados = [] }) {
@@ -726,7 +726,7 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDe
   modal.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.setAttribute('aria-labelledby', 'workout-summary-title');
   modal.setAttribute('aria-describedby', 'workout-summary-description');
-  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">SessÃ£o concluÃ­da</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÃ‰RIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÃ‡ÃƒO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercÃ­cios registrados no seu histÃ³rico.</p>${destaqueHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">ConcluÃ­do</button></div></section>`;
+  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p>${destaqueHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
   document.body.appendChild(modal);
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   modal.querySelector('[data-close]').onclick = close;
@@ -737,12 +737,12 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDe
 
 window.mostrarInfoTreino = (tipo) => {
   const infos = {
-    serie: ['SÃ©rie', 'Uma tentativa do exercÃ­cio. W Ã© aquecimento; nÃºmeros sÃ£o sÃ©ries de trabalho; F indica falha e D, drop set.'],
-    anterior: ['Anterior', 'Mostra a Ãºltima carga e repetiÃ§Ãµes registradas para esta sÃ©rie. Toque no valor para copiar.'],
-    kg: ['KG', 'A carga usada na sÃ©rie, em quilogramas.'],
-    reps: ['RepetiÃ§Ãµes', 'Quantas repetiÃ§Ãµes vocÃª fez com a carga informada.'],
-    rir: ['RIR â€” repetiÃ§Ãµes em reserva', 'Quantas repetiÃ§Ãµes vocÃª ainda conseguiria fazer antes da falha. RIR 2 significa que sobrariam cerca de duas reps.'],
-    check: ['Concluir sÃ©rie', 'Toque quando peso e repetiÃ§Ãµes estiverem registrados. O descanso inicia automaticamente.']
+    serie: ['Série', 'Uma tentativa do exercício. W é aquecimento; números são séries de trabalho; F indica falha e D, drop set.'],
+    anterior: ['Anterior', 'Mostra a última carga e repetições registradas para esta série. Toque no valor para copiar.'],
+    kg: ['KG', 'A carga usada na série, em quilogramas.'],
+    reps: ['Repetições', 'Quantas repetições você fez com a carga informada.'],
+    rir: ['RIR — repetições em reserva', 'Quantas repetições você ainda conseguiria fazer antes da falha. RIR 2 significa que sobrariam cerca de duas reps.'],
+    check: ['Concluir série', 'Toque quando peso e repetições estiverem registrados. O descanso inicia automaticamente.']
   };
   const [titulo, texto] = infos[tipo] || infos.serie;
   document.getElementById('mol-training-info')?.remove();
@@ -751,7 +751,7 @@ window.mostrarInfoTreino = (tipo) => {
   sheet.className = 'fixed inset-0 z-[210] flex items-end bg-black/65 p-4 backdrop-blur-sm';
   sheet.setAttribute('aria-labelledby', 'training-info-title');
   sheet.setAttribute('aria-describedby', 'training-info-description');
-  sheet.innerHTML = `<section class="w-full max-w-md mx-auto rounded-3xl mol-dialog-surface p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Guia rÃ¡pido</p><h2 id="training-info-title" class="mt-1 text-xl font-extrabold">${titulo}</h2><p id="training-info-description" class="mt-3 text-sm leading-relaxed text-gray-300">${texto}</p><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl mol-soft text-sm font-bold active:bg-white/15">Entendi</button></section>`;
+  sheet.innerHTML = `<section class="w-full max-w-md mx-auto rounded-3xl mol-dialog-surface p-6 animate-slide-up"><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Guia rápido</p><h2 id="training-info-title" class="mt-1 text-xl font-extrabold">${titulo}</h2><p id="training-info-description" class="mt-3 text-sm leading-relaxed text-gray-300">${texto}</p><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl mol-soft text-sm font-bold active:bg-white/15">Entendi</button></section>`;
   document.body.appendChild(sheet);
   const close = activateDialog(sheet, { initialFocus: sheet.querySelector('[data-close]') });
   sheet.querySelector('[data-close]').onclick = close;
@@ -760,7 +760,7 @@ window.mostrarInfoTreino = (tipo) => {
 
 function renderRotinas() {
   if (rotinasReais.length === 0) {
-    rotinasList.innerHTML = '<p class="text-center text-gray-500 my-10">VocÃª ainda nÃ£o tem treinos.</p>';
+    rotinasList.innerHTML = '<p class="text-center text-gray-500 my-10">Você ainda não tem treinos.</p>';
     return;
   }
   const termo = inputBuscaRotina?.value.trim().toLocaleLowerCase('pt-BR') || '';
@@ -774,7 +774,7 @@ function renderRotinas() {
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
-          <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercÃ­cios${rotina.horario ? ` Â· ${escapeHTML(rotina.horario)}` : ''}</p>
+          <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercícios${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
         </div>
         <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="text-gray-500 hover:text-red-400 transition-colors p-1" aria-label="Excluir ${escapeHTML(rotina.nome)}">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -808,14 +808,14 @@ function solicitarCheckin() {
     modal.id = 'workout-checkin';
     modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'checkin-title');
-    modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Antes de comeÃ§ar</p><h2 id="checkin-title" class="mt-1 text-xl font-extrabold">Como vocÃª estÃ¡ hoje?</h2><p class="mt-2 text-sm text-gray-400">Isso ajuda a ajustar a intensidade com seguranÃ§a.</p><div class="mt-5 grid grid-cols-3 gap-3"><label class="text-xs font-bold text-gray-400">Energia<input data-checkin="energia" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Sono<input data-checkin="sono" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Dor<input data-checkin="dor" type="number" inputmode="numeric" min="0" max="5" value="0" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label></div><p class="mt-2 text-[11px] text-gray-500">Energia e sono: 1â€“5 Â· Dor muscular: 0â€“5</p><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl mol-soft text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-start class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Iniciar treino</button></div></section>`;
+    modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Antes de começar</p><h2 id="checkin-title" class="mt-1 text-xl font-extrabold">Como você está hoje?</h2><p class="mt-2 text-sm text-gray-400">Isso ajuda a ajustar a intensidade com segurança.</p><div class="mt-5 grid grid-cols-3 gap-3"><label class="text-xs font-bold text-gray-400">Energia<input data-checkin="energia" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Sono<input data-checkin="sono" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Dor<input data-checkin="dor" type="number" inputmode="numeric" min="0" max="5" value="0" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label></div><p class="mt-2 text-[11px] text-gray-500">Energia e sono: 1–5 · Dor muscular: 0–5</p><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl mol-soft text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-start class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Iniciar treino</button></div></section>`;
     let closeDialog;
     const close = value => { closeDialog(); resolve(value); };
     modal.querySelector('[data-cancel]').onclick = () => close(null);
     modal.querySelector('[data-start]').onclick = () => {
       const value = name => Number(modal.querySelector(`[data-checkin="${name}"]`).value);
       const energia = value('energia'), sono = value('sono'), dor = value('dor');
-      if (energia < 1 || energia > 5 || sono < 1 || sono > 5 || dor < 0 || dor > 5) return showToast('Use valores vÃ¡lidos nas escalas informadas.');
+      if (energia < 1 || energia > 5 || sono < 1 || sono > 5 || dor < 0 || dor > 5) return showToast('Use valores válidos nas escalas informadas.');
       close({ energia, sono, dor });
     };
     modal.onclick = event => { if (event.target === modal) close(null); };
@@ -828,13 +828,13 @@ async function iniciarRotinaComCheckin(id) {
   const checkin = await solicitarCheckin();
   if (!checkin) return;
   checkinPreTreino = checkin;
-  if (checkin.energia <= 2 || checkin.dor >= 4) showToast('Hoje priorize tÃ©cnica e reduza carga se necessÃ¡rio.');
+  if (checkin.energia <= 2 || checkin.dor >= 4) showToast('Hoje priorize técnica e reduza carga se necessário.');
   iniciarCronometroGlobal(); abrirRotina(id);
 }
 
 window.clicarIniciarRotina = iniciarRotinaComCheckin;
 
-// Editar abre a ficha sem iniciar cronÃ´metro, sessÃ£o ou descanso.
+// Editar abre a ficha sem iniciar cronômetro, sessão ou descanso.
 window.editarRotina = (id) => {
   pararDescanso();
   abrirRotina(id);
@@ -852,8 +852,8 @@ window.salvarNomeRotina = async () => {
   const horario = timeInput?.value || '';
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina || !nome) return showToast('Digite um nome para a rotina.');
-  if (nome.length > 60) return showToast('Use no mÃ¡ximo 60 caracteres no nome da rotina.');
-  if (horario && !/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) return showToast('Use um horÃ¡rio vÃ¡lido ou deixe em branco.');
+  if (nome.length > 60) return showToast('Use no máximo 60 caracteres no nome da rotina.');
+  if (horario && !/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) return showToast('Use um horário válido ou deixe em branco.');
   if (nome === rotina.nome && horario === (rotina.horario || '')) return;
   try {
     await updateDoc(doc(db, 'treinos', rotinaAbertaId), { nome, horario });
@@ -863,11 +863,11 @@ window.salvarNomeRotina = async () => {
     showToast('Rotina atualizada.', 'success');
   } catch (error) {
     console.error(error);
-    showToast('NÃ£o foi possÃ­vel salvar a rotina.');
+    showToast('Não foi possível salvar a rotina.');
   }
 };
 
-const WEEKDAYS = [[1, 'Segunda'], [2, 'TerÃ§a'], [3, 'Quarta'], [4, 'Quinta'], [5, 'Sexta'], [6, 'SÃ¡bado'], [0, 'Domingo']];
+const WEEKDAYS = [[1, 'Segunda'], [2, 'Terça'], [3, 'Quarta'], [4, 'Quinta'], [5, 'Sexta'], [6, 'Sábado'], [0, 'Domingo']];
 
 function routineDaysEditor(days = []) {
   const selected = new Set((Array.isArray(days) ? days : []).map(Number));
@@ -884,28 +884,28 @@ window.salvarDiasRotina = async () => {
     rotina.diasSemana = diasSemana;
     showToast('Dias de treino atualizados.', 'success');
   } catch (error) {
-    console.error('Dias da rotina nÃ£o salvos:', error);
-    showToast('NÃ£o foi possÃ­vel salvar os dias de treino.');
+    console.error('Dias da rotina não salvos:', error);
+    showToast('Não foi possível salvar os dias de treino.');
   }
 };
 
 window.deletarRotina = async (id) => {
-  if (await confirmAction({ title: 'Excluir rotina?', message: 'Essa rotina e seus exercÃ­cios serÃ£o removidos permanentemente.', confirmText: 'Excluir', danger: true })) {
+  if (await confirmAction({ title: 'Excluir rotina?', message: 'Essa rotina e seus exercícios serão removidos permanentemente.', confirmText: 'Excluir', danger: true })) {
     try {
       await deleteDoc(doc(db, "treinos", id));
       carregarRotinasDoBanco();
     } catch (error) {
       console.error("Erro ao deletar treino:", error);
-      showToast('NÃ£o foi possÃ­vel excluir o treino.');
+      showToast('Não foi possível excluir o treino.');
     }
   }
 };
 
 btnSalvarNova.addEventListener('click', async () => {
   const nome = inputNomeRotina.value.trim();
-  if (!nome) return showToast('DÃª um nome para a rotina.');
-  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`VocÃª pode salvar atÃ© ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
-  if (!usuarioAtual) return showToast('A sessÃ£o expirou. Entre novamente.');
+  if (!nome) return showToast('Dê um nome para a rotina.');
+  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
+  if (!usuarioAtual) return showToast('A sessão expirou. Entre novamente.');
   btnSalvarNova.disabled = true;
   btnSalvarNova.textContent = "Salvando...";
   try {
@@ -925,7 +925,7 @@ btnSalvarNova.addEventListener('click', async () => {
     showToast('Rotina criada com sucesso.', 'success');
   } catch (error) {
     console.error('Erro ao criar rotina:', error);
-    showToast(error.code === 'permission-denied' ? 'O Firestore bloqueou a criaÃ§Ã£o. Revise as regras de treinos.' : 'NÃ£o foi possÃ­vel criar a rotina. Tente novamente.');
+    showToast(error.code === 'permission-denied' ? 'O Firestore bloqueou a criação. Revise as regras de treinos.' : 'Não foi possível criar a rotina. Tente novamente.');
   } finally { btnSalvarNova.textContent = "Salvar"; btnSalvarNova.disabled = false; }
 });
 
@@ -942,22 +942,22 @@ window.criarTemplate = async (nome) => {
     series: Array.from({ length: template.sets || 3 }, () => ({ tipo: 'N', method: SET_METHODS.NORMAL, kg: '', reps: '', rir: String(rirAlvo), anteriorKg: '', anteriorReps: '', anteriorRir: '', concluida: false }))
   }));
   if (!template) return showToast('Modelo não encontrado.');
-  if (!usuarioAtual) return showToast('A sessÃ£o ainda estÃ¡ carregando.');
-  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`VocÃª pode salvar atÃ© ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
+  if (!usuarioAtual) return showToast('A sessão ainda está carregando.');
+  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
   try {
     await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: template.description, diasSemana: template.days, exercicios, criadoEm: serverTimestamp() });
     showToast('Modelo criado. Ajuste-o para sua realidade.', 'success'); await carregarRotinasDoBanco(); esconderTudo(); viewRotinas.classList.remove('hidden');
-  } catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel criar o modelo.'); }
+  } catch (error) { console.error(error); showToast('Não foi possível criar o modelo.'); }
 };
 
 window.duplicarRotina = async (id) => {
   const origem = rotinasReais.find(r => r.id === id);
   if (!origem) return;
-  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`VocÃª pode salvar atÃ© ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
+  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
   const exercicios = JSON.parse(JSON.stringify(origem.exercicios || [])).map(ex => ({ ...ex, series: (ex.series || []).map(s => ({ ...s, kg: '', reps: '', concluida: false })) }));
-  const nome = `${origem.nome || 'Rotina'} (cÃ³pia)`.slice(0, 60);
+  const nome = `${origem.nome || 'Rotina'} (cópia)`.slice(0, 60);
   try { await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: origem.descricao || '', exercicios, criadoEm: serverTimestamp() }); await carregarRotinasDoBanco(); showToast('Rotina duplicada.', 'success'); }
-  catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel duplicar a rotina.'); }
+  catch (error) { console.error(error); showToast('Não foi possível duplicar a rotina.'); }
 };
 
 window.escolherExercicio = async (nomeExercicio) => {
@@ -986,7 +986,7 @@ window.escolherExercicio = async (nomeExercicio) => {
     series: seriesBase
   };
   if (!rotina.exercicios) rotina.exercicios = [];
-  if (!substituindo && rotina.exercicios.length >= WORKOUT_STRUCTURE_LIMITS.exercises) return showToast(`Cada rotina pode ter atÃ© ${WORKOUT_STRUCTURE_LIMITS.exercises} exercÃ­cios.`);
+  if (!substituindo && rotina.exercicios.length >= WORKOUT_STRUCTURE_LIMITS.exercises) return showToast(`Cada rotina pode ter até ${WORKOUT_STRUCTURE_LIMITS.exercises} exercícios.`);
   if (substituindo) rotina.exercicios[substituirExercicioIndex] = novoExercicio;
   else rotina.exercicios.push(novoExercicio);
   registrarRecente(nomeExercicio);
@@ -996,12 +996,12 @@ window.escolherExercicio = async (nomeExercicio) => {
     substituirExercicioIndex = null;
     filtroMuscular = '';
     abrirRotina(rotinaAbertaId);
-    showToast(substituindo ? 'ExercÃ­cio substituÃ­do.' : 'ExercÃ­cio adicionado.', 'success');
+    showToast(substituindo ? 'Exercício substituído.' : 'Exercício adicionado.', 'success');
   } catch (error) {
     if (substituindo) rotina.exercicios[substituirExercicioIndex] = anterior;
     else rotina.exercicios.pop();
     console.error(error);
-    showToast(substituindo ? 'NÃ£o foi possÃ­vel substituir o exercÃ­cio.' : 'NÃ£o foi possÃ­vel adicionar o exercÃ­cio.');
+    showToast(substituindo ? 'Não foi possível substituir o exercício.' : 'Não foi possível adicionar o exercício.');
   }
 };
 
@@ -1009,7 +1009,7 @@ window.abrirSubstituicao = indexEx => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   const exercicio = rotina?.exercicios?.[indexEx];
   if (!exercicio) return;
-  if (exercicio.series?.some(serie => serie.concluida)) return showToast('Conclua o treino antes de trocar um exercÃ­cio que jÃ¡ possui sÃ©ries registradas.');
+  if (exercicio.series?.some(serie => serie.concluida)) return showToast('Conclua o treino antes de trocar um exercício que já possui séries registradas.');
   substituirExercicioIndex = indexEx;
   const origem = bibliotecaDeExercicios.find(item => item.nome === exercicio.nome) || exercicio;
   const recomendados = rankExerciseSubstitutes(origem, bibliotecaDeExercicios, grupoDetalhado);
@@ -1021,11 +1021,11 @@ window.abrirSubstituicao = indexEx => {
   if (libraryResultsSummary) libraryResultsSummary.insertAdjacentHTML('afterbegin', `<span class="text-neon">Substituindo ${escapeHTML(exercicio.nome)}</span>`);
   viewBiblioteca.classList.remove('hidden');
   resetarScrollBiblioteca();
-  if (recomendados[0]) showToast(`SugestÃ£o: ${recomendados[0].nome}`, 'success');
+  if (recomendados[0]) showToast(`Sugestão: ${recomendados[0].nome}`, 'success');
   renderIcons();
 };
 // ---------------------------------------------
-// RENDERIZAR BIBLIOTECA DE EXERCÃCIOS (COM BUSCA AO DIGITAR)
+// RENDERIZAR BIBLIOTECA DE EXERCÍCIOS (COM BUSCA AO DIGITAR)
 // ---------------------------------------------
 let filtroMuscular = '';
 
@@ -1056,7 +1056,7 @@ window.abrirDetalheExercicio = (nome) => {
   document.getElementById('exercise-detail')?.remove();
   const modal = document.createElement('div'); modal.id = 'exercise-detail'; modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
   modal.setAttribute('aria-labelledby', 'exercise-detail-title');
-  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div class="mt-5 flex gap-4"><img src="${exerciseFigure}" alt="" class="h-20 w-16 rounded-2xl mol-soft p-2"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p></div></div>${historico.length ? `<section class="mt-5 rounded-2xl mol-soft p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">EvoluÃ§Ã£o recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg Ã— ${item.reps}`).join(' Â· ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>ExecuÃ§Ã£o</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>SubstituiÃ§Ãµes</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' Â· ') || 'Sem substituiÃ§Ãµes cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
+  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div class="mt-5 flex gap-4"><img src="${exerciseFigure}" alt="" class="h-20 w-16 rounded-2xl mol-soft p-2"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p></div></div>${historico.length ? `<section class="mt-5 rounded-2xl mol-soft p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
   document.body.appendChild(modal);
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   modal.onclick = event => { if (event.target === modal) close(); };
@@ -1073,12 +1073,12 @@ function renderizarBiblioteca(filtro = '') {
   );
 
   if (libraryResultsSummary) {
-    const contexto = filtroMuscular || (termo ? `Busca: ${filtro}` : 'Todos os exercÃ­cios');
-    libraryResultsSummary.innerHTML = `<span>${exerciciosFiltrados.length} ${exerciciosFiltrados.length === 1 ? 'exercÃ­cio' : 'exercÃ­cios'}</span><span class="rounded-full mol-soft px-2 py-1 font-bold text-gray-400">${escapeHTML(contexto)}</span>`;
+    const contexto = filtroMuscular || (termo ? `Busca: ${filtro}` : 'Todos os exercícios');
+    libraryResultsSummary.innerHTML = `<span>${exerciciosFiltrados.length} ${exerciciosFiltrados.length === 1 ? 'exercício' : 'exercícios'}</span><span class="rounded-full mol-soft px-2 py-1 font-bold text-gray-400">${escapeHTML(contexto)}</span>`;
   }
 
   if (exerciciosFiltrados.length === 0) {
-    bibliotecaList.innerHTML = '<div class="my-10 rounded-3xl border border-white/10 mol-soft p-6 text-center"><p class="text-sm font-bold">Nenhum exercÃ­cio encontrado.</p><p class="mt-1 text-xs text-gray-500">Tente outro nome, grupo muscular ou crie um exercÃ­cio personalizado.</p></div>';
+    bibliotecaList.innerHTML = '<div class="my-10 rounded-3xl border border-white/10 mol-soft p-6 text-center"><p class="text-sm font-bold">Nenhum exercício encontrado.</p><p class="mt-1 text-xs text-gray-500">Tente outro nome, grupo muscular ou crie um exercício personalizado.</p></div>';
     return;
   }
 
@@ -1101,7 +1101,7 @@ function renderizarBiblioteca(filtro = '') {
             </div>
           </div>
           <div class="mt-3 flex items-center justify-between gap-3">
-            ${ultimaPerformance.has(ex.nome) ? `<p class="min-w-0 text-xs font-semibold text-neon">Ãšltimo: ${ultimaPerformance.get(ex.nome).kg} kg Ã— ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="min-w-0 text-xs text-gray-600">Sem histÃ³rico ainda</p>'}
+            ${ultimaPerformance.has(ex.nome) ? `<p class="min-w-0 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="min-w-0 text-xs text-gray-600">Sem histórico ainda</p>'}
             <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neon px-3 text-xs font-extrabold text-black active:scale-[.98]"><i data-lucide="plus" class="h-4 w-4"></i><span>Adicionar</span></button>
           </div>
         </div>
@@ -1135,7 +1135,7 @@ document.querySelectorAll('[data-exercise-filter]').forEach(button => button.add
 
 function prepararAtalhosBiblioteca() {
   if (document.getElementById('library-shortcuts')) return;
-  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button type="button" data-library-filter="Favoritos" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button type="button" data-library-filter="Recentes" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button type="button" data-library-filter="MÃ¡quina" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">MÃ¡quinas</button><button type="button" data-library-filter="Polia" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button type="button" id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
+  bibliotecaList.insertAdjacentHTML('beforebegin', '<div id="library-shortcuts" class="mb-4 flex gap-2 overflow-x-auto pb-1"><button type="button" data-library-filter="Favoritos" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Favoritos</button><button type="button" data-library-filter="Recentes" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Recentes</button><button type="button" data-library-filter="Máquina" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Máquinas</button><button type="button" data-library-filter="Polia" aria-pressed="false" class="library-filter-chip rounded-full mol-soft px-4 py-2 text-xs font-bold text-gray-300">Polia</button><button type="button" id="create-custom-exercise" class="rounded-full bg-neon/15 px-4 py-2 text-xs font-bold text-neon">+ Personalizado</button></div>');
   document.querySelectorAll('[data-library-filter]').forEach(button => button.onclick = () => {
     filtroMuscular = filtroMuscular === button.dataset.libraryFilter ? '' : button.dataset.libraryFilter;
     atualizarEstadoFiltrosBiblioteca();
@@ -1146,21 +1146,21 @@ function prepararAtalhosBiblioteca() {
 }
 
 function abrirCriadorExercicio() {
-  if (exerciciosPersonalizados.length >= MAX_CUSTOM_EXERCISES) return showToast(`VocÃª pode salvar atÃ© ${MAX_CUSTOM_EXERCISES} exercÃ­cios personalizados.`);
+  if (exerciciosPersonalizados.length >= MAX_CUSTOM_EXERCISES) return showToast(`Você pode salvar até ${MAX_CUSTOM_EXERCISES} exercícios personalizados.`);
   document.getElementById('custom-exercise-modal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'custom-exercise-modal'; modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'custom-exercise-title');
-  modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl mol-dialog-surface p-6"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Biblioteca pessoal</p><h2 id="custom-exercise-title" class="mt-1 text-xl font-extrabold">Novo exercÃ­cio</h2><label class="mt-5 block text-xs font-bold text-gray-400" for="custom-exercise-name">Nome</label><input id="custom-exercise-name" maxlength="80" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white" placeholder="Ex.: Remada unilateral"><label class="mt-4 block text-xs font-bold text-gray-400" for="custom-exercise-group">Grupo muscular</label><input id="custom-exercise-group" maxlength="40" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white" value="Outros"><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl mol-soft text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-save class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Criar</button></div></section>`;
+  modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl mol-dialog-surface p-6"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Biblioteca pessoal</p><h2 id="custom-exercise-title" class="mt-1 text-xl font-extrabold">Novo exercício</h2><label class="mt-5 block text-xs font-bold text-gray-400" for="custom-exercise-name">Nome</label><input id="custom-exercise-name" maxlength="80" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white" placeholder="Ex.: Remada unilateral"><label class="mt-4 block text-xs font-bold text-gray-400" for="custom-exercise-group">Grupo muscular</label><input id="custom-exercise-group" maxlength="40" autocomplete="off" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4 text-white" value="Outros"><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl mol-soft text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-save class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Criar</button></div></section>`;
   let close;
   modal.querySelector('[data-save]').onclick = () => {
     const nome = modal.querySelector('#custom-exercise-name').value.trim();
     const grupo = modal.querySelector('#custom-exercise-group').value.trim() || 'Outros';
-    if (!nome) return showToast('Digite o nome do exercÃ­cio.');
-    if (exerciciosPersonalizados.length >= MAX_CUSTOM_EXERCISES) return showToast(`VocÃª pode salvar atÃ© ${MAX_CUSTOM_EXERCISES} exercÃ­cios personalizados.`);
-    if (bibliotecaDeExercicios.some(item => item.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'))) return showToast('Esse exercÃ­cio jÃ¡ existe na biblioteca.');
+    if (!nome) return showToast('Digite o nome do exercício.');
+    if (exerciciosPersonalizados.length >= MAX_CUSTOM_EXERCISES) return showToast(`Você pode salvar até ${MAX_CUSTOM_EXERCISES} exercícios personalizados.`);
+    if (bibliotecaDeExercicios.some(item => item.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'))) return showToast('Esse exercício já existe na biblioteca.');
     const novo = { nome, grupo, personalizado: true };
-    exerciciosPersonalizados.push(novo); bibliotecaDeExercicios.push(novo); salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); close(); showToast('ExercÃ­cio personalizado criado.', 'success');
+    exerciciosPersonalizados.push(novo); bibliotecaDeExercicios.push(novo); salvarPreferenciasBiblioteca(); renderizarBiblioteca(inputBuscaExercicio?.value || ''); close(); showToast('Exercício personalizado criado.', 'success');
   };
   modal.onclick = event => { if (event.target === modal) close(); };
   document.body.appendChild(modal);
@@ -1168,7 +1168,7 @@ function abrirCriadorExercicio() {
   modal.querySelector('[data-cancel]').onclick = close;
 }
 
-// Garantir que a busca limpa ao abrir a tela de adicionar exercÃ­cio
+// Garantir que a busca limpa ao abrir a tela de adicionar exercício
 if (btnAddExercicio) {
   btnAddExercicio.addEventListener('click', () => {
     substituirExercicioIndex = null;
@@ -1191,7 +1191,7 @@ function abrirRotina(id) {
     rotinaAbertaId = null;
     esconderTudo();
     viewRotinas.classList.remove('hidden');
-    showToast('Esta rotina nÃ£o estÃ¡ mais disponÃ­vel.');
+    showToast('Esta rotina não está mais disponível.');
     return;
   }
   detalheTitulo.textContent = rotina.nome;
@@ -1216,7 +1216,7 @@ function abrirRotina(id) {
     });
   }
 
-  // REQUISITO 1 & 2: O botÃ£o sÃ³ fica com fundo neon sÃ³lido se 100% das sÃ©ries estiverem concluÃ­das
+  // REQUISITO 1 & 2: O botão só fica com fundo neon sólido se 100% das séries estiverem concluídas
   const btnConcluir = document.getElementById('btn-concluir-treino');
   if (btnConcluir) {
     if (!treinoIniciado) {
@@ -1235,7 +1235,7 @@ function abrirRotina(id) {
       btnConcluir.classList.remove('hidden');
       btnConcluir.disabled = true;
       btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-white/10 text-gray-500 opacity-60 cursor-not-allowed";
-      btnConcluir.textContent = 'Finalize uma sÃ©rie';
+      btnConcluir.textContent = 'Finalize uma série';
     }
   }
 
@@ -1245,7 +1245,7 @@ function abrirRotina(id) {
   const painelMetricasHTML = treinoIniciado ? `
     <div class="mb-4 overflow-hidden rounded-2xl border border-white/5 mol-panel p-3 text-center"><div class="grid grid-cols-3 gap-2">
       <div>
-        <p class="text-[10px] text-gray-400 font-semibold uppercase">DuraÃ§Ã£o</p>
+        <p class="text-[10px] text-gray-400 font-semibold uppercase">Duração</p>
         <p id="treino-tempo" class="text-sm font-bold text-white mt-0.5">0s</p>
       </div>
       <div class="border-x border-white/10">
@@ -1253,18 +1253,18 @@ function abrirRotina(id) {
         <p class="text-sm font-bold text-neon mt-0.5">${volumeTotal} kg</p>
       </div>
       <div>
-        <p class="text-[10px] text-gray-400 font-semibold uppercase">SÃ©ries</p>
+        <p class="text-[10px] text-gray-400 font-semibold uppercase">Séries</p>
         <p class="text-sm font-bold text-white mt-0.5">${seriesFeitas}/${totalSeries}</p>
       </div>
-    </div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessÃ£o Â· tela ativa</p><button type="button" onclick="alternarModoCompacto()" aria-pressed="${modoCompacto}" class="min-h-9 rounded-xl mol-soft px-3 text-[10px] font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
-  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo ediÃ§Ã£o</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} sÃ©ries Â· cerca de ${minutosEstimados} min</p></div><button type="button" onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
-  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><label for="input-editar-horario-rotina" class="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">HorÃ¡rio do treino <span class="font-normal normal-case tracking-normal text-gray-500">(opcional)</span><input id="input-editar-horario-rotina" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-white"></label><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
+    </div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão · tela ativa</p><button type="button" onclick="alternarModoCompacto()" aria-pressed="${modoCompacto}" class="min-h-9 rounded-xl mol-soft px-3 text-[10px] font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
+  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button type="button" onclick="iniciarTreinoDaEdicao()" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
+  const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" onclick="salvarNomeRotina()" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><label for="input-editar-horario-rotina" class="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">Horário do treino <span class="font-normal normal-case tracking-normal text-gray-500">(opcional)</span><input id="input-editar-horario-rotina" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-white"></label><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
 
   if (!rotina.exercicios || rotina.exercicios.length === 0) {
     exerciciosList.innerHTML = `
       ${painelMetricasHTML}
       ${editorNomeHTML}
-      <p class="text-center text-sm text-gray-500 my-10">Nenhum exercÃ­cio. Adicione abaixo!</p>
+      <p class="text-center text-sm text-gray-500 my-10">Nenhum exercício. Adicione abaixo!</p>
     `;
   } else {
     let exerciciosHtml = rotina.exercicios.map((ex, indexEx) => {
@@ -1275,27 +1275,27 @@ function abrirRotina(id) {
       const currentClass = indexEx === indiceExercicioAtual ? 'is-current' : '';
       const notaExercicio = typeof ex.notas === 'string' ? ex.notas.trim() : '';
       const notaHTML = notaExercicio ? `<section class="mb-3 rounded-xl border border-neon/15 bg-neon/5 p-3 text-neon"><div class="flex items-start gap-2"><i data-lucide="clipboard-list" class="mt-0.5 h-4 w-4 shrink-0"></i><p class="text-[11px] leading-relaxed">${escapeHTML(notaExercicio)}</p></div></section>` : '';
-      const editorNotaHTML = treinoIniciado ? '' : `<details class="mb-3 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">ObservaÃ§Ãµes do exercÃ­cio</summary><label class="mt-3 block text-[10px] font-bold uppercase tracking-wider text-gray-500" for="nota-exercicio-${indexEx}">OrientaÃ§Ã£o, ajuste de mÃ¡quina ou detalhe tÃ©cnico</label><textarea id="nota-exercicio-${indexEx}" maxlength="500" rows="3" class="mt-2 min-h-24 w-full resize-y rounded-xl border border-white/10 mol-field p-3 text-sm text-white outline-none transition-colors focus:border-neon" placeholder="Ex.: usar mÃ¡quina Technogym, polia abaixo das escÃ¡pulas, atenÃ§Ã£o ao desconforto..." onblur="atualizarNotaExercicio(${indexEx}, this.value)">${escapeHTML(notaExercicio)}</textarea><p class="mt-2 text-[11px] text-gray-500">Salva automaticamente ao sair do campo.</p></details>`;
+      const editorNotaHTML = treinoIniciado ? '' : `<details class="mb-3 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Observações do exercício</summary><label class="mt-3 block text-[10px] font-bold uppercase tracking-wider text-gray-500" for="nota-exercicio-${indexEx}">Orientação, ajuste de máquina ou detalhe técnico</label><textarea id="nota-exercicio-${indexEx}" maxlength="500" rows="3" class="mt-2 min-h-24 w-full resize-y rounded-xl border border-white/10 mol-field p-3 text-sm text-white outline-none transition-colors focus:border-neon" placeholder="Ex.: usar máquina Technogym, polia abaixo das escápulas, atenção ao desconforto..." onblur="atualizarNotaExercicio(${indexEx}, this.value)">${escapeHTML(notaExercicio)}</textarea><p class="mt-2 text-[11px] text-gray-500">Salva automaticamente ao sair do campo.</p></details>`;
 
       return `
       <article class="workout-exercise-card ${currentClass} mol-panel rounded-2xl pt-4 pb-2 px-4 border border-white/5 mb-4">
         <div class="flex items-center justify-between mb-4">
-          <div><h4 class="font-bold text-sm text-neon">${escapeHTML(ex.nome)}</h4><p class="mt-1 text-[11px] text-gray-500">Meta: ${ex.repsMin || 8}â€“${ex.repsMax || 12} reps Â· RIR ${ex.rirAlvo ?? 2} Â· ${ex.descansoSegundos || 90}s</p></div>
+          <div><h4 class="font-bold text-sm text-neon">${escapeHTML(ex.nome)}</h4><p class="mt-1 text-[11px] text-gray-500">Meta: ${ex.repsMin || 8}–${ex.repsMax || 12} reps · RIR ${ex.rirAlvo ?? 2} · ${ex.descansoSegundos || 90}s</p></div>
           <div class="flex gap-1"><button type="button" onclick="moverExercicio(${indexEx}, -1)" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" onclick="moverExercicio(${indexEx}, 1)" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" onclick="excluirExercicio(${indexEx})" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
         </div>
         ${notaHTML}
         <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p><p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p></div></div></section>
-        <button type="button" onclick="abrirSubstituicao(${indexEx})" class="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercÃ­cio</button>
+        <button type="button" onclick="abrirSubstituicao(${indexEx})" class="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
         ${editorNotaHTML}
-        <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressÃ£o</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mÃ­n.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMin', this.value)" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS mÃ¡x.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMax', this.value)" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'rirAlvo', this.value)" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" onchange="atualizarMetaExercicio(${indexEx}, 'descansoSegundos', this.value)" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
+        <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMin', this.value)" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'repsMax', this.value)" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" onchange="atualizarMetaExercicio(${indexEx}, 'rirAlvo', this.value)" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" onchange="atualizarMetaExercicio(${indexEx}, 'descansoSegundos', this.value)" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
 
         <div class="workout-set-header flex items-center gap-1 mb-2 px-1"><div class="workout-set-grid grid flex-1 grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 text-[10px] text-gray-500 font-semibold text-center tracking-wider items-center">
-          <button type="button" onclick="mostrarInfoTreino('serie')" class="min-h-8 rounded-md active:bg-white/10">SÃ‰RIE</button>
+          <button type="button" onclick="mostrarInfoTreino('serie')" class="min-h-8 rounded-md active:bg-white/10">SÉRIE</button>
           <button type="button" onclick="mostrarInfoTreino('anterior')" class="min-h-8 rounded-md active:bg-white/10">ANTERIOR</button>
           <button type="button" onclick="mostrarInfoTreino('kg')" class="min-h-8 rounded-md active:bg-white/10">KG</button>
           <button type="button" onclick="mostrarInfoTreino('reps')" class="min-h-8 rounded-md active:bg-white/10">REPS</button>
           <button type="button" onclick="mostrarInfoTreino('rir')" class="min-h-8 rounded-md active:bg-white/10">RIR</button>
-          <button type="button" onclick="mostrarInfoTreino('check')" aria-label="O que Ã© concluir sÃ©rie" class="min-h-8 rounded-md active:bg-white/10"><i data-lucide="check" class="w-3 h-3 mx-auto"></i></button>
+          <button type="button" onclick="mostrarInfoTreino('check')" aria-label="O que é concluir série" class="min-h-8 rounded-md active:bg-white/10"><i data-lucide="check" class="w-3 h-3 mx-auto"></i></button>
         </div><div class="w-8 shrink-0"></div></div>
 
         <div class="space-y-1">
@@ -1332,7 +1332,7 @@ function abrirRotina(id) {
                 <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir ${meta.label}" class="flex h-auto w-11 shrink-0 items-center justify-center rounded-xl ${bgBotaoCheckMetodo} transition-colors active:scale-95">
                   <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-white' : 'text-gray-600'}"></i>
                 </button>
-                <button type="button" onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir sÃ©rie" class="flex h-auto w-9 shrink-0 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
+                <button type="button" onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir série" class="flex h-auto w-9 shrink-0 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
               </div>`;
@@ -1359,17 +1359,17 @@ function abrirRotina(id) {
                   <span>${textoAnterior}</span>
                 </button>
 
-                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da sÃ©rie ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="RepetiÃ§Ãµes da sÃ©rie ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
-                <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da sÃ©rie ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da série ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
 
-                <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir sÃ©rie ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">
+                <button type="button" onclick="concluirSerie(${indexEx}, ${indexSerie})" aria-label="Concluir série ${label}" class="h-11 w-11 mx-auto rounded-xl ${bgBotaoCheck} flex items-center justify-center transition-colors active:scale-95">
                   <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-white' : 'text-gray-600'}"></i>
                 </button>
               </div>
 
 
-              <button type="button" onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir sÃ©rie" class="flex h-11 w-9 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
+              <button type="button" onclick="excluirSerie(${indexEx}, ${indexSerie})" aria-label="Excluir série" class="flex h-11 w-9 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
@@ -1377,7 +1377,7 @@ function abrirRotina(id) {
         </div>
 
         <button type="button" onclick="adicionarSerie(${indexEx})" class="w-full text-center py-3 mt-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-1">
-          <i data-lucide="plus" class="w-3 h-3"></i> Adicionar SÃ©rie
+          <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Série
         </button>
       </article>
     `}).join('');
@@ -1406,7 +1406,7 @@ window.atualizarMetaExercicio = async (indexEx, campo, valor) => {
   exercicio[campo] = validacao.value;
   salvarRascunho({ force: true });
   try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); showToast('Meta atualizada.', 'success'); }
-  catch (error) { exercicio[campo] = anterior; abrirRotina(rotinaAbertaId); console.error(error); showToast('NÃ£o foi possÃ­vel salvar a meta.'); }
+  catch (error) { exercicio[campo] = anterior; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível salvar a meta.'); }
 };
 
 window.atualizarNotaExercicio = async (indexEx, valor) => {
@@ -1420,19 +1420,19 @@ window.atualizarNotaExercicio = async (indexEx, valor) => {
   salvarRascunho({ force: true });
   try {
     await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
-    showToast(nota ? 'ObservaÃ§Ã£o salva.' : 'ObservaÃ§Ã£o removida.', 'success');
+    showToast(nota ? 'Observação salva.' : 'Observação removida.', 'success');
   } catch (error) {
     exercicio.notas = anterior;
     abrirRotina(rotinaAbertaId);
     console.error(error);
-    showToast('NÃ£o foi possÃ­vel salvar a observaÃ§Ã£o.');
+    showToast('Não foi possível salvar a observação.');
   }
 };
 
 window.copiarAnterior = (indexEx, indexSerie) => {
   const exercicio = rotinasReais.find(r => r.id === rotinaAbertaId)?.exercicios[indexEx];
   const anterior = valorAnteriorDaSerie(exercicio, indexSerie);
-  if (!anterior) return showToast('Ainda nÃ£o hÃ¡ carga anterior para copiar.');
+  if (!anterior) return showToast('Ainda não há carga anterior para copiar.');
   const kg = document.getElementById(`kg-${indexEx}-${indexSerie}`);
   const reps = document.getElementById(`reps-${indexEx}-${indexSerie}`);
   kg.value = anterior.kg; reps.value = anterior.reps;
@@ -1441,10 +1441,10 @@ window.copiarAnterior = (indexEx, indexSerie) => {
 };
 
 // ---------------------------------------------
-// REQUISITO 1: VALIDAÃ‡ÃƒO RÃGIDA DE CARGA/REPS NO CHECK
+// REQUISITO 1: VALIDAÇÃO RÍGIDA DE CARGA/REPS NO CHECK
 // ---------------------------------------------
 window.concluirSerie = async (indexEx, indexSerie) => {
-  if (!treinoIniciado) return showToast('VocÃª estÃ¡ editando a rotina. Toque em Iniciar para registrar sÃ©ries.');
+  if (!treinoIniciado) return showToast('Você está editando a rotina. Toque em Iniciar para registrar séries.');
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   const serie = rotina.exercicios[indexEx].series[indexSerie];
 
@@ -1472,7 +1472,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
   const inputReps = document.getElementById(`reps-${indexEx}-${indexSerie}`).value.trim();
   const inputRir = document.getElementById(`rir-${indexEx}-${indexSerie}`).value.trim();
 
-  // Se a sÃ©rie JÃ ESTÃ concluÃ­da, permitir desmarcar livremente
+  // Se a série JÁ ESTÁ concluída, permitir desmarcar livremente
   if (serie.concluida) {
     serie.concluida = false;
   } else {
@@ -1490,7 +1490,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
     serie.kg = validacao.values.kg;
     serie.reps = validacao.values.reps;
     serie.rir = validacao.values.rir ?? '';
-    if (dadosDaSerie.usadoAnterior) showToast('SÃ©rie concluÃ­da com os dados do Ãºltimo treino.', 'success');
+    if (dadosDaSerie.usadoAnterior) showToast('Série concluída com os dados do último treino.', 'success');
   }
   salvarRascunho({ force: true });
   abrirRotina(rotinaAbertaId);
@@ -1498,7 +1498,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
 };
 
 // ---------------------------------------------
-// REQUISITO 2 & 3: SALVAMENTO COM RESET DE CHECKS E HISTÃ“RICO LIMPO PARA A PRÃ“XIMA SEMANA
+// REQUISITO 2 & 3: SALVAMENTO COM RESET DE CHECKS E HISTÓRICO LIMPO PARA A PRÓXIMA SEMANA
 // ---------------------------------------------
 window.finalizarEConcluirTreino = async () => {
   if (finalizandoTreino) return;
@@ -1506,9 +1506,9 @@ window.finalizarEConcluirTreino = async () => {
   if (!rotina || !rotina.exercicios) return;
 
   const totais = workoutTotals(rotina.exercicios);
-  if (totais.completed === 0) return showToast('Conclua ao menos uma sÃ©rie antes de finalizar.');
+  if (totais.completed === 0) return showToast('Conclua ao menos uma série antes de finalizar.');
   if (totais.completed < totais.total) {
-    const confirmar = await confirmAction({ title: 'Finalizar treino?', message: `${totais.total - totais.completed} sÃ©rie(s) ficarÃ£o como nÃ£o realizadas.`, confirmText: 'Finalizar assim' });
+    const confirmar = await confirmAction({ title: 'Finalizar treino?', message: `${totais.total - totais.completed} série(s) ficarão como não realizadas.`, confirmText: 'Finalizar assim' });
     if (!confirmar) return;
   }
   finalizandoTreino = true;
@@ -1522,7 +1522,7 @@ window.finalizarEConcluirTreino = async () => {
   const exerciciosLimpos = cleanRoutineExercises(rotina.exercicios);
 
   try {
-    // A sessÃ£o Ã© um registro imutÃ¡vel: rotinas podem mudar, o histÃ³rico nÃ£o.
+    // A sessão é um registro imutável: rotinas podem mudar, o histórico não.
     const batch = writeBatch(db);
     const sessaoRef = doc(collection(db, 'sessoes'));
     batch.set(sessaoRef, {
@@ -1558,7 +1558,7 @@ window.finalizarEConcluirTreino = async () => {
     carregarRotinasDoBanco();
   } catch (error) {
     console.error("Erro ao salvar treino:", error);
-    showToast('NÃ£o foi possÃ­vel concluir o treino.');
+    showToast('Não foi possível concluir o treino.');
   } finally {
     finalizandoTreino = false;
     if (btnFinalizar) { btnFinalizar.disabled = false; btnFinalizar.textContent = 'Finalizar'; }
@@ -1568,26 +1568,26 @@ window.finalizarEConcluirTreino = async () => {
 window.adicionarSerie = async (indexEx) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[indexEx]) return;
-  if (rotina.exercicios[indexEx].series.length >= WORKOUT_STRUCTURE_LIMITS.setsPerExercise) return showToast(`Cada exercÃ­cio pode ter atÃ© ${WORKOUT_STRUCTURE_LIMITS.setsPerExercise} sÃ©ries.`);
+  if (rotina.exercicios[indexEx].series.length >= WORKOUT_STRUCTURE_LIMITS.setsPerExercise) return showToast(`Cada exercício pode ter até ${WORKOUT_STRUCTURE_LIMITS.setsPerExercise} séries.`);
   rotina.exercicios[indexEx].series.push({ tipo: 'N', kg: '', reps: '', concluida: false });
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel adicionar a sÃ©rie.'); await carregarRotinasDoBanco(); }
+  } catch (error) { console.error(error); showToast('Não foi possível adicionar a série.'); await carregarRotinasDoBanco(); }
 };
 
 async function excluirSerie(indexEx, indexSerie) {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[indexEx]?.series?.[indexSerie]) return;
-  if (rotina.exercicios[indexEx].series.length === 1) return showToast('O exercÃ­cio precisa manter ao menos uma sÃ©rie. Para removÃª-lo, use a lixeira do exercÃ­cio.');
-  if (!await confirmAction({ title: 'Excluir sÃ©rie?', message: 'Os dados preenchidos nesta sÃ©rie serÃ£o removidos.', confirmText: 'Excluir', danger: true })) return;
+  if (rotina.exercicios[indexEx].series.length === 1) return showToast('O exercício precisa manter ao menos uma série. Para removê-lo, use a lixeira do exercício.');
+  if (!await confirmAction({ title: 'Excluir série?', message: 'Os dados preenchidos nesta série serão removidos.', confirmText: 'Excluir', danger: true })) return;
   rotina.exercicios[indexEx].series.splice(indexSerie, 1);
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel excluir a sÃ©rie.'); await carregarRotinasDoBanco(); }
+  } catch (error) { console.error(error); showToast('Não foi possível excluir a série.'); await carregarRotinasDoBanco(); }
 };
 
 window.moverExercicio = async (indexEx, direcao) => {
@@ -1596,19 +1596,19 @@ window.moverExercicio = async (indexEx, direcao) => {
   if (!rotina || destino < 0 || destino >= rotina.exercicios.length) return;
   [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]];
   try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); abrirRotina(rotinaAbertaId); }
-  catch (error) { [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]]; abrirRotina(rotinaAbertaId); console.error(error); showToast('NÃ£o foi possÃ­vel reordenar o exercÃ­cio.'); }
+  catch (error) { [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]]; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível reordenar o exercício.'); }
 };
 
 window.excluirExercicio = async (indexEx) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[indexEx]) return;
-  if (!await confirmAction({ title: 'Excluir exercÃ­cio?', message: `${rotina.exercicios[indexEx].nome} e todas as suas sÃ©ries serÃ£o removidos da rotina.`, confirmText: 'Excluir', danger: true })) return;
+  if (!await confirmAction({ title: 'Excluir exercício?', message: `${rotina.exercicios[indexEx].nome} e todas as suas séries serão removidos da rotina.`, confirmText: 'Excluir', danger: true })) return;
   rotina.exercicios.splice(indexEx, 1);
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel excluir o exercÃ­cio.'); await carregarRotinasDoBanco(); }
+  } catch (error) { console.error(error); showToast('Não foi possível excluir o exercício.'); await carregarRotinasDoBanco(); }
 };
 
 const modalTipoSerie = document.getElementById('modal-tipo-serie');
@@ -1646,7 +1646,7 @@ window.mudarTipoSerie = async (novoTipo) => {
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
-  } catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel alterar o tipo da sÃ©rie.'); await carregarRotinasDoBanco(); }
+  } catch (error) { console.error(error); showToast('Não foi possível alterar o tipo da série.'); await carregarRotinasDoBanco(); }
 };
 
 function instalarOpcoesContextuais() {
@@ -1656,7 +1656,7 @@ function instalarOpcoesContextuais() {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
     <div class="h-px bg-white/10 my-2"></div>
-    <p class="px-4 pt-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">MÃ©todos contextuais</p>
+    <p class="px-4 pt-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">Métodos contextuais</p>
     ${Object.entries(methodMeta).map(([method, meta]) => `<button type="button" data-series-method="${method}" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors"><span class="font-extrabold w-10 text-sm ${meta.tone}">${meta.badge}</span><span class="font-medium text-white text-base">${meta.label}</span></button>`).join('')}
   `;
   [...wrapper.children].forEach(child => list.insertBefore(child, remove.previousElementSibling));
@@ -1676,7 +1676,7 @@ window.mudarMetodoSerie = async (method) => {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
     window.abrirEditorMetodoSerie(editandoSerie.ex, editandoSerie.serie);
-  } catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel alterar o mÃ©todo da sÃ©rie.'); await carregarRotinasDoBanco(); }
+  } catch (error) { console.error(error); showToast('Não foi possível alterar o método da série.'); await carregarRotinasDoBanco(); }
 };
 
 function numberField(name, label, value, attrs = '') {
@@ -1698,11 +1698,11 @@ window.abrirEditorMetodoSerie = (indexEx, indexSerie) => {
   const details = { ...defaultMethodDetails(method, serie), ...(serie.details || {}) };
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-0';
-  modal.innerHTML = `<form class="mx-auto w-full max-w-md rounded-t-3xl mol-dialog-surface p-6 animate-slide-up" data-method-form><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-wider text-neon">${meta.label}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(exercicio.nome)}</h2><div data-method-fields class="mt-5 space-y-4"></div><label class="mt-4 block text-[10px] font-bold uppercase tracking-wider text-gray-500">ObservaÃ§Ã£o<textarea name="note" maxlength="240" class="mt-1 min-h-20 w-full rounded-xl mol-field p-3 text-sm text-white outline-none focus:border-neon">${escapeHTML(details.note || '')}</textarea></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Fechar</button><button type="submit" class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Salvar</button></div></form>`;
+  modal.innerHTML = `<form class="mx-auto w-full max-w-md rounded-t-3xl mol-dialog-surface p-6 animate-slide-up" data-method-form><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-wider text-neon">${meta.label}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(exercicio.nome)}</h2><div data-method-fields class="mt-5 space-y-4"></div><label class="mt-4 block text-[10px] font-bold uppercase tracking-wider text-gray-500">Observação<textarea name="note" maxlength="240" class="mt-1 min-h-20 w-full rounded-xl mol-field p-3 text-sm text-white outline-none focus:border-neon">${escapeHTML(details.note || '')}</textarea></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Fechar</button><button type="submit" class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Salvar</button></div></form>`;
   const fields = modal.querySelector('[data-method-fields]');
-  if (method === SET_METHODS.DROP_SET) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">SÃ©rie principal</p><div class="grid grid-cols-2 gap-2">${numberField('primaryKg', 'Carga inicial', details.primary?.kg, 'min="0" max="2000" step="0.25"')}${numberField('primaryReps', 'Reps', details.primary?.reps, 'min="1" max="1000" step="1"')}</div></section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Drops</p><div class="space-y-2">${[0,1,2].map(i => `<div class="grid grid-cols-2 gap-2">${numberField(`dropKg${i}`, `Drop ${i + 1} kg`, details.drops?.[i]?.kg, 'min="0" max="2000" step="0.25"')}${numberField(`dropReps${i}`, 'Reps', details.drops?.[i]?.reps, 'min="1" max="1000" step="1"')}</div>`).join('')}</div>${numberField('restSeconds', 'Descanso entre drops (s)', details.restSeconds ?? 0, 'min="0" max="3600" step="5"')}</section>`;
+  if (method === SET_METHODS.DROP_SET) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série principal</p><div class="grid grid-cols-2 gap-2">${numberField('primaryKg', 'Carga inicial', details.primary?.kg, 'min="0" max="2000" step="0.25"')}${numberField('primaryReps', 'Reps', details.primary?.reps, 'min="1" max="1000" step="1"')}</div></section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Drops</p><div class="space-y-2">${[0,1,2].map(i => `<div class="grid grid-cols-2 gap-2">${numberField(`dropKg${i}`, `Drop ${i + 1} kg`, details.drops?.[i]?.kg, 'min="0" max="2000" step="0.25"')}${numberField(`dropReps${i}`, 'Reps', details.drops?.[i]?.reps, 'min="1" max="1000" step="1"')}</div>`).join('')}</div>${numberField('restSeconds', 'Descanso entre drops (s)', details.restSeconds ?? 0, 'min="0" max="3600" step="5"')}</section>`;
   if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-2 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</div><p class="mb-2 mt-4 text-xs font-bold uppercase tracking-wider text-neon">Blocos</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`block${i}`, `${i + 1}`, details.blocks?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
-  if (method === SET_METHODS.MYO_REPS) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">SÃ©rie de ativaÃ§Ã£o</p><div class="grid grid-cols-2 gap-2">${numberField('activationKg', 'Carga', details.activation?.kg, 'min="0" max="2000" step="0.25"')}${numberField('activationReps', 'Reps', details.activation?.reps, 'min="1" max="1000" step="1"')}</div>${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Mini-sÃ©ries</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`mini${i}`, `+${i + 1}`, details.miniSets?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
+  if (method === SET_METHODS.MYO_REPS) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série de ativação</p><div class="grid grid-cols-2 gap-2">${numberField('activationKg', 'Carga', details.activation?.kg, 'min="0" max="2000" step="0.25"')}${numberField('activationReps', 'Reps', details.activation?.reps, 'min="1" max="1000" step="1"')}</div>${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Mini-séries</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`mini${i}`, `+${i + 1}`, details.miniSets?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
   if (method === SET_METHODS.ISOMETRIC) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-3 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('reps', 'Reps', details.reps, 'min="1" max="1000" step="1"')}${numberField('holdSeconds', 'Isometria (s)', details.holdSeconds, 'min="1" max="3600" step="1"')}</div></section>`;
   document.body.appendChild(modal);
   modal.querySelector('[data-close]').onclick = () => modal.remove();
@@ -1729,8 +1729,8 @@ window.abrirEditorMetodoSerie = (indexEx, indexSerie) => {
     serie.details = validacao.values.details;
     syncSetLegacyFields(serie);
     salvarRascunho({ force: true });
-    try { await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); modal.remove(); abrirRotina(rotinaAbertaId); showToast('MÃ©todo salvo.', 'success'); }
-    catch (error) { console.error(error); showToast('NÃ£o foi possÃ­vel salvar o mÃ©todo.'); }
+    try { await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); modal.remove(); abrirRotina(rotinaAbertaId); showToast('Método salvo.', 'success'); }
+    catch (error) { console.error(error); showToast('Não foi possível salvar o método.'); }
   };
   renderIcons(modal);
 };
