@@ -121,6 +121,20 @@ function renderWeight() {
   const last = ordered.at(-1);
   $('last-weight').textContent = last ? `${Number(last.pesoKg).toLocaleString('pt-BR')} kg` : '— kg';
   $('weight-change').textContent = ordered.length > 1 ? `${(Number(last.pesoKg) - Number(ordered[0].pesoKg)).toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} kg desde o primeiro registro.` : 'Registre o primeiro peso para acompanhar.';
+  const trend = $('weight-trend');
+  if (trend) {
+    const lastItems = ordered.slice(-12);
+    const values = lastItems.map(item => Number(item.pesoKg));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    trend.innerHTML = lastItems.length > 1
+      ? lastItems.map(item => {
+        const value = Number(item.pesoKg);
+        const pct = max === min ? 55 : 22 + ((value - min) / (max - min)) * 78;
+        return `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${pct}%" title="${value.toLocaleString('pt-BR')} kg"></span>`;
+      }).join('')
+      : '<p class="self-center text-xs text-gray-500">A tendência aparece após mais registros.</p>';
+  }
   if (!ordered.length) {
     $('history').innerHTML = '<p class="text-sm text-gray-500">Sem registros.</p>';
     return;

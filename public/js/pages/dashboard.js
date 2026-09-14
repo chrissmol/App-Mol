@@ -38,6 +38,7 @@ let dashboardUser = null;
 let profileData = {};
 let appModules = normalizeAppModules();
 let mealRefreshTimer = null;
+const dailyBrief = { workout: 'Treino pendente', meal: 'Refeição pendente', progress: 'Semana em aberto' };
 const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), timeout))]);
 const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
 const profileCacheKey = uid => `mol-profile-dashboard-${uid}`;
@@ -65,6 +66,21 @@ function normalizeCards(value) {
   return [...valid, ...defaultCards.filter(card => !seen.has(card.id)).map(card => ({ ...card }))];
 }
 
+function updateDailyBrief() {
+  const title = $('daily-brief-title');
+  const subtitle = $('daily-brief-subtitle');
+  const items = $('daily-brief-items');
+  if (!title || !subtitle || !items) return;
+  title.textContent = dailyBrief.workout.includes('Retomar') ? 'Você tem um treino em andamento' : 'Seu dia está organizado';
+  subtitle.textContent = 'Treino, dieta e evolução em um resumo rápido.';
+  items.innerHTML = [
+    ['dumbbell', 'Treino', dailyBrief.workout],
+    ['utensils', 'Dieta', dailyBrief.meal],
+    ['activity', 'Semana', dailyBrief.progress]
+  ].map(([icon, label, value]) => `<div class="rounded-2xl bg-white/5 p-3"><i data-lucide="${icon}" class="mb-2 h-4 w-4 text-neon"></i><span class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">${label}</span><strong class="mt-1 block truncate text-sm text-white">${value}</strong></div>`).join('');
+  renderIcons();
+}
+
 function setWeek(sessions, goal = 1) {
   const tier = avatarTier(profileStats(sessions, goal).workouts);
   const frame = $('dashboard-avatar-frame');
@@ -77,6 +93,7 @@ function setWeek(sessions, goal = 1) {
   $('weekly-sessions').textContent = thisWeek.length;
   $('weekly-volume').textContent = Math.round(volume).toLocaleString('pt-BR');
   $('weekly-streak').textContent = weeklyStreak(sessions, new Date(), goal);
+  dailyBrief.progress = `${thisWeek.length}/${goal || 1} treinos`;
   const orderedSessions = [...sessions].filter(session => dateOf(session) && dateOf(session) <= new Date()).sort((a,b) => dateOf(b) - dateOf(a));
   const [last, previous] = orderedSessions;
   const lastVolume = last ? sessionMetrics(last).volume : 0;
@@ -97,6 +114,7 @@ function setToday(routines, user) {
     $('today-eyebrow').textContent = 'Treino em andamento'; $('today-workout-title').textContent = `Retomar ${routine.nome}`; $('today-workout-subtitle').textContent = `${done}/${series.length} séries · ${Math.floor(elapsed / 60)} min decorridos`;
     card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}&retomar=1`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Retomar treino</span>';
+    dailyBrief.workout = `Retomar ${routine.nome}`;
   } else if (routines.length) {
     const scheduled = routines.find(r => (r.diasSemana || []).map(Number).includes(new Date().getDay()));
     const routine = selectRoutine(routines); const series = (routine.exercicios || []).reduce((sum, ex) => sum + (ex.series?.length || 0), 0);
@@ -105,10 +123,13 @@ function setToday(routines, user) {
     $('today-workout-subtitle').textContent = `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${estimatedWorkoutMinutes(routine)} min`;
     card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Iniciar treino</span>';
+    dailyBrief.workout = scheduled ? `Hoje: ${routine.nome}` : `Próximo: ${routine.nome}`;
   } else {
     $('today-eyebrow').textContent = 'Comece por aqui'; $('today-workout-title').textContent = 'Crie sua primeira rotina'; $('today-workout-subtitle').textContent = 'Monte uma ficha ou use um modelo pronto para treinar hoje.';
     card.href = './pages/treino.html?acao=nova'; card.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i><span>Criar rotina</span>';
+    dailyBrief.workout = 'Criar rotina';
   }
+  updateDailyBrief();
   renderIcons();
 }
 
@@ -119,15 +140,17 @@ function setNextMeal(meals) {
   const now = today.toTimeString().slice(0, 5);
   const normalized = normalizeDietMeals(meals);
   const { meal, tomorrow } = nextMeal(normalized, now);
-  if (!meal) { card.dataset.available = 'false'; card.classList.add('hidden'); return; }
+  if (!meal) { card.dataset.available = 'false'; card.classList.add('hidden'); dailyBrief.meal = 'Sem refeição planejada'; updateDailyBrief(); return; }
   card.dataset.available = 'true';
   $('next-meal-name').textContent = meal.nome || 'Refeição';
   const foods = mealFoods(meal);
   const nutrients = foods.reduce((sum, food) => sum + foodNutrients(food).kcal, 0);
   $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${foods.length} alimento(s) · ${Math.round(nutrients)} kcal`;
   const targetDay = (today.getDay() + (tomorrow ? 1 : 0)) % 7;
+  dailyBrief.meal = `${meal.hora} - ${meal.nome || 'Refeição'}`;
   card.querySelector('a')?.setAttribute('href', `./pages/dieta.html?meal=${encodeURIComponent(meal.id)}&day=${targetDay}`);
   card.classList.remove('hidden');
+  updateDailyBrief();
 }
 
 function setFastingCard(settings) {
@@ -285,6 +308,7 @@ watchProtectedPage(async user => {
   $('app-body').classList.remove('opacity-0');
   $('user-name').textContent = user.displayName?.trim().split(/\s+/)[0] || 'Atleta';
   setupDashboardCards();
+  updateDailyBrief();
   const cachedDashboard = readDashboardDataCache(user.uid);
   const hasDashboardCache = !!cachedDashboard;
   if (cachedDashboard) {
