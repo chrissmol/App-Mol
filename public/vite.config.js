@@ -1,6 +1,5 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
 
 const firebaseBrowserMock = resolve(import.meta.dirname, 'e2e/firebase-browser-mock.js');
 
@@ -15,32 +14,7 @@ export default defineConfig({
         ]
       : [],
   },
-  plugins: [
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeManifestIcons: false,
-      manifest: {
-        name: 'Mol',
-        short_name: 'Mol',
-        description: 'Treino, evolução e dieta no seu ritmo.',
-        theme_color: '#070a08',
-        background_color: '#070a08',
-        display: 'standalone',
-        lang: 'pt-BR',
-        start_url: '/',
-        icons: [{ src: '/assets/mol-mark.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
-      },
-      workbox: {
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
-        importScripts: ['/notification-sw.js'],
-        navigateFallback: null,
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,woff2}'],
-        runtimeCaching: []
-      }
-    })
-  ],
+  plugins: [],
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 550,
@@ -64,8 +38,8 @@ export default defineConfig({
         progresso: resolve(import.meta.dirname, 'pages/progresso.html'),
         configuracoes: resolve(import.meta.dirname, 'pages/configuracoes.html'),
         evolucao: resolve(import.meta.dirname, 'pages/evolucao.html'),
-        dadosPessoais: resolve(import.meta.dirname, 'pages/dados-pessoais.html')
-        ,admin: resolve(import.meta.dirname, 'pages/admin.html')
+        dadosPessoais: resolve(import.meta.dirname, 'pages/dados-pessoais.html'),
+        admin: resolve(import.meta.dirname, 'pages/admin.html')
       }
     }
   },

@@ -8,53 +8,61 @@ function deferred() {
   return { promise, resolve };
 }
 
-describe('restauração da sessão', () => {
-  it('não observa um estado nulo antes da persistência estar pronta', async () => {
+describe('restauracao da sessao', () => {
+  it('observa o Auth imediatamente sem depender da restauracao da persistencia', async () => {
     const ready = deferred();
     const callback = vi.fn();
     const subscribe = vi.fn(() => vi.fn());
+
     subscribeAfterAuthReady(ready.promise, subscribe, callback);
     await Promise.resolve();
-    expect(subscribe).not.toHaveBeenCalled();
+
+    expect(subscribe).toHaveBeenCalledOnce();
     ready.resolve();
     await ready.promise;
     await Promise.resolve();
     expect(subscribe).toHaveBeenCalledOnce();
+
     const listener = subscribe.mock.calls[0][0];
     listener({ uid: 'user-1' });
     expect(callback).toHaveBeenCalledWith({ uid: 'user-1' });
   });
 
-  it('cancela com segurança antes ou depois da assinatura', async () => {
+  it('cancela com seguranca antes ou depois da persistencia estar pronta', async () => {
     const ready = deferred();
     const firebaseUnsubscribe = vi.fn();
     const subscribe = vi.fn(() => firebaseUnsubscribe);
-    const stopBefore = subscribeAfterAuthReady(ready.promise, subscribe, vi.fn());
-    stopBefore();
+
+    const stopBeforeReady = subscribeAfterAuthReady(ready.promise, subscribe, vi.fn());
+    stopBeforeReady();
     ready.resolve();
     await ready.promise;
     await Promise.resolve();
-    expect(subscribe).not.toHaveBeenCalled();
-
-    const stopAfter = subscribeAfterAuthReady(Promise.resolve(), subscribe, vi.fn());
-    await Promise.resolve();
-    await Promise.resolve();
-    stopAfter();
+    expect(subscribe).toHaveBeenCalledOnce();
     expect(firebaseUnsubscribe).toHaveBeenCalledOnce();
+
+    const stopAfterReady = subscribeAfterAuthReady(Promise.resolve(), subscribe, vi.fn());
+    await Promise.resolve();
+    await Promise.resolve();
+    stopAfterReady();
+    expect(firebaseUnsubscribe).toHaveBeenCalledTimes(2);
   });
 
-  it('ignora repetição e dá tolerância a um estado nulo transitório', async () => {
+  it('ignora repeticao e da tolerancia a um estado nulo transitorio', async () => {
     vi.useFakeTimers();
     const callback = vi.fn();
     let listener;
     const subscribe = vi.fn(next => { listener = next; return vi.fn(); });
+
     subscribeAfterAuthReady(Promise.resolve(), subscribe, callback, { transientNullGraceMs: 1000 });
     await Promise.resolve();
     await Promise.resolve();
+
     listener({ uid: 'user-1' });
     listener({ uid: 'user-1' });
     listener(null);
     expect(callback).toHaveBeenCalledTimes(1);
+
     vi.advanceTimersByTime(999);
     expect(callback).toHaveBeenCalledTimes(1);
     listener({ uid: 'user-1' });
@@ -63,7 +71,7 @@ describe('restauração da sessão', () => {
     vi.useRealTimers();
   });
 
-  it('inicializa a persistência antes de expor o estado do Auth', async () => {
+  it('inicializa a persistencia antes de expor o estado do Auth', async () => {
     const source = await readFile(new URL('../js/config/firebase-config.js', import.meta.url), 'utf8');
     expect(source).toContain('initializeAuth(app');
     expect(source).toContain('indexedDBLocalPersistence');
@@ -71,4 +79,5 @@ describe('restauração da sessão', () => {
     expect(source).not.toContain('browserSessionPersistence');
     expect(source).toContain('auth.authStateReady()');
     expect(source).not.toContain('setPersistence(');
-  });});
+  });
+});

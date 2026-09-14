@@ -14,8 +14,7 @@ import {
   inMemoryPersistence,
   initializeAuth,
 } from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
-import { isTrustedDevice } from '../utils/offline.js';
+import { getFirestore } from 'firebase/firestore';
 
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
 const firebaseConfig = {
@@ -48,8 +47,10 @@ export const authReady = Promise.race([
 ]).catch(error => {
   console.warn('[Mol] Estado inicial da autenticação não pôde ser restaurado:', error.message);
 });
-export const offlinePersistenceEnabled = isTrustedDevice();
-export const db = offlinePersistenceEnabled
-  ? initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) })
-  : getFirestore(app);
+// Firestore persistente em IndexedDB estava no caminho critico do app. Quando o
+// cache local ficava corrompido ou bloqueado por outra aba, as telas privadas
+// podiam ficar eternamente em carregamento. Mantemos o Firestore online como
+// fonte principal e deixamos caches manuais por tela como fallback controlado.
+export const offlinePersistenceEnabled = false;
+export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
