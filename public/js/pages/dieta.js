@@ -47,7 +47,19 @@ const MEAL_COMBINATIONS = [
   { label: 'Tapioca + ovos', foods: [['Tapioca pronta', 100], ['Ovo cozido', 100]] },
   { label: 'Whey + banana', foods: [['Whey protein', 30], ['Banana', 100]] }
 ];
+const FOOD_EQUIVALENTS = [
+  ['Peito de frango grelhado', ['Patinho moído refogado', 'Tilápia grelhada', 'Atum em água', 'Ovo cozido']],
+  ['Arroz branco cozido', ['Arroz integral cozido', 'Batata inglesa cozida', 'Mandioca cozida', 'Macarrão cozido']],
+  ['Feijão carioca cozido', ['Feijão preto cozido', 'Lentilha cozida', 'Grão-de-bico cozido']],
+  ['Pão de forma', ['Pão integral', 'Pão francês', 'Tapioca pronta', 'Cuscuz de milho cozido']],
+  ['Banana', ['Maçã', 'Mamão', 'Morango', 'Uva']],
+  ['Leite integral', ['Leite desnatado', 'Leite sem lactose integral', 'Bebida de soja sem açúcar']]
+];
 const catalogFood = name => FOOD_CATALOG.find(food => food.nome === name);
+function equivalentSuggestions(meal) {
+  const names = mealFoods(meal).map(food => food.nome);
+  return FOOD_EQUIVALENTS.filter(([base]) => names.includes(base)).map(([base, options]) => ({ base, options: options.filter(name => catalogFood(name)).slice(0, 4) })).filter(item => item.options.length).slice(0, 4);
+}
 const dietCacheKey = uid => `mol-diet-cache-${uid}`;
 function readDietCache(uid) {
   try {
@@ -270,9 +282,11 @@ function optionGroupsHTML(meal) {
 function openMeal(mealId, { editable = dietMode === 'edit' } = {}) {
   const meal = meals.find(item => item.id === mealId); if (!meal) return;
   const total = nutritionTotals([meal]);
+  const equivalents = equivalentSuggestions(meal);
+  const equivalentsHTML = equivalents.length ? `<section class="mt-5 rounded-2xl mol-soft p-4 text-left"><p class="text-xs font-bold uppercase tracking-wider text-neon">Trocas equivalentes</p><div class="mt-3 space-y-3">${equivalents.map(item => `<div><p class="text-xs font-bold text-gray-300">${escapeHTML(item.base)}</p><p class="mt-1 text-xs leading-relaxed text-gray-500">${item.options.map(option => escapeHTML(option)).join(' · ')}</p></div>`).join('')}</div></section>` : '';
   const editTools = editable ? `<button id="add-food" type="button" class="mt-5 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button><section class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Combinações rápidas</p><div id="meal-combinations" class="mt-2 flex gap-2 overflow-x-auto pb-1">${MEAL_COMBINATIONS.map((item, index) => `<button type="button" data-combination="${index}" class="shrink-0 rounded-xl mol-soft px-3 py-2 text-xs font-bold text-gray-300">+ ${item.label}</button>`).join('')}</div></section>` : '';
   const editActions = editable ? '<div class="mt-6 grid grid-cols-2 gap-3"><button id="edit-meal" type="button" class="min-h-11 rounded-xl mol-soft text-sm font-bold">Editar</button><button id="delete-meal" type="button" class="min-h-11 rounded-xl bg-red-500/10 text-sm font-bold text-red-300">Excluir</button></div>' : '';
-  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div>${meal.observacao ? `<p class="mt-4 rounded-2xl mol-soft p-4 text-sm text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}${editTools}<div id="meal-foods" class="mt-4 space-y-2"></div>${optionGroupsHTML(meal)}${editActions}`);
+  modal(meal.nome, `<p class="text-sm text-neon">${escapeHTML(meal.hora)} · ${rounded(total.kcal)} kcal</p><div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div>${meal.observacao ? `<p class="mt-4 rounded-2xl mol-soft p-4 text-sm text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}${editTools}<div id="meal-foods" class="mt-4 space-y-2"></div>${optionGroupsHTML(meal)}${equivalentsHTML}${editActions}`);
   $('meal-foods').innerHTML = meal.alimentos.length ? meal.alimentos.map(food => foodCard(food, editable)).join('') : '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento fixo nesta refeição.</p>';
   if (!editable) return;
   $('add-food').onclick = () => openFoodSearch(meal.id); $('edit-meal').onclick = () => openMealForm(meal.id);
