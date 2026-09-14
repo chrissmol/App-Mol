@@ -25,9 +25,11 @@ let sessaoIniciadaEm = null;
 let descansoSegundos = 90;
 let descansoTotal = 90;
 let descansoInterval = null;
+let descansoPausado = false;
 let finalizandoTreino = false;
 let checkinPreTreino = null;
 let descansoTerminaEm = null;
+let descansoContexto = null;
 let ultimoRascunhoSalvoEm = 0;
 let wakeLock = null;
 let modoCompacto = getLocalItem('mol-workout-compact') === 'true';
@@ -207,9 +209,59 @@ const btnAddExercicio = document.getElementById('btn-add-exercicio');
 const inputBuscaExercicio = document.getElementById('input-busca-exercicio');
 const inputBuscaRotina = document.getElementById('input-busca-rotina');
 const libraryResultsSummary = document.getElementById('library-results-summary');
+
+function configurarPainelDescanso() {
+  const panel = document.getElementById('rest-timer');
+  if (!panel) return;
+  panel.className = 'rest-timer-panel hidden is-expanded rounded-3xl border border-neon/30 mol-dialog-surface p-4 shadow-2xl backdrop-blur-xl';
+  panel.setAttribute('aria-label', 'Cronometro de descanso');
+  panel.innerHTML = `
+    <div class="rest-mini">
+      <button type="button" id="btn-open-rest" class="flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl bg-white/5 px-4 text-left">
+        <span class="min-w-0"><span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Descanso</span><span id="rest-mini-title" class="block truncate text-sm font-bold text-white">Proxima serie</span></span>
+        <span id="rest-mini-time" class="shrink-0 text-xl font-extrabold tabular-nums text-white">01:30</span>
+      </button>
+      <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-mini-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
+    </div>
+    <div class="rest-expanded">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p id="rest-label" class="text-[10px] font-bold uppercase tracking-[.16em] text-neon">Descanso inteligente</p>
+          <h2 id="rest-exercise" class="mt-1 truncate text-lg font-extrabold">Exercicio</h2>
+          <p id="rest-next" class="mt-1 text-xs text-gray-400">Proxima serie</p>
+        </div>
+        <button type="button" id="btn-collapse-rest" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-gray-300" aria-label="Minimizar descanso"><i data-lucide="chevron-down" class="h-4 w-4"></i></button>
+      </div>
+      <div class="mt-5 grid place-items-center">
+        <div id="rest-ring" class="rest-ring relative">
+          <div class="text-center">
+            <span id="rest-time" class="block text-4xl font-extrabold tabular-nums text-white">01:30</span>
+            <span id="rest-hint" class="mt-1 block text-[11px] font-semibold text-gray-500">Recupere a respiracao</span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-5 grid grid-cols-4 gap-2">
+        <button type="button" id="btn-sub-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">-15s</button>
+        <button type="button" id="btn-pause-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">Pausar</button>
+        <button type="button" id="btn-add-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">+15s</button>
+        <button type="button" id="btn-skip-rest" class="min-h-11 rounded-xl bg-neon text-xs font-bold text-black">Pular</button>
+      </div>
+      <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
+    </div>`;
+}
+
+configurarPainelDescanso();
 const restTimer = document.getElementById('rest-timer');
 const restTime = document.getElementById('rest-time');
 const restProgress = document.getElementById('rest-progress');
+const restMiniTime = document.getElementById('rest-mini-time');
+const restMiniTitle = document.getElementById('rest-mini-title');
+const restMiniProgress = document.getElementById('rest-mini-progress');
+const restRing = document.getElementById('rest-ring');
+const restExercise = document.getElementById('rest-exercise');
+const restNext = document.getElementById('rest-next');
+const restHint = document.getElementById('rest-hint');
+const btnPauseRest = document.getElementById('btn-pause-rest');
 document.getElementById('btn-concluir-treino')?.addEventListener('click', () => window.finalizarEConcluirTreino());
 
 watchProtectedPage(user => {
@@ -297,14 +349,10 @@ if (btnVoltar) {
       const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
       if (rotina && rotina.exercicios) {
         const exerciciosLimpos = cleanRoutineExercises(rotina.exercicios);
-        try {
-          await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosLimpos });
-          rotina.exercicios = exerciciosLimpos;
-        } catch (error) {
-          console.error("Erro ao limpar rascunho do treino:", error);
-          showToast('Não foi possível encerrar o treino. Verifique sua conexão.');
-          return;
-        }
+        const rotinaIdCancelada = rotinaAbertaId;
+        rotina.exercicios = exerciciosLimpos;
+        updateDoc(doc(db, "treinos", rotinaIdCancelada), { exercicios: exerciciosLimpos })
+          .catch(error => console.warn('Limpeza remota do treino cancelado falhou:', error.message));
       }
     }
 
@@ -327,45 +375,126 @@ function resetarScrollBiblioteca() {
   window.scrollTo(0, 0);
 }
 
+const formatarDescanso = seconds => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+
+function proximaSerie(indexExercicio, indexSerie) {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  const exercicios = rotina?.exercicios || [];
+  for (let exIndex = indexExercicio; exIndex < exercicios.length; exIndex++) {
+    const startSet = exIndex === indexExercicio ? indexSerie + 1 : 0;
+    const nextSetIndex = (exercicios[exIndex].series || []).findIndex((serie, setIndex) => setIndex >= startSet && !serie.concluida);
+    if (nextSetIndex >= 0) return { exercicio: exercicios[exIndex], indexSerie: nextSetIndex };
+  }
+  return null;
+}
+
+function descansoSugerido(exercicio, serie) {
+  const base = Number(exercicio?.descansoSegundos) || 90;
+  let ajuste = 0;
+  if (serie?.tipo === 'W') ajuste -= 30;
+  if (serie?.tipo === 'F') ajuste += 30;
+  if (serie?.tipo === 'D') ajuste += 45;
+  const rir = Number(serie?.rir);
+  if (Number.isFinite(rir) && rir <= 1) ajuste += 30;
+  if (Number.isFinite(rir) && rir >= 4) ajuste -= 15;
+  return Math.max(15, Math.min(WORKOUT_LIMITS.rest, base + ajuste));
+}
+
+function contextoDescanso(indexExercicio, indexSerie) {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  const exercicio = rotina?.exercicios?.[indexExercicio] || rotina?.exercicios?.find(ex => ex.series?.some(s => s.concluida));
+  const serie = exercicio?.series?.[indexSerie] || null;
+  const next = proximaSerie(indexExercicio, indexSerie);
+  const nextSet = next?.exercicio?.series?.[next.indexSerie];
+  const nextKg = nextSet?.kg || nextSet?.anteriorKg || serie?.kg || '';
+  const nextReps = nextSet?.reps || nextSet?.anteriorReps || serie?.reps || '';
+  return {
+    seconds: descansoSugerido(exercicio, serie),
+    title: exercicio?.nome || 'Descanso',
+    nextTitle: next
+      ? `Proxima: serie ${next.indexSerie + 1} de ${next.exercicio.series.length}${nextKg || nextReps ? ` - ${nextKg || '-'} kg - ${nextReps || '-'} reps` : ''}`
+      : 'Ultima serie registrada. Voce pode finalizar o treino.',
+    hint: serie?.tipo === 'W'
+      ? 'Aquecimento: mantenha o ritmo'
+      : Number(serie?.rir) <= 1 || ['F', 'D'].includes(serie?.tipo)
+        ? 'Serie pesada: recupere de verdade'
+        : 'Recupere a respiracao'
+  };
+}
+
+function ajustarDescanso(delta) {
+  if (!descansoTerminaEm && !descansoPausado) return;
+  descansoSegundos = Math.max(0, Math.min(WORKOUT_LIMITS.rest, descansoSegundos + delta));
+  descansoTotal = Math.max(15, Math.min(WORKOUT_LIMITS.rest, descansoTotal + delta));
+  if (!descansoPausado) descansoTerminaEm = Date.now() + descansoSegundos * 1000;
+  atualizarDescanso();
+}
+
 function atualizarDescanso() {
-  if (descansoTerminaEm) descansoSegundos = Math.max(0, Math.ceil((descansoTerminaEm - Date.now()) / 1000));
-  const minutos = Math.floor(descansoSegundos / 60);
-  const segundos = descansoSegundos % 60;
-  restTime.textContent = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
-  restProgress.style.width = `${Math.max(0, (descansoSegundos / descansoTotal) * 100)}%`;
+  if (descansoTerminaEm && !descansoPausado) descansoSegundos = Math.max(0, Math.ceil((descansoTerminaEm - Date.now()) / 1000));
+  const display = formatarDescanso(descansoSegundos);
+  const progress = Math.max(0, Math.min(1, descansoTotal ? descansoSegundos / descansoTotal : 0));
+  restTime.textContent = display;
+  if (restMiniTime) restMiniTime.textContent = display;
+  if (restProgress) restProgress.style.width = `${progress * 100}%`;
+  if (restMiniProgress) restMiniProgress.style.width = `${progress * 100}%`;
+  if (restRing) restRing.style.setProperty('--rest-progress', String(progress));
+  if (restExercise && descansoContexto) restExercise.textContent = descansoContexto.title;
+  if (restNext && descansoContexto) restNext.textContent = descansoContexto.nextTitle;
+  if (restMiniTitle && descansoContexto) restMiniTitle.textContent = descansoContexto.title;
+  if (restHint && descansoContexto) restHint.textContent = descansoPausado ? 'Descanso pausado' : descansoContexto.hint;
+  if (btnPauseRest) btnPauseRest.textContent = descansoPausado ? 'Retomar' : 'Pausar';
 }
 
 function pararDescanso() {
   clearInterval(descansoInterval);
   descansoInterval = null;
   descansoTerminaEm = null;
+  descansoPausado = false;
+  descansoContexto = null;
   restTimer.classList.add('hidden');
+  restTimer.classList.add('is-expanded');
   document.body.classList.remove('rest-active');
 }
 
-function iniciarDescanso(indexExercicio) {
+function iniciarDescanso(indexExercicio, indexSerie = 0) {
   clearInterval(descansoInterval);
-  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
-  const exercise = rotina?.exercicios?.[indexExercicio] || rotina?.exercicios?.find(ex => ex.series?.some(s => s.concluida));
-  descansoSegundos = exercise?.descansoSegundos || 90; descansoTotal = descansoSegundos; descansoTerminaEm = Date.now() + descansoSegundos * 1000;
+  descansoContexto = contextoDescanso(indexExercicio, indexSerie);
+  descansoSegundos = descansoContexto.seconds;
+  descansoTotal = descansoSegundos;
+  descansoTerminaEm = Date.now() + descansoSegundos * 1000;
+  descansoPausado = false;
   restTimer.classList.remove('hidden');
+  restTimer.classList.add('is-expanded');
   document.body.classList.add('rest-active');
   atualizarDescanso();
   descansoInterval = setInterval(() => {
     atualizarDescanso();
-    if (descansoSegundos <= 0) { pararDescanso(); showToast('Descanso concluído. Vamos para a próxima!', 'success'); }
+    if (descansoSegundos <= 0) { pararDescanso(); showToast('Descanso concluido. Vamos para a proxima!', 'success'); }
   }, 1000);
+  renderIcons(restTimer);
 }
 
 document.getElementById('btn-skip-rest')?.addEventListener('click', pararDescanso);
+document.getElementById('btn-sub-rest')?.addEventListener('click', () => ajustarDescanso(-15));
 document.getElementById('btn-add-rest')?.addEventListener('click', () => {
-  if (!descansoTerminaEm) return;
-  if (descansoTotal >= WORKOUT_LIMITS.rest) return showToast('O descanso máximo é de 60 minutos.');
-  const addition = Math.min(30, WORKOUT_LIMITS.rest - descansoTotal);
-  descansoTerminaEm += addition * 1000;
-  descansoTotal += addition;
+  if (descansoTotal >= WORKOUT_LIMITS.rest) return showToast('O descanso maximo e de 60 minutos.');
+  ajustarDescanso(15);
+});
+document.getElementById('btn-pause-rest')?.addEventListener('click', () => {
+  if (!descansoTerminaEm && !descansoPausado) return;
+  if (descansoPausado) {
+    descansoTerminaEm = Date.now() + descansoSegundos * 1000;
+    descansoPausado = false;
+  } else {
+    descansoSegundos = Math.max(0, Math.ceil((descansoTerminaEm - Date.now()) / 1000));
+    descansoTerminaEm = null;
+    descansoPausado = true;
+  }
   atualizarDescanso();
 });
+document.getElementById('btn-collapse-rest')?.addEventListener('click', () => restTimer.classList.remove('is-expanded'));
+document.getElementById('btn-open-rest')?.addEventListener('click', () => restTimer.classList.add('is-expanded'));
 
 document.addEventListener('input', (event) => {
   const match = event.target.id?.match(/^(kg|reps|rir)-(\d+)-(\d+)$/);
@@ -1201,7 +1330,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
   }
   salvarRascunho({ force: true });
   abrirRotina(rotinaAbertaId);
-  if (serie.concluida) iniciarDescanso(indexEx);
+  if (serie.concluida) iniciarDescanso(indexEx, indexSerie);
 };
 
 // ---------------------------------------------
