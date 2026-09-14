@@ -235,11 +235,12 @@ function configurarPainelDescanso() {
       <div class="mt-5 grid place-items-center">
         <div id="rest-ring" class="rest-ring relative">
           <div class="text-center">
-            <span id="rest-time" class="block text-4xl font-extrabold tabular-nums text-white">01:30</span>
-            <span id="rest-hint" class="mt-1 block text-[11px] font-semibold text-gray-500">Recupere a respiracao</span>
+            <span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Restam</span>
+            <span id="rest-time" class="mt-1 block text-[2.7rem] font-extrabold leading-none tabular-nums text-white">01:30</span>
           </div>
         </div>
       </div>
+      <p id="rest-hint" class="mt-4 min-h-5 text-center text-xs font-semibold text-gray-400">Recupere a respiracao</p>
       <div class="mt-5 grid grid-cols-4 gap-2">
         <button type="button" id="btn-sub-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">-15s</button>
         <button type="button" id="btn-pause-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">Pausar</button>
