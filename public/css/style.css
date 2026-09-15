@@ -99,6 +99,41 @@ body {
   color: var(--mol-text);
 }
 
+.mol-state {
+  border: 1px solid var(--mol-border);
+  border-radius: 1.5rem;
+  background: var(--mol-surface-soft);
+  color: var(--mol-text);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.mol-state-title {
+  color: var(--mol-text);
+  font-size: .95rem;
+  font-weight: 800;
+}
+
+.mol-state-copy {
+  margin-top: .4rem;
+  color: var(--mol-muted);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+
+.mol-state-action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: .9rem;
+  background: var(--mol-brand-green);
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 800;
+  padding: 0 1rem;
+}
+
 .mol-field {
   min-height: 3rem;
   border: 1px solid var(--mol-border);

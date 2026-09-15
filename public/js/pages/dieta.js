@@ -158,7 +158,7 @@ function render() {
     const outsideWindow = mealIsOutsideFastingWindow(meal, fasting) ? ' · fora da janela' : '';
     const macroLine = [['P', total.protein], ['C', total.carbs], ['G', total.fat]].map(([label, value]) => `<span class="rounded-xl bg-white/5 px-2 py-1">${label} ${rounded(value)}g</span>`).join('');
     return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${mealFoods(meal).length} alimento(s) · ${rounded(total.kcal)} kcal${outsideWindow}</p><div class="mt-3 flex flex-wrap gap-1.5 text-[10px] font-bold text-gray-300">${macroLine}</div>${meal.observacao ? `<p class="mt-3 line-clamp-2 rounded-2xl bg-white/5 p-3 text-xs text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}</div><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-gray-400"><i data-lucide="chevron-right" class="h-5 w-5"></i></span></div></button></article>`;
-  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeicao neste dia</p><p class="mt-2 text-sm text-gray-500">Use a edicao para escolher em quais dias cada refeicao aparece.</p><button type="button" data-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Adicionar refeição</button></div>';
+  }).join('') : '<div class="mol-state"><p class="mol-state-title">Nenhuma refeição neste dia</p><p class="mol-state-copy">Use a edição para escolher em quais dias cada refeição aparece.</p><button type="button" data-empty-add class="mol-state-action mt-5">Adicionar refeição</button></div>';
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
   renderEditView();
@@ -184,7 +184,7 @@ function renderEditView() {
   list.innerHTML = sorted.length ? sorted.map(meal => {
     const total = nutritionTotals([meal]);
     return `<article class="glass-card rounded-3xl p-5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${mealFoods(meal).length} alimento(s) · ${rounded(total.kcal)} kcal</p></div><button type="button" data-edit-view="${escapeHTML(meal.id)}" class="min-h-10 rounded-xl mol-soft px-3 text-xs font-bold">Visualizar</button></div><div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"><button type="button" data-edit-meal="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl bg-neon px-3 text-xs font-bold text-black">Editar refeição</button><button type="button" data-edit-foods="${escapeHTML(meal.id)}" class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold">Alimentos</button><button type="button" data-delete-meal="${escapeHTML(meal.id)}" class="col-span-2 min-h-11 rounded-xl bg-red-500/10 px-3 text-xs font-bold text-red-300 sm:col-span-1">Excluir</button></div></article>`;
-  }).join('') : '<div class="glass-card rounded-3xl px-5 py-10 text-center"><p class="font-bold">Nenhuma refeição para editar</p><p class="mt-2 text-sm text-gray-500">Crie sua primeira refeição e adicione quantos alimentos quiser.</p><button type="button" data-edit-empty-add class="mt-5 min-h-11 rounded-xl bg-neon px-5 text-sm font-bold text-black">Nova refeição</button></div>';
+  }).join('') : '<div class="mol-state"><p class="mol-state-title">Nenhuma refeição para editar</p><p class="mol-state-copy">Crie sua primeira refeição e adicione quantos alimentos quiser.</p><button type="button" data-edit-empty-add class="mol-state-action mt-5">Nova refeição</button></div>';
   list.querySelectorAll('[data-edit-view]').forEach(button => button.onclick = () => openMeal(button.dataset.editView));
   list.querySelectorAll('[data-edit-meal]').forEach(button => button.onclick = () => openMealForm(button.dataset.editMeal));
   list.querySelectorAll('[data-edit-foods]').forEach(button => button.onclick = () => openMeal(button.dataset.editFoods, { editable: true }));
@@ -382,7 +382,7 @@ async function load() {
     const message = error?.code === 'permission-denied'
       ? 'Sua dieta ainda não está liberada pelas regras do banco.'
       : 'Não foi possível carregar sua dieta.';
-    $('diet-status').innerHTML = `<p>${message}</p><button id="retry-diet" type="button" class="mt-4 min-h-10 rounded-xl bg-neon px-4 text-xs font-bold text-black">Tentar novamente</button>`;
+    $('diet-status').innerHTML = `<div class="mol-state"><p class="mol-state-title">${message}</p><button id="retry-diet" type="button" class="mol-state-action mt-4">Tentar novamente</button></div>`;
     $('retry-diet').onclick = load;
     showToast(message);
   }

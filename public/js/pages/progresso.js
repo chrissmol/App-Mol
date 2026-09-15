@@ -39,7 +39,7 @@ function renderSummary(volume, records) {
 function renderVolume(volume) {
   const entries = Object.entries(volume).sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
-    $('volume').innerHTML = `<div class="rounded-2xl bg-white/5 px-4 py-6 text-center"><p class="text-sm font-bold">Nenhuma série nos últimos ${selectedDays} dias</p><p class="mt-1 text-xs text-gray-500">Conclua um treino para visualizar a distribuição.</p><a href="./treino.html" class="mt-4 inline-flex min-h-10 items-center rounded-xl bg-neon px-4 text-xs font-bold text-black">Ir para treinos</a></div>`;
+    $('volume').innerHTML = `<div class="mol-state"><p class="mol-state-title">Nenhuma série nos últimos ${selectedDays} dias</p><p class="mol-state-copy">Conclua um treino para visualizar a distribuição.</p><a href="./treino.html" class="mol-state-action mt-4">Ir para treinos</a></div>`;
     return;
   }
   const max = Math.max(...entries.map(([, sets]) => sets), 1);
@@ -53,7 +53,7 @@ function recordCard(record) {
 
 function renderRecords(records) {
   if (!records.length) {
-    $('prs').innerHTML = '<div class="rounded-2xl bg-white/5 px-4 py-6 text-center"><p class="text-sm font-bold">Ainda não há marcas calculáveis</p><p class="mt-1 text-xs text-gray-500">Use carga maior que zero e até 15 repetições para uma estimativa confiável.</p></div>';
+    $('prs').innerHTML = '<div class="mol-state"><p class="mol-state-title">Ainda não há marcas calculáveis</p><p class="mol-state-copy">Use carga maior que zero e até 15 repetições para uma estimativa confiável.</p></div>';
     return;
   }
   const visible = showAllRecords ? records : records.slice(0, 8);
@@ -69,7 +69,7 @@ function renderInsight(volume) {
 
 function renderTrends(trends) {
   if (!trends.length) {
-    $('trends').innerHTML = '<div class="rounded-2xl mol-soft px-4 py-6 text-center"><p class="text-sm font-bold">Precisamos de duas sessões</p><p class="mt-1 text-xs text-gray-500">Repita um exercício com carga registrada para calcular uma tendência.</p></div>';
+    $('trends').innerHTML = '<div class="mol-state"><p class="mol-state-title">Precisamos de duas sessões</p><p class="mol-state-copy">Repita um exercício com carga registrada para calcular uma tendência.</p></div>';
     return;
   }
   const labels = { improving: ['Evoluindo', 'text-neon', 'trending-up'], stable: ['Estável', 'text-blue-400', 'minus'], declining: ['Atenção', 'text-orange-400', 'trending-down'] };
@@ -111,8 +111,8 @@ async function shareProgress() {
 
 function renderError() {
   $('weekly-sets').textContent = '—'; $('trained-groups').textContent = '—'; $('record-count').textContent = '—';
-  $('volume').innerHTML = '<div class="rounded-2xl bg-white/5 p-5 text-center"><p class="text-sm text-gray-500">Não foi possível carregar a distribuição.</p><button id="retry-progress" type="button" class="mt-4 min-h-10 rounded-xl bg-neon px-4 text-xs font-bold text-black">Tentar novamente</button></div>';
-  $('prs').innerHTML = '<div class="rounded-2xl bg-white/5 p-5 text-center text-sm text-gray-500">Os recordes estarão disponíveis após recarregar os dados.</div>';
+  $('volume').innerHTML = '<div class="mol-state"><p class="mol-state-title">Não foi possível carregar a distribuição.</p><button id="retry-progress" type="button" class="mol-state-action mt-4">Tentar novamente</button></div>';
+  $('prs').innerHTML = '<div class="mol-state"><p class="mol-state-copy">Os recordes estarão disponíveis após recarregar os dados.</p></div>';
   $('retry-progress')?.addEventListener('click', loadProgress);
 }
 

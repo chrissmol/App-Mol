@@ -120,9 +120,9 @@ function renderSessions() {
   const filtered = filteredSessions();
   $('session-count').textContent = `${filtered.length} ${filtered.length === 1 ? 'sessão' : 'sessões'}`;
   if (!sessions.length) {
-    $('sessions').innerHTML = '<div class="glass-card rounded-3xl px-5 py-10 text-center"><span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="calendar-check" class="h-6 w-6"></i></span><h3 class="mt-4 font-bold">Seu histórico começa no primeiro treino</h3><p class="mt-2 text-sm text-gray-500">Ao concluir uma sessão, os detalhes aparecerão aqui.</p><a href="./treino.html" class="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-neon px-5 text-sm font-bold text-black">Ir para treinos</a></div>';
+    $('sessions').innerHTML = '<div class="mol-state"><span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="calendar-check" class="h-6 w-6"></i></span><h3 class="mol-state-title mt-4">Seu histórico começa no primeiro treino</h3><p class="mol-state-copy">Ao concluir uma sessão, os detalhes aparecerão aqui.</p><a href="./treino.html" class="mol-state-action mt-5">Ir para treinos</a></div>';
   } else if (!filtered.length) {
-    $('sessions').innerHTML = '<div class="glass-card rounded-2xl p-6 text-center"><p class="text-sm font-bold">Nenhuma sessão encontrada</p><p class="mt-2 text-xs text-gray-500">Altere o mês, o dia selecionado ou a busca.</p></div>';
+    $('sessions').innerHTML = '<div class="mol-state"><p class="mol-state-title">Nenhuma sessão encontrada</p><p class="mol-state-copy">Altere o mês, o dia selecionado ou a busca.</p></div>';
   } else {
     $('sessions').innerHTML = filtered.slice(0, visibleLimit).map(sessionCard).join(''); bindDeleteActions();
   }
@@ -136,7 +136,7 @@ function renderAll() { renderSummary(); renderCalendar(); renderSessions(); }
 function renderError() {
   $('total-workouts').textContent = '—'; $('total-workouts-label').textContent = 'histórico indisponível'; $('total-volume').textContent = '—'; $('month-summary').textContent = 'Não foi possível carregar';
   $('calendar').innerHTML = '<p class="col-span-7 py-8 text-center text-sm text-gray-500">Tente novamente em alguns instantes.</p>';
-  $('sessions').innerHTML = '<div class="glass-card rounded-2xl p-5 text-center"><p class="text-sm text-gray-500">Não foi possível carregar as sessões.</p><button id="retry-history" type="button" class="mt-4 min-h-10 rounded-xl bg-neon px-4 text-xs font-bold text-black">Tentar novamente</button></div>';
+  $('sessions').innerHTML = '<div class="mol-state"><p class="mol-state-title">Não foi possível carregar as sessões.</p><button id="retry-history" type="button" class="mol-state-action mt-4">Tentar novamente</button></div>';
   $('retry-history')?.addEventListener('click', () => loadHistory({ ignoreCache: true }));
 }
 

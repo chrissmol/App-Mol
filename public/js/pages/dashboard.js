@@ -76,7 +76,7 @@ function updateDailyBrief() {
   items.innerHTML = [
     ['dumbbell', 'Treino', dailyBrief.workout],
     ['utensils', 'Dieta', dailyBrief.meal],
-    ['activity', 'Semana', dailyBrief.progress]
+    ['chart-no-axes-combined', 'Semana', dailyBrief.progress]
   ].map(([icon, label, value]) => `<div class="rounded-2xl bg-white/5 p-3"><i data-lucide="${icon}" class="mb-2 h-4 w-4 text-neon"></i><span class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">${label}</span><strong class="mt-1 block truncate text-sm text-white">${value}</strong></div>`).join('');
   renderIcons();
 }

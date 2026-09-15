@@ -8,6 +8,7 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { SET_METHODS, cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, defaultMethodDetails, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, setMethod, setSummary, setVolume, validateContextualSet, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
 import { matchesExerciseSearch, progressionAdvice, rankExerciseSubstitutes } from '../modules/workout-coach.js';
 import { estimate1RM } from '../modules/workout-analytics.js';
+import { WORKOUT_TEMPLATES } from '../modules/workout-templates.js';
 import { detailedExerciseGroup as grupoDetalhado, exerciseEquipment as equipamentoDo, exerciseGuidance as orientacaoDo } from '../modules/exercise-presentation.js';
 import { buildExercisePerformanceHistory, MAX_CUSTOM_EXERCISES, normalizeExerciseLibraryPreferences } from '../modules/exercise-library.js';
 import { getLocalItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
@@ -152,66 +153,6 @@ const methodMeta = {
   [SET_METHODS.MYO_REPS]: { label: 'Myo-Reps', badge: 'MY', tone: 'text-neon bg-neon/10' },
   [SET_METHODS.CLUSTER]: { label: 'Cluster', badge: 'CL', tone: 'text-neon bg-neon/10' },
   [SET_METHODS.ISOMETRIC]: { label: 'Isometria', badge: 'ISO', tone: 'text-orange-400 bg-orange-400/10' }
-};
-
-const WORKOUT_TEMPLATES = {
-  'Upper / Lower': {
-    description: '4 dias · superior/inferior com base forte',
-    days: [1, 2, 4, 5],
-    exercises: [
-      ['Supino Reto (Barra)', 'Peito', 8, 10, 2, 120],
-      ['Remada Curvada (Barra)', 'Costas', 8, 10, 2, 120],
-      ['Desenvolvimento Militar (Barra)', 'Ombros', 6, 10, 2, 120],
-      ['Agachamento Livre', 'Quadríceps', 6, 10, 2, 150],
-      ['Levantamento Terra Romeno', 'Posterior', 8, 12, 2, 120],
-      ['Rosca Direta (Barra)', 'Braços', 10, 12, 1, 75]
-    ]
-  },
-  'Push Pull Legs': {
-    description: '6 dias · push, pull e legs editável',
-    days: [1, 2, 3, 4, 5, 6],
-    exercises: [
-      ['Supino Inclinado (Halter)', 'Peito', 8, 12, 2, 90],
-      ['Desenvolvimento com Halteres', 'Ombros', 8, 12, 2, 90],
-      ['Tríceps Pulley', 'Braços', 10, 15, 1, 60],
-      ['Puxada Alta (Frente / Triângulo)', 'Costas', 8, 12, 2, 90],
-      ['Remada Baixa (Triângulo)', 'Costas', 8, 12, 2, 90],
-      ['Leg Press 45° com Pegada Alta e Fechada', 'Quadríceps', 10, 15, 2, 120]
-    ]
-  },
-  'Full Body 3x': {
-    description: '3 dias · simples, eficiente e fácil de manter',
-    days: [1, 3, 5],
-    exercises: [
-      ['Agachamento Goblet com Halter', 'Pernas', 10, 12, 2, 90],
-      ['Supino Reto (Halter)', 'Peito', 8, 12, 2, 90],
-      ['Remada Curvada (Halter)', 'Costas', 8, 12, 2, 90],
-      ['Elevação Lateral', 'Ombros', 12, 15, 1, 60],
-      ['Prancha', 'Abdômen', 20, 45, 2, 60]
-    ]
-  },
-  'Força 5x5': {
-    description: '3 dias · cargas progressivas e poucas variações',
-    days: [1, 3, 5],
-    sets: 5,
-    exercises: [
-      ['Agachamento Livre', 'Quadríceps', 5, 5, 2, 180],
-      ['Supino Reto (Barra)', 'Peito', 5, 5, 2, 180],
-      ['Remada Curvada (Barra)', 'Costas', 5, 5, 2, 150],
-      ['Desenvolvimento Militar (Barra)', 'Ombros', 5, 5, 2, 150]
-    ]
-  },
-  'Casa / Sem academia': {
-    description: 'Viagem · peso corporal, halteres e elástico',
-    days: [1, 3, 5],
-    exercises: [
-      ['Flexão de Braço', 'Peito', 8, 20, 2, 60],
-      ['Agachamento Livre', 'Quadríceps', 12, 25, 2, 60],
-      ['Remada Curvada (Halter)', 'Costas', 10, 15, 2, 75],
-      ['Elevação Lateral', 'Ombros', 12, 20, 1, 60],
-      ['Prancha', 'Abdômen', 20, 60, 2, 45]
-    ]
-  }
 };
 
 function isAdvancedSet(serie) { return setMethod(serie) !== SET_METHODS.NORMAL; }
@@ -397,7 +338,7 @@ async function carregarRotinasDoBanco() {
   } catch (error) {
     console.error("Erro ao buscar:", error);
     if (cachedRoutines) return;
-    rotinasList.innerHTML = '<div class="my-10 text-center"><p class="text-sm text-red-400">Não foi possível carregar suas rotinas.</p><button id="retry-routines" type="button" class="mt-4 min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-white">Tentar novamente</button></div>';
+    rotinasList.innerHTML = '<div class="mol-state my-10"><p class="mol-state-title text-red-300">Não foi possível carregar suas rotinas.</p><button id="retry-routines" type="button" class="mol-state-action mt-4">Tentar novamente</button></div>';
     document.getElementById('retry-routines')?.addEventListener('click', carregarRotinasDoBanco);
     showToast(error.code === 'permission-denied' ? 'Sem permissão para ler treinos. Revise as regras do Firestore.' : 'Não foi possível carregar suas rotinas.');
   }
@@ -760,13 +701,13 @@ window.mostrarInfoTreino = (tipo) => {
 
 function renderRotinas() {
   if (rotinasReais.length === 0) {
-    rotinasList.innerHTML = '<p class="text-center text-gray-500 my-10">Você ainda não tem treinos.</p>';
+    rotinasList.innerHTML = '<div class="mol-state my-10"><p class="mol-state-title">Você ainda não tem treinos.</p><p class="mol-state-copy">Crie uma rotina ou use um modelo para começar.</p></div>';
     return;
   }
   const termo = inputBuscaRotina?.value.trim().toLocaleLowerCase('pt-BR') || '';
   const rotinasFiltradas = rotinasReais.filter(rotina => rotina.nome.toLocaleLowerCase('pt-BR').includes(termo));
   if (rotinasFiltradas.length === 0) {
-    rotinasList.innerHTML = '<p class="my-10 text-center text-sm text-gray-500">Nenhuma rotina encontrada.</p>';
+    rotinasList.innerHTML = '<div class="mol-state my-10"><p class="mol-state-title">Nenhuma rotina encontrada.</p><p class="mol-state-copy">Tente outro termo de busca.</p></div>';
     return;
   }
   rotinasList.innerHTML = rotinasFiltradas.map(rotina => `
@@ -1078,7 +1019,7 @@ function renderizarBiblioteca(filtro = '') {
   }
 
   if (exerciciosFiltrados.length === 0) {
-    bibliotecaList.innerHTML = '<div class="my-10 rounded-3xl border border-white/10 mol-soft p-6 text-center"><p class="text-sm font-bold">Nenhum exercício encontrado.</p><p class="mt-1 text-xs text-gray-500">Tente outro nome, grupo muscular ou crie um exercício personalizado.</p></div>';
+    bibliotecaList.innerHTML = '<div class="mol-state my-10"><p class="mol-state-title">Nenhum exercício encontrado.</p><p class="mol-state-copy">Tente outro nome, grupo muscular ou crie um exercício personalizado.</p></div>';
     return;
   }
 
@@ -1264,7 +1205,7 @@ function abrirRotina(id) {
     exerciciosList.innerHTML = `
       ${painelMetricasHTML}
       ${editorNomeHTML}
-      <p class="text-center text-sm text-gray-500 my-10">Nenhum exercício. Adicione abaixo!</p>
+      <div class="mol-state my-10"><p class="mol-state-title">Nenhum exercício.</p><p class="mol-state-copy">Adicione exercícios para montar esta rotina.</p></div>
     `;
   } else {
     let exerciciosHtml = rotina.exercicios.map((ex, indexEx) => {
