@@ -41,7 +41,7 @@ body {
   --mol-brand-green: #1e7349;
   --mol-brand-text: #57d493;
   --mol-neon: #57d493;
-  --mol-page-top: clamp(1rem, 2.8svh, 1.6rem);
+  --mol-page-top: clamp(.35rem, 1.2svh, .85rem);
 }
 
 :root[data-high-contrast="true"] {
@@ -962,7 +962,7 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
   padding: .5rem 0;
   border: 0;
   background: transparent;
-  color: #9ca3af !important;
+  color: var(--mol-muted-strong) !important;
 }
 
 #back:active { color: #2fbf78 !important; }
@@ -970,13 +970,13 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
 
 /* Navegação principal: dock flutuante no toque, sidebar em telas com mouse. */
 :root {
-  --mol-dock-size: 70px;
-  --mol-dock-offset: max(1.15rem, env(safe-area-inset-bottom, 0px));
+  --mol-dock-size: 66px;
+  --mol-dock-offset: max(.75rem, env(safe-area-inset-bottom, 0px));
   --mol-dock-bg: #101411;
   --mol-dock-border: rgba(87, 212, 147, .34);
   --mol-dock-muted: #8b9a91;
   --mol-dock-active: #57d493;
-  --mol-app-nav-reserve: calc(var(--mol-dock-size) + var(--mol-dock-offset) + .65rem);
+  --mol-app-nav-reserve: calc(var(--mol-dock-size) + var(--mol-dock-offset) + .35rem);
 }
 
 html[data-theme="light"] {
@@ -984,6 +984,18 @@ html[data-theme="light"] {
   --mol-dock-border: #dce7df;
   --mol-dock-muted: #5f7069;
   --mol-dock-active: #0f6b42;
+}
+
+html[data-theme="light"] body .mol-dock__trigger {
+  box-shadow:
+    0 0 0 3px rgba(15, 107, 66, .035),
+    0 12px 26px rgba(26, 49, 37, .16),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+html[data-theme="light"] body .mol-dock__pulse {
+  border-color: rgba(15, 107, 66, .1);
+  background: rgba(15, 107, 66, .035);
 }
 
 body.has-app-nav {
@@ -1020,9 +1032,9 @@ body.has-app-nav {
     var(--mol-dock-bg);
   color: var(--mol-dock-active);
   box-shadow:
-    0 0 0 7px rgba(87, 212, 147, .055),
-    0 0 32px rgba(87, 212, 147, .2),
-    0 20px 58px rgba(0,0,0,.42),
+    0 0 0 4px rgba(87, 212, 147, .045),
+    0 0 20px rgba(87, 212, 147, .15),
+    0 14px 34px rgba(0,0,0,.28),
     inset 0 1px 0 rgba(255,255,255,.12);
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
@@ -1046,18 +1058,18 @@ body.has-app-nav {
 
 .mol-dock__pulse {
   position: absolute;
-  inset: -.42rem;
+  inset: -.22rem;
   z-index: -1;
   border-radius: inherit;
   border: 1px solid rgba(87, 212, 147, .18);
-  background: rgba(87, 212, 147, .08);
-  opacity: .9;
+  background: rgba(87, 212, 147, .045);
+  opacity: .65;
   animation: molDockPulse 2.4s ease-in-out infinite;
 }
 
 @keyframes molDockPulse {
-  0%, 100% { transform: scale(.96); opacity: .55; }
-  50% { transform: scale(1.08); opacity: .95; }
+  0%, 100% { transform: scale(.98); opacity: .45; }
+  50% { transform: scale(1.035); opacity: .7; }
 }
 
 .mol-dock__scrim {
@@ -1186,7 +1198,7 @@ body.has-app-nav {
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
   }
-  .app-surface main { padding-top: max(1rem, env(safe-area-inset-top)); }
+  .app-surface main { padding-top: calc(env(safe-area-inset-top, 0px) + var(--mol-page-top)); }
 }
 
 /* Regra global de cabeçalho: retorno interno e marca nunca aparecem juntos. */
@@ -1341,28 +1353,29 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 
 .rest-timer-panel {
   position: fixed;
-  right: max(.9rem, env(safe-area-inset-right));
-  bottom: calc(var(--mol-app-nav-reserve) + .65rem);
+  right: calc(max(1rem, env(safe-area-inset-right)) + var(--mol-dock-size) + .7rem);
+  bottom: var(--mol-dock-offset);
   left: auto;
-  z-index: 90;
-  width: min(15.5rem, calc(100vw - 2rem));
-  max-width: 18rem;
+  z-index: 121;
+  width: min(13.25rem, calc(100vw - var(--mol-dock-size) - 2.9rem));
+  max-width: 13.25rem;
   transform: translateZ(0);
   will-change: transform;
   contain: layout paint;
 }
 
 .rest-timer-panel.is-expanded {
-  right: max(.9rem, env(safe-area-inset-right));
+  right: max(.75rem, env(safe-area-inset-right));
+  bottom: calc(var(--mol-dock-offset) + var(--mol-dock-size) + .7rem);
   left: auto;
-  width: min(20.5rem, calc(100vw - 1.8rem));
+  width: min(18.5rem, calc(100vw - 1.5rem));
   margin-inline: auto;
 }
 
 .rest-mini-button {
   background: color-mix(in srgb, var(--mol-surface) 94%, transparent);
   color: var(--mol-text);
-  box-shadow: 0 14px 34px rgba(0,0,0,.18);
+  box-shadow: 0 10px 24px rgba(0,0,0,.16);
 }
 
 .rest-mini-ring {
@@ -1379,32 +1392,46 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 
 .rest-time-display {
   color: var(--mol-text);
-  font-size: clamp(2rem, 10vw, 2.65rem);
+  font-size: clamp(1.55rem, 7vw, 2rem);
   letter-spacing: 0;
   text-shadow: 0 1px 0 color-mix(in srgb, var(--mol-surface) 80%, transparent);
 }
 
 #rest-mini-time {
   color: var(--mol-text);
-  font-size: 1rem;
+  font-size: .92rem;
   line-height: 1;
 }
 
 .rest-ring {
   --rest-progress: 1;
-  width: 8.25rem;
+  width: 7.35rem;
   aspect-ratio: 1;
   border-radius: 999px;
-  background: conic-gradient(var(--mol-neon) calc(var(--rest-progress) * 360deg), color-mix(in srgb, var(--mol-muted) 16%, transparent) 0);
+  background:
+    conic-gradient(from -90deg, var(--mol-neon) calc(var(--rest-progress) * 360deg), color-mix(in srgb, var(--mol-muted) 14%, transparent) 0),
+    radial-gradient(circle at 32% 24%, color-mix(in srgb, var(--mol-neon) 20%, transparent), transparent 42%);
   display: grid;
   place-items: center;
-  box-shadow: 0 0 28px color-mix(in srgb, var(--mol-neon) 14%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--mol-neon) 13%, transparent);
+  transition: background .6s ease, transform .25s ease;
+}
+
+.rest-ring::after {
+  content: "";
+  position: absolute;
+  inset: .55rem;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--mol-neon) 20%, transparent);
+  border-top-color: color-mix(in srgb, var(--mol-neon) 72%, transparent);
+  opacity: .75;
+  animation: restBreath 2.4s ease-in-out infinite;
 }
 
 .rest-ring::before {
   content: "";
   position: absolute;
-  width: 6.35rem;
+  width: 5.55rem;
   aspect-ratio: 1;
   border-radius: 999px;
   background: var(--mol-surface);
@@ -1413,14 +1440,20 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 
 .rest-ring > * {
   position: relative;
+  z-index: 1;
+}
+
+@keyframes restBreath {
+  0%, 100% { transform: scale(.96) rotate(0deg); opacity: .42; }
+  50% { transform: scale(1.02) rotate(12deg); opacity: .9; }
 }
 
 /* O cronômetro é flutuante, mas nunca deve cobrir as últimas opções da ficha. */
 body.rest-active .workout-page main {
-  padding-bottom: calc(var(--mol-app-nav-reserve) + 4.75rem);
+  padding-bottom: calc(var(--mol-app-nav-reserve) + 1.4rem);
 }
 body.rest-active .workout-page .workout-compact {
-  scroll-padding-bottom: calc(var(--mol-app-nav-reserve) + 4.75rem);
+  scroll-padding-bottom: calc(var(--mol-app-nav-reserve) + 1.4rem);
 }
 
 body.mol-keyboard-open #rest-timer {
@@ -2344,6 +2377,17 @@ html[data-reduce-motion="true"] *::after {
   .app-surface main { max-width: 42rem; }
   .pt-8 { padding-top: 1.25rem; }
   .pb-6, .pb-7 { padding-bottom: 1rem; }
+}
+
+html[data-theme="light"] body #back,
+html[data-theme="light"] body .mol-brand {
+  color: #35463e !important;
+  opacity: 1;
+}
+
+html[data-theme="light"] body .mol-brand img {
+  opacity: 1;
+  filter: saturate(1.12) contrast(1.18);
 }
 
 /* Desktop web: layout de monitor, com proporcoes previsiveis e leitura por mouse/teclado. */
