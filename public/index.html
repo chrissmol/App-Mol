@@ -18,11 +18,11 @@
 </head>
 <body id="app-body" class="app-surface dashboard-surface min-h-screen has-app-nav text-white" aria-busy="true">
   <main class="mx-auto max-w-6xl px-5 lg:px-8">
-    <header class="flex items-start justify-between gap-4 pt-8 pb-7 lg:pt-10">
+    <header class="app-page-header app-page-header--dashboard flex items-start justify-between gap-4">
       <div class="min-w-0">
         <a id="dashboard-brand" class="mol-brand" href="./index.html" aria-label="Ir para o início"><img src="./assets/mol-mark.svg" alt="">Mol</a>
-        <p id="week-label" class="mt-3 text-xs font-semibold uppercase tracking-[.16em] text-neon">Carregando</p>
-        <h1 class="mt-1 truncate text-2xl font-extrabold tracking-tight">Olá, <span id="user-name">Atleta</span></h1>
+        <p id="week-label" class="app-page-header__eyebrow">Carregando</p>
+        <h1 class="app-page-header__title truncate">Olá, <span id="user-name">Atleta</span></h1>
         <button type="button" id="btn-edit-dashboard" class="mt-2 min-h-11 rounded-xl pr-3 text-xs font-bold text-gray-400 active:text-neon"><i data-lucide="sliders-horizontal" class="mr-1 inline h-3.5 w-3.5"></i> Editar painel</button>
       </div>
       <a id="dashboard-avatar-frame" href="./pages/perfil.html" aria-label="Abrir perfil" class="avatar-frame avatar-frame--plastic relative mt-1 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">

@@ -18,13 +18,13 @@
 </head>
 <body class="app-surface personal-page min-h-screen text-white">
   <main class="mx-auto max-w-md px-5 pb-10 pt-6">
-    <a id="back" href="./perfil.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para o perfil"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Perfil</span></a>
-    <header class="mt-4"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Seu perfil</p><h1 class="mt-1 text-2xl font-extrabold">Dados e metas</h1><p class="mt-2 text-sm text-gray-500">Mantenha suas referências pessoais e objetivos atualizados.</p></header>
+    <a id="back" href="./perfil.html" class="app-page-back text-sm font-bold text-gray-400" aria-label="Voltar para o perfil"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Perfil</span></a>
+    <header class="app-page-header"><p class="app-page-header__eyebrow">Seu perfil</p><h1 class="app-page-header__title">Dados e metas</h1><p class="app-page-header__copy">Mantenha suas referências pessoais e objetivos atualizados.</p></header>
     <p id="page-status" class="glass-card mt-6 rounded-2xl p-4 text-sm text-gray-500" role="status">Carregando seus dados…</p>
 
     <div id="personal-content" class="hidden">
       <section class="glass-card mt-6 rounded-3xl p-5" aria-labelledby="goals-title">
-        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="target" class="h-5 w-5"></i></span><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Referências</p><h2 id="goals-title" class="mt-1 text-lg font-extrabold">Corpo e objetivos</h2></div></div>
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="target" class="h-5 w-5"></i></span><div><p class="app-page-header__eyebrow">Referências</p><h2 id="goals-title" class="mt-1 text-lg font-extrabold">Corpo e objetivos</h2></div></div>
         <div class="mt-5 grid grid-cols-2 gap-3"><label class="text-xs font-bold text-gray-400">Altura (cm)<input id="height" type="number" min="100" max="250" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 175"></label><label class="text-xs font-bold text-gray-400">Meta de peso (kg)<input id="goal-weight" type="number" min="20" max="400" step="0.1" inputmode="decimal" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 75,5"></label></div>
         <label class="mt-4 block text-xs font-bold text-gray-400">Objetivo<select id="goal" class="mt-2 w-full rounded-xl mol-field p-3 text-white"><option value="">Selecione</option><option>Hipertrofia</option><option>Força</option><option>Emagrecimento</option><option>Saúde</option></select></label>
         <label class="mt-4 block text-xs font-bold text-gray-400">Meta semanal de treinos<input id="weekly" type="number" min="1" max="7" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="De 1 a 7"></label>

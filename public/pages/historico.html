@@ -18,11 +18,11 @@
 </head>
 <body class="app-surface history-page min-h-screen has-app-nav text-white">
   <main>
-    <header>
-      <a id="back" href="./treino.html" class="text-sm font-bold text-gray-400" aria-label="Voltar para treinos"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Treinos</span></a>
-      <p class="mt-4 text-xs font-semibold uppercase tracking-[.16em] text-neon">Consistência</p>
-      <h1 class="mt-1 text-2xl font-extrabold">Histórico</h1>
-      <p class="mt-2 text-sm text-gray-500">Relembre sua frequência e os resultados de cada treino.</p>
+    <header class="app-page-header">
+      <a id="back" href="./treino.html" class="app-page-back text-sm font-bold text-gray-400" aria-label="Voltar para treinos"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Treinos</span></a>
+      <p class="app-page-header__eyebrow">Consistência</p>
+      <h1 class="app-page-header__title">Histórico</h1>
+      <p class="app-page-header__copy">Relembre sua frequência e os resultados de cada treino.</p>
     </header>
     <section class="mt-6 grid grid-cols-2 gap-3" aria-label="Resumo do histórico">
       <article class="glass-card rounded-3xl p-4"><p class="text-xs text-gray-400">Treinos concluídos</p><strong id="total-workouts" class="mt-1 block text-2xl text-neon" aria-live="polite">—</strong><p id="total-workouts-label" class="mt-1 text-xs text-gray-500">carregando histórico</p></article>
