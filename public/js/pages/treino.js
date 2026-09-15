@@ -179,7 +179,9 @@ async function manterTelaAtiva() {
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => { wakeLock = null; }, { once: true });
     }
-  } catch (error) { console.warn('Tela ativa indisponível:', error.message); }
+  } catch (error) {
+    if (!/wake lock|permission|denied|notallowed/i.test(`${error?.name || ''} ${error?.message || ''}`)) console.warn('Tela ativa indisponível:', error.message);
+  }
 }
 
 async function liberarTelaAtiva() {

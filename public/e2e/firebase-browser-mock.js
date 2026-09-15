@@ -54,9 +54,76 @@ export const persistentMultipleTabManager = () => ({});
 export const collection = (...path) => ({ kind: 'collection', path });
 export const doc = (...path) => ({ kind: 'doc', path });
 export const where = (...args) => ({ kind: 'where', args });
-export const query = (...args) => ({ kind: 'query', args });
-export const getDoc = async () => ({ exists: () => false, data: () => ({}) });
-export const getDocs = async () => ({ docs: [], empty: true, forEach() {} });
+export const query = (...args) => ({ kind: 'query', args, path: args[0]?.path || [] });
+const mockRoutine = {
+  userId: 'e2e-user',
+  nome: 'Upper',
+  diasSemana: [new Date().getDay()],
+  exercicios: [
+    {
+      nome: 'Supino reto',
+      grupo: 'Peito',
+      repsMin: 8,
+      repsMax: 12,
+      rirAlvo: 2,
+      descansoSegundos: 60,
+      series: [
+        { tipo: 'N', method: 'NORMAL', kg: '', reps: '', rir: '2', concluida: false }
+      ]
+    }
+  ]
+};
+const mockDiet = {
+  userId: 'e2e-user',
+  refeicoes: [
+    {
+      id: 'meal-breakfast',
+      nome: 'Café da manhã',
+      hora: '08:00',
+      diasSemana: [0, 1, 2, 3, 4, 5, 6],
+      alimentos: [
+        { id: 'banana', nome: 'Banana', gramas: 100, kcal100: 89, proteina100: 1.1, carbo100: 22.8, gordura100: 0.3 }
+      ]
+    },
+    {
+      id: 'meal-snack',
+      nome: 'R3 - Lanche',
+      hora: '16:00',
+      diasSemana: [0, 1, 2, 3, 4, 5, 6],
+      alimentos: [
+        { id: 'bread', nome: 'Pão de forma', gramas: 75, kcal100: 253, proteina100: 9, carbo100: 49, gordura100: 3.2 }
+      ]
+    }
+  ],
+  jejum: { ativo: false }
+};
+const mockProfile = {
+  name: 'Christian',
+  metaCalorias: 2400,
+  macroGoals: { protein: 180, carbs: 250, fat: 70 },
+  metaSemanal: 3,
+};
+const documentSnapshot = data => ({ exists: () => Boolean(data), data: () => data || {} });
+const querySnapshot = rows => ({ docs: rows.map(([id, data]) => ({ id, data: () => data })), empty: rows.length === 0, forEach(callback) { this.docs.forEach(callback); } });
+function referencePath(reference) {
+  const raw = reference?.path || [];
+  const nested = reference?.args || [];
+  return [...raw, ...nested].flatMap(item => item?.path ? item.path : item);
+}
+export const getDoc = async reference => {
+  const path = referencePath(reference);
+  if (path.includes('dietas')) return documentSnapshot(mockDiet);
+  if (path.includes('users')) return documentSnapshot(mockProfile);
+  return documentSnapshot(null);
+};
+export const getDocs = async reference => {
+  const path = referencePath(reference);
+  if (path.includes('treinos')) return querySnapshot([['routine-upper', mockRoutine]]);
+  if (path.includes('dietas')) return querySnapshot([['diet-e2e', mockDiet]]);
+  if (path.includes('sessoes')) return querySnapshot([]);
+  if (path.includes('pesos')) return querySnapshot([]);
+  return querySnapshot([]);
+};
 export const setDoc = async () => {};
 export const updateDoc = async () => {};
 export const deleteDoc = async () => {};
