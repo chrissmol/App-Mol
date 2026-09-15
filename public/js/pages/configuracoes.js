@@ -1,12 +1,12 @@
 import { setupAppShell } from '../utils/app-shell.js';
-import { auth, db, googleProvider, offlinePersistenceEnabled } from '../config/firebase-config.js';
+import { auth, db, googleProvider } from '../config/firebase-config.js';
 import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
 import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
 import { removeLocalItemsWithPrefix } from '../utils/storage.js';
-import { setTrustedDevice } from '../utils/offline.js';
+import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { MODULE_DEFINITIONS, MODULE_PRESETS, normalizeAppModules, presetFromModules, saveAppModules, syncAppModulesForUser } from '../utils/app-modules.js';
@@ -247,7 +247,7 @@ async function persistAppModules() {
 
 
 const reminderPreferences = getReminderPreferences();
-$('trusted-device').checked = offlinePersistenceEnabled;
+$('trusted-device').checked = isTrustedDevice();
 $('reminders-enabled').checked = reminderPreferences.enabled;
 
 function persistReminderControls() {
@@ -274,7 +274,7 @@ $('trusted-device').onchange = async () => {
     $('device-status').textContent = 'Dados offline removidos deste aparelho. Reiniciando…';
     window.setTimeout(() => location.reload(), 500);
   } catch (error) {
-    $('trusted-device').checked = offlinePersistenceEnabled;
+    $('trusted-device').checked = isTrustedDevice();
     $('trusted-device').disabled = false;
     $('device-status').textContent = error.message || 'Não foi possível alterar o modo offline.';
     showToast(error.message || 'Não foi possível alterar o modo offline.');

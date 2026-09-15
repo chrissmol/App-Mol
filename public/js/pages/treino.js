@@ -1560,21 +1560,68 @@ const modalTipoSerie = document.getElementById('modal-tipo-serie');
 const modalTipoSerieContent = document.getElementById('modal-tipo-serie-content');
 let editandoSerie = { ex: null, serie: null };
 let focoAntesDoModal = null;
+let modalTipoScrollY = 0;
+
+function travarFundoModalTipo() {
+  modalTipoScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.body.classList.add('mol-modal-open');
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${modalTipoScrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+}
+
+function liberarFundoModalTipo() {
+  document.body.classList.remove('mol-modal-open');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, modalTipoScrollY);
+}
+
+function prepararCabecalhoModalTipo() {
+  if (!modalTipoSerieContent || modalTipoSerieContent.querySelector('.series-type-sheet-header')) return;
+  const title = modalTipoSerieContent.querySelector('#modal-tipo-serie-title');
+  const eyebrow = title?.previousElementSibling;
+  if (!title || !eyebrow) return;
+  const header = document.createElement('div');
+  header.className = 'series-type-sheet-header';
+  const copy = document.createElement('div');
+  copy.append(eyebrow, title);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'series-type-close';
+  close.dataset.closeSeriesType = 'true';
+  close.setAttribute('aria-label', 'Fechar selecao de tipo');
+  close.innerHTML = '<i data-lucide="x" class="h-5 w-5"></i>';
+  header.append(copy, close);
+  modalTipoSerieContent.prepend(header);
+}
 
 function fecharModalTipoSerie() {
   modalTipoSerie.classList.add('opacity-0');
   modalTipoSerieContent.classList.add('translate-y-full');
-  setTimeout(() => { modalTipoSerie.classList.add('hidden'); focoAntesDoModal?.focus(); }, 300);
+  setTimeout(() => {
+    modalTipoSerie.classList.add('hidden');
+    liberarFundoModalTipo();
+    focoAntesDoModal?.focus();
+  }, 300);
 }
 
 window.abrirModalTipoSerie = (indexEx, indexSerie) => {
   editandoSerie = { ex: indexEx, serie: indexSerie };
   focoAntesDoModal = document.activeElement;
+  prepararCabecalhoModalTipo();
+  travarFundoModalTipo();
   modalTipoSerie.classList.remove('hidden');
   setTimeout(() => {
     modalTipoSerie.classList.remove('opacity-0');
     modalTipoSerieContent.classList.remove('translate-y-full');
-    modalTipoSerieContent.querySelector('button')?.focus();
+    modalTipoSerieContent.querySelector('[data-close-series-type]')?.focus();
+    renderIcons(modalTipoSerieContent);
   }, 10);
 }
 window.excluirSerie = excluirSerie;
@@ -1702,10 +1749,14 @@ modalTipoSerie.querySelectorAll('[data-series-method]').forEach(button => button
 modalTipoSerie.querySelector('[data-remove-series]')?.addEventListener('click', () => window.removerSerieAberta());
 
 modalTipoSerie.addEventListener('click', (e) => {
-  if (e.target === modalTipoSerie) {
+  if (e.target === modalTipoSerie || e.target.closest('[data-close-series-type]')) {
     fecharModalTipoSerie();
   }
 });
+
+modalTipoSerie.addEventListener('touchmove', event => {
+  if (!event.target.closest('#modal-tipo-serie-content')) event.preventDefault();
+}, { passive: false });
 
 modalTipoSerie.addEventListener('keydown', event => {
   if (event.key === 'Escape') { event.preventDefault(); fecharModalTipoSerie(); return; }

@@ -51,41 +51,8 @@
     @media (prefers-reduced-motion: reduce) {
       .workout-page *, .workout-page *::before, .workout-page *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
     }
-    .rest-timer-panel {
-      position: fixed;
-      inset: auto 1rem calc(1rem + env(safe-area-inset-bottom)) 1rem;
-      z-index: 90;
-      max-width: 28rem;
-      margin-inline: auto;
-    }
-    .rest-ring {
-      --rest-progress: 1;
-      width: 10rem;
-      aspect-ratio: 1;
-      border-radius: 999px;
-      background: conic-gradient(#57d493 calc(var(--rest-progress) * 360deg), rgba(255,255,255,.08) 0);
-      display: grid;
-      place-items: center;
-      box-shadow: 0 0 32px rgba(87,212,147,.18);
-    }
-    .rest-ring::before {
-      content: "";
-      position: absolute;
-      width: 7.75rem;
-      aspect-ratio: 1;
-      border-radius: 999px;
-      background: #101611;
-      border: 1px solid rgba(255,255,255,.08);
-    }
-    .rest-ring > * { position: relative; }
     .rest-timer-panel.is-expanded .rest-mini { display: none; }
     .rest-timer-panel:not(.is-expanded) .rest-expanded { display: none; }
-    @media (min-width: 768px) {
-      .rest-timer-panel {
-        inset: auto 2rem 2rem auto;
-        width: 26rem;
-      }
-    }
   </style>
 </head>
 <body class="app-surface workout-page min-h-screen has-app-nav text-white" id="app-body" aria-busy="true">
@@ -116,7 +83,7 @@
 
     <!-- TELA 2: DETALHE DO TREINO -->
     <div id="view-detalhe" class="hidden pt-3">
-      <div class="sticky top-0 z-40 -mx-5 mb-4 flex items-center justify-between border-b border-white/10 mol-panel px-5 py-3 backdrop-blur-xl">
+      <div class="mol-screen-header sticky top-0 z-40 -mx-5 mb-4 flex items-center justify-between border-b border-white/10 mol-panel px-5 backdrop-blur-xl">
         <button type="button" id="btn-voltar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
@@ -136,7 +103,7 @@
     </div>
 
     <div id="view-nova-rotina" class="hidden pt-8">
-      <div class="flex items-center justify-between mb-6">
+      <div class="mol-screen-header flex items-center justify-between mb-6">
         <button type="button" id="btn-voltar-nova" aria-label="Cancelar criação da rotina" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
@@ -149,7 +116,7 @@
     </div>
 
     <div id="view-explorar" class="hidden pt-8">
-      <div class="flex items-center justify-start mb-6">
+      <div class="mol-screen-header flex items-center justify-start mb-6">
         <button type="button" id="btn-voltar-explorar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-neon p-2 -ml-2 mr-2 active:scale-95 transition-all">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
@@ -162,7 +129,7 @@
     </div>
 
     <div id="view-biblioteca" class="hidden pt-8">
-      <div class="flex items-center justify-between mb-6">
+      <div class="mol-screen-header flex items-center justify-between mb-6">
         <button type="button" id="btn-voltar-biblioteca" aria-label="Fechar biblioteca de exercícios" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
@@ -189,7 +156,7 @@
   </div>
 
   <div id="modal-tipo-serie" role="dialog" aria-modal="true" aria-labelledby="modal-tipo-serie-title" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col justify-end transition-opacity opacity-0">
-      <div id="modal-tipo-serie-content" class="mol-panel max-h-[86vh] overflow-y-auto rounded-t-3xl p-5 transform translate-y-full transition-transform duration-300" tabindex="-1">
+      <div id="modal-tipo-serie-content" class="series-type-sheet mol-panel overflow-y-auto p-5 transform translate-y-full transition-transform duration-300" tabindex="-1">
         <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-5"></div>
         <p class="text-center text-[10px] font-bold uppercase tracking-[.16em] text-neon">Registro da série</p>
         <h3 id="modal-tipo-serie-title" class="text-center font-extrabold mb-5 text-xl tracking-tight">Tipo de série</h3>
