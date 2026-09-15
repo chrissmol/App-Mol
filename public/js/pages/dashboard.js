@@ -9,7 +9,7 @@ import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem, setSessionItem } from '../utils/storage.js';
-import { cardAllowed, normalizeAppModules } from '../utils/app-modules.js';
+import { cardAllowed, normalizeAppModules, presetFromModules } from '../utils/app-modules.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -74,10 +74,34 @@ function setFocusCandidate(id, candidate = null) {
 }
 
 function getDailyFocus() {
+  const preset = presetFromModules(appModules);
   const candidates = Object.values(focusCandidates)
     .filter(candidate => !candidate.module || normalizeAppModules(appModules)[candidate.module] !== false)
     .sort((a, b) => (b.priority || 0) - (a.priority || 0));
-  return candidates[0] || {
+  if (candidates[0]) return candidates[0];
+  if (preset === 'training') return {
+    id: 'training-default',
+    eyebrow: 'Modo caverna',
+    title: 'Foco no treino',
+    subtitle: 'Seu início mostra só o essencial para abrir, executar e registrar.',
+    context: 'Ative outros módulos nas Configurações quando quiser ver dieta, evolução ou progresso.',
+    href: './pages/treino.html',
+    label: 'Abrir treinos',
+    icon: 'dumbbell',
+    cardId: null
+  };
+  if (preset === 'trainingDiet') return {
+    id: 'training-diet-default',
+    eyebrow: 'Treino + dieta',
+    title: 'Rotina enxuta',
+    subtitle: 'O início prioriza treino e alimentação, sem cards extras de acompanhamento.',
+    context: 'Se houver treino ou refeição próximos, eles aparecem aqui como ação principal.',
+    href: './pages/treino.html',
+    label: 'Começar',
+    icon: 'apple',
+    cardId: null
+  };
+  return {
     id: 'default',
     eyebrow: 'Próxima ação',
     title: 'Tudo pronto por aqui',
@@ -452,6 +476,7 @@ watchProtectedPage(async user => {
     }
   } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
   applyDashboardCards();
+  updateDailyBrief();
   if (appModules.dieta) void loadNextMeal(user.uid);
   const fullName = String(user.displayName || profileData.name || profileData.nome || '');
   $('user-name').textContent = fullName.trim().split(/\s+/)[0].slice(0, 40) || 'Atleta';

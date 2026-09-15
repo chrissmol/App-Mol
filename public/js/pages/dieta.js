@@ -18,6 +18,7 @@ let selectedDay = new Date().getDay();
 const requestedParams = new URLSearchParams(window.location.search);
 const requestedMealId = requestedParams.get('meal');
 let pendingRequestedMealId = requestedMealId;
+let focusedMealId = requestedMealId;
 const requestedDay = Number(requestedParams.get('day'));
 if (Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6) selectedDay = requestedDay;
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -161,8 +162,43 @@ function render() {
   }).join('') : '<div class="mol-state"><p class="mol-state-title">Nenhuma refeição neste dia</p><p class="mol-state-copy">Use a edição para escolher em quais dias cada refeição aparece.</p><button type="button" data-empty-add class="mol-state-action mt-5">Adicionar refeição</button></div>';
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
+  renderFocusedMeal();
   renderEditView();
   window.lucide?.createIcons();
+}
+
+function setFocusedMeal(mealId) {
+  focusedMealId = mealId || null;
+  if (focusedMealId) {
+    requestedParams.set('meal', focusedMealId);
+    requestedParams.set('day', String(selectedDay));
+  } else {
+    requestedParams.delete('meal');
+  }
+  const query = requestedParams.toString();
+  window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  render();
+  $('focused-meal-section')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+function renderFocusedMeal() {
+  const section = $('focused-meal-section');
+  const meal = meals.find(item => item.id === focusedMealId);
+  const isFocused = Boolean(section && meal && dietMode === 'view');
+  ['diet-summary-section', 'diet-goals-section', 'diet-plan-section'].forEach(id => $(id)?.classList.toggle('hidden', isFocused));
+  if (!section) return;
+  section.classList.toggle('hidden', !isFocused);
+  if (!isFocused) {
+    section.innerHTML = '';
+    return;
+  }
+  const total = nutritionTotals([meal]);
+  const foods = mealFoods(meal);
+  const foodList = foods.length
+    ? foods.map(food => foodCard(food, false)).join('')
+    : '<p class="rounded-2xl mol-soft p-4 text-sm text-gray-500">Nenhum alimento fixo nesta refeição.</p>';
+  section.innerHTML = `<article class="glass-card mt-6 rounded-3xl p-5"><div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Visualização da refeição</p><h2 class="mt-1 text-2xl font-extrabold">${escapeHTML(meal.nome)}</h2><p class="mt-2 text-sm text-gray-400">${escapeHTML(meal.hora)} · ${foods.length} alimento(s) · ${rounded(total.kcal)} kcal</p></div><button id="show-full-diet" type="button" class="mol-btn mol-btn-secondary min-h-11 rounded-xl px-4 text-xs">Ver plano completo</button></div><div class="mt-5 grid grid-cols-3 gap-2 text-center text-xs"><span class="rounded-xl mol-soft p-2">P ${rounded(total.protein)} g</span><span class="rounded-xl mol-soft p-2">C ${rounded(total.carbs)} g</span><span class="rounded-xl mol-soft p-2">G ${rounded(total.fat)} g</span></div>${meal.observacao ? `<p class="mt-4 rounded-2xl mol-soft p-4 text-sm text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}<div class="mt-5 space-y-2">${foodList}</div>${optionGroupsHTML(meal)}</article>`;
+  $('show-full-diet').onclick = () => setFocusedMeal(null);
 }
 
 function setDietMode(mode) {
@@ -175,6 +211,7 @@ function setDietMode(mode) {
   viewButton.classList.toggle('bg-neon', viewing); viewButton.classList.toggle('text-black', viewing); viewButton.classList.toggle('text-gray-400', !viewing);
   editButton.classList.toggle('bg-neon', !viewing); editButton.classList.toggle('text-black', !viewing); editButton.classList.toggle('text-gray-400', viewing);
   viewButton.setAttribute('aria-selected', String(viewing)); editButton.setAttribute('aria-selected', String(!viewing));
+  if (!viewing && focusedMealId) setFocusedMeal(null);
 }
 
 function renderEditView() {
@@ -330,7 +367,8 @@ function openRequestedMeal() {
   if (!target) return;
   pendingRequestedMealId = null;
   setDietMode('view');
-  window.setTimeout(() => openMeal(target.id, { editable: false }), 0);
+  focusedMealId = target.id;
+  window.setTimeout(renderFocusedMeal, 0);
 }
 
 function showDietContent() {
