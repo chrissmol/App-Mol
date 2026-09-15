@@ -189,36 +189,37 @@
   </div>
 
   <div id="modal-tipo-serie" role="dialog" aria-modal="true" aria-labelledby="modal-tipo-serie-title" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col justify-end transition-opacity opacity-0">
-      <div id="modal-tipo-serie-content" class="mol-panel rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300" tabindex="-1">
-        <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
-        <h3 id="modal-tipo-serie-title" class="text-center font-bold mb-6 text-lg tracking-tight">Selecionar tipo de série</h3>
+      <div id="modal-tipo-serie-content" class="mol-panel max-h-[86vh] overflow-y-auto rounded-t-3xl p-5 transform translate-y-full transition-transform duration-300" tabindex="-1">
+        <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-5"></div>
+        <p class="text-center text-[10px] font-bold uppercase tracking-[.16em] text-neon">Registro da série</p>
+        <h3 id="modal-tipo-serie-title" class="text-center font-extrabold mb-5 text-xl tracking-tight">Tipo de série</h3>
 
-        <div class="space-y-2">
-          <button type="button" data-series-type="W" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-orange-400 font-extrabold w-10 text-lg">W</span>
-            <span class="font-medium text-white text-base">Série de Aquecimento</span>
+        <div class="series-type-grid grid gap-2">
+          <button type="button" data-series-type="W" class="series-type-option">
+            <span class="set-type-badge is-w">W</span>
+            <span><strong>Série de Aquecimento</strong><small>Prepara carga, articulação e técnica.</small></span>
           </button>
 
-          <button type="button" data-series-type="N" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-white font-extrabold w-10 text-lg">1</span>
-            <span class="font-medium text-white text-base">Série Normal</span>
+          <button type="button" data-series-type="N" class="series-type-option">
+            <span class="set-type-badge is-normal">1</span>
+            <span><strong>Série Normal</strong><small>Registro simples de carga, reps e RIR.</small></span>
           </button>
 
-          <button type="button" data-series-type="F" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-red-400 font-extrabold w-10 text-lg">F</span>
-            <span class="font-medium text-white text-base">Série Falhada</span>
+          <button type="button" data-series-type="F" class="series-type-option">
+            <span class="set-type-badge is-f">F</span>
+            <span><strong>Série Falhada</strong><small>Marca esforço máximo ou falha técnica.</small></span>
           </button>
 
-          <button type="button" data-series-type="D" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors">
-            <span class="text-blue-400 font-extrabold w-10 text-lg">D</span>
-            <span class="font-medium text-white text-base">Série Drop</span>
+          <button type="button" data-series-type="D" class="series-type-option">
+            <span class="set-type-badge is-d">D</span>
+            <span><strong>Série Drop</strong><small>Atalho rápido para um drop set.</small></span>
           </button>
 
-          <div class="h-px bg-white/10 my-2"></div>
+          <div class="series-type-divider"></div>
 
-          <button type="button" data-remove-series class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors text-red-500">
-            <i data-lucide="x" class="w-5 h-5 mr-5"></i>
-            <span class="font-medium text-base">Remover Série</span>
+          <button type="button" data-remove-series class="series-type-option is-danger">
+            <span class="set-type-badge"><i data-lucide="x" class="h-4 w-4"></i></span>
+            <span><strong>Remover Série</strong><small>Exclui esta linha da rotina.</small></span>
           </button>
         </div>
       </div>

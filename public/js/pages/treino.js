@@ -241,13 +241,14 @@ const libraryResultsSummary = document.getElementById('library-results-summary')
 function configurarPainelDescanso() {
   const panel = document.getElementById('rest-timer');
   if (!panel) return;
-  panel.className = 'rest-timer-panel hidden is-expanded rounded-3xl border border-neon/30 mol-dialog-surface p-4 shadow-2xl backdrop-blur-xl';
+  panel.className = 'rest-timer-panel hidden rounded-3xl border border-neon/30 mol-dialog-surface p-3 shadow-2xl backdrop-blur-xl';
   panel.setAttribute('aria-label', 'Cronometro de descanso');
   panel.innerHTML = `
     <div class="rest-mini">
-      <button type="button" id="btn-open-rest" class="flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl bg-white/5 px-4 text-left">
-        <span class="min-w-0"><span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Descanso</span><span id="rest-mini-title" class="block truncate text-sm font-bold text-white">Proxima serie</span></span>
-        <span id="rest-mini-time" class="shrink-0 text-xl font-extrabold tabular-nums text-white">01:30</span>
+      <button type="button" id="btn-open-rest" class="rest-mini-button flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left">
+        <span class="rest-mini-ring shrink-0"><i data-lucide="timer-reset" class="h-4 w-4"></i></span>
+        <span class="min-w-0 flex-1"><span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Descanso</span><span id="rest-mini-title" class="block truncate text-xs font-bold text-gray-400">Proxima serie</span></span>
+        <span id="rest-mini-time" class="shrink-0 text-lg font-extrabold tabular-nums">01:30</span>
       </button>
       <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-mini-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
     </div>
@@ -264,7 +265,7 @@ function configurarPainelDescanso() {
         <div id="rest-ring" class="rest-ring relative">
           <div class="text-center">
             <span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Restam</span>
-            <span id="rest-time" class="mt-1 block text-[2.7rem] font-extrabold leading-none tabular-nums text-white">01:30</span>
+            <span id="rest-time" class="rest-time-display mt-1 block font-extrabold leading-none tabular-nums">01:30</span>
           </div>
         </div>
       </div>
@@ -476,6 +477,7 @@ function atualizarDescanso() {
   if (restProgress) restProgress.style.width = `${progress * 100}%`;
   if (restMiniProgress) restMiniProgress.style.width = `${progress * 100}%`;
   if (restRing) restRing.style.setProperty('--rest-progress', String(progress));
+  if (restTimer) restTimer.style.setProperty('--rest-progress', String(progress));
   if (restExercise && descansoContexto) restExercise.textContent = descansoContexto.title;
   if (restNext && descansoContexto) restNext.textContent = descansoContexto.nextTitle;
   if (restMiniTitle && descansoContexto) restMiniTitle.textContent = descansoContexto.title;
@@ -490,7 +492,7 @@ function pararDescanso() {
   descansoPausado = false;
   descansoContexto = null;
   restTimer.classList.add('hidden');
-  restTimer.classList.add('is-expanded');
+  restTimer.classList.remove('is-expanded');
   document.body.classList.remove('rest-active');
 }
 
@@ -502,7 +504,7 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
   descansoTerminaEm = Date.now() + descansoSegundos * 1000;
   descansoPausado = false;
   restTimer.classList.remove('hidden');
-  restTimer.classList.add('is-expanded');
+  restTimer.classList.remove('is-expanded');
   document.body.classList.add('rest-active');
   atualizarDescanso();
   descansoInterval = setInterval(() => {
@@ -1585,6 +1587,12 @@ window.mudarTipoSerie = async (novoTipo) => {
   serie.details = defaultMethodDetails(serie.method, serie);
 
   fecharModalTipoSerie();
+  salvarRascunho({ force: true });
+
+  if (treinoIniciado) {
+    abrirRotina(rotinaAbertaId);
+    return;
+  }
 
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
@@ -1593,14 +1601,14 @@ window.mudarTipoSerie = async (novoTipo) => {
 };
 
 function instalarOpcoesContextuais() {
-  const list = modalTipoSerieContent?.querySelector('.space-y-2');
+  const list = modalTipoSerieContent?.querySelector('.series-type-grid');
   const remove = modalTipoSerie?.querySelector('[data-remove-series]');
   if (!list || !remove || modalTipoSerie.querySelector('[data-series-method]')) return;
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div class="h-px bg-white/10 my-2"></div>
-    <p class="px-4 pt-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">Métodos contextuais</p>
-    ${Object.entries(methodMeta).map(([method, meta]) => `<button type="button" data-series-method="${method}" class="w-full flex items-center p-4 rounded-2xl active:bg-white/5 transition-colors"><span class="font-extrabold w-10 text-sm ${meta.tone}">${meta.badge}</span><span class="font-medium text-white text-base">${meta.label}</span></button>`).join('')}
+    <div class="series-type-divider"></div>
+    <p class="series-type-label">Métodos contextuais</p>
+    ${Object.entries(methodMeta).map(([method, meta]) => `<button type="button" data-series-method="${method}" class="series-type-option"><span class="set-type-badge ${meta.tone}">${meta.badge}</span><span><strong>${meta.label}</strong><small>${meta.description || 'Campos adaptados para este método.'}</small></span></button>`).join('')}
   `;
   [...wrapper.children].forEach(child => list.insertBefore(child, remove.previousElementSibling));
 }
@@ -1615,6 +1623,11 @@ window.mudarMetodoSerie = async (method) => {
   syncSetLegacyFields(serie);
   fecharModalTipoSerie();
   salvarRascunho({ force: true });
+  if (treinoIniciado) {
+    abrirRotina(rotinaAbertaId);
+    window.abrirEditorMetodoSerie(editandoSerie.ex, editandoSerie.serie);
+    return;
+  }
   try {
     await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
     abrirRotina(rotinaAbertaId);
@@ -1641,7 +1654,7 @@ window.abrirEditorMetodoSerie = (indexEx, indexSerie) => {
   const details = { ...defaultMethodDetails(method, serie), ...(serie.details || {}) };
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-0';
-  modal.innerHTML = `<form class="mx-auto w-full max-w-md rounded-t-3xl mol-dialog-surface p-6 animate-slide-up" data-method-form><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-wider text-neon">${meta.label}</p><h2 class="mt-1 text-xl font-extrabold">${escapeHTML(exercicio.nome)}</h2><div data-method-fields class="mt-5 space-y-4"></div><label class="mt-4 block text-[10px] font-bold uppercase tracking-wider text-gray-500">Observação<textarea name="note" maxlength="240" class="mt-1 min-h-20 w-full rounded-xl mol-field p-3 text-sm text-white outline-none focus:border-neon">${escapeHTML(details.note || '')}</textarea></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Fechar</button><button type="submit" class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Salvar</button></div></form>`;
+  modal.innerHTML = `<form role="dialog" aria-modal="true" aria-labelledby="method-editor-title" class="mx-auto w-full max-w-md rounded-t-3xl mol-dialog-surface p-6 animate-slide-up" data-method-form><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-wider text-neon">${meta.label}</p><h2 id="method-editor-title" class="mt-1 text-xl font-extrabold">${escapeHTML(exercicio.nome)}</h2><div data-method-fields class="mt-5 space-y-4"></div><label class="mt-4 block text-[10px] font-bold uppercase tracking-wider text-gray-500">Observação<textarea name="note" maxlength="240" class="mt-1 min-h-20 w-full rounded-xl mol-field p-3 text-sm text-white outline-none focus:border-neon">${escapeHTML(details.note || '')}</textarea></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Fechar</button><button type="submit" class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Salvar</button></div></form>`;
   const fields = modal.querySelector('[data-method-fields]');
   if (method === SET_METHODS.DROP_SET) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série principal</p><div class="grid grid-cols-2 gap-2">${numberField('primaryKg', 'Carga inicial', details.primary?.kg, 'min="0" max="2000" step="0.25"')}${numberField('primaryReps', 'Reps', details.primary?.reps, 'min="1" max="1000" step="1"')}</div></section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Drops</p><div class="space-y-2">${[0,1,2].map(i => `<div class="grid grid-cols-2 gap-2">${numberField(`dropKg${i}`, `Drop ${i + 1} kg`, details.drops?.[i]?.kg, 'min="0" max="2000" step="0.25"')}${numberField(`dropReps${i}`, 'Reps', details.drops?.[i]?.reps, 'min="1" max="1000" step="1"')}</div>`).join('')}</div>${numberField('restSeconds', 'Descanso entre drops (s)', details.restSeconds ?? 0, 'min="0" max="3600" step="5"')}</section>`;
   if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-2 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</div><p class="mb-2 mt-4 text-xs font-bold uppercase tracking-wider text-neon">Blocos</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`block${i}`, `${i + 1}`, details.blocks?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
