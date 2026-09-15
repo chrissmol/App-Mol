@@ -38,7 +38,8 @@ let dashboardUser = null;
 let profileData = {};
 let appModules = normalizeAppModules();
 let mealRefreshTimer = null;
-const dailyBrief = { workout: 'Treino pendente', meal: 'Refeição pendente', progress: 'Semana em aberto' };
+const focusCandidates = {};
+let spotlightCardId = null;
 const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), timeout))]);
 const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
 const profileCacheKey = uid => `mol-profile-dashboard-${uid}`;
@@ -66,19 +67,53 @@ function normalizeCards(value) {
   return [...valid, ...defaultCards.filter(card => !seen.has(card.id)).map(card => ({ ...card }))];
 }
 
+function setFocusCandidate(id, candidate = null) {
+  if (candidate) focusCandidates[id] = { id, ...candidate };
+  else delete focusCandidates[id];
+  updateDailyBrief();
+}
+
+function getDailyFocus() {
+  const candidates = Object.values(focusCandidates)
+    .filter(candidate => !candidate.module || normalizeAppModules(appModules)[candidate.module] !== false)
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  return candidates[0] || {
+    id: 'default',
+    eyebrow: 'Próxima ação',
+    title: 'Tudo pronto por aqui',
+    subtitle: 'Quando houver treino, refeição ou acompanhamento importante, ele aparece primeiro neste card.',
+    context: 'Use os cards abaixo para abrir uma área específica sem repetir o resumo.',
+    href: './pages/treino.html',
+    label: 'Ver app',
+    icon: 'sparkles',
+    cardId: null
+  };
+}
+
 function updateDailyBrief() {
+  const eyebrow = $('daily-brief-eyebrow');
   const title = $('daily-brief-title');
   const subtitle = $('daily-brief-subtitle');
-  const items = $('daily-brief-items');
-  if (!title || !subtitle || !items) return;
-  title.textContent = dailyBrief.workout.includes('Retomar') ? 'Você tem um treino em andamento' : 'Seu dia está organizado';
-  subtitle.textContent = 'Treino, dieta e evolução em um resumo rápido.';
-  items.innerHTML = [
-    ['dumbbell', 'Treino', dailyBrief.workout],
-    ['utensils', 'Dieta', dailyBrief.meal],
-    ['chart-no-axes-combined', 'Semana', dailyBrief.progress]
-  ].map(([icon, label, value]) => `<div class="rounded-2xl bg-white/5 p-3"><i data-lucide="${icon}" class="mb-2 h-4 w-4 text-neon"></i><span class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">${label}</span><strong class="mt-1 block truncate text-sm text-white">${value}</strong></div>`).join('');
+  const context = $('daily-brief-context');
+  const action = $('daily-brief-action');
+  const icon = $('daily-brief-icon');
+  if (!eyebrow || !title || !subtitle || !context || !action || !icon) return;
+  const focus = getDailyFocus();
+  spotlightCardId = focus.cardId || null;
+  eyebrow.textContent = focus.eyebrow;
+  title.textContent = focus.title;
+  subtitle.textContent = focus.subtitle;
+  context.textContent = focus.context;
+  action.href = focus.href;
+  action.textContent = focus.label;
+  icon.innerHTML = `<i data-lucide="${focus.icon || 'sparkles'}" class="h-5 w-5"></i>`;
+  applyDashboardCards();
   renderIcons();
+}
+
+function insertAfterOrAppend(anchor, element, fallback) {
+  if (anchor) anchor.after(element);
+  else fallback.appendChild(element);
 }
 
 function setWeek(sessions, goal = 1) {
@@ -93,7 +128,22 @@ function setWeek(sessions, goal = 1) {
   $('weekly-sessions').textContent = thisWeek.length;
   $('weekly-volume').textContent = Math.round(volume).toLocaleString('pt-BR');
   $('weekly-streak').textContent = weeklyStreak(sessions, new Date(), goal);
-  dailyBrief.progress = `${thisWeek.length}/${goal || 1} treinos`;
+  if (thisWeek.length < (goal || 1)) {
+    setFocusCandidate('weekly', {
+      module: 'progresso',
+      cardId: 'weekly-card',
+      priority: 30,
+      eyebrow: 'Meta da semana',
+      title: `${thisWeek.length}/${goal || 1} treinos concluídos`,
+      subtitle: 'Ainda existe espaço para fechar sua meta semanal.',
+      context: 'Acompanhe a semana completa no card de progresso quando quiser ver detalhes.',
+      href: './pages/treino.html',
+      label: 'Treinar',
+      icon: 'calendar-check'
+    });
+  } else {
+    setFocusCandidate('weekly', null);
+  }
   const orderedSessions = [...sessions].filter(session => dateOf(session) && dateOf(session) <= new Date()).sort((a,b) => dateOf(b) - dateOf(a));
   const [last, previous] = orderedSessions;
   const lastVolume = last ? sessionMetrics(last).volume : 0;
@@ -114,7 +164,18 @@ function setToday(routines, user) {
     $('today-eyebrow').textContent = 'Treino em andamento'; $('today-workout-title').textContent = `Retomar ${routine.nome}`; $('today-workout-subtitle').textContent = `${done}/${series.length} séries · ${Math.floor(elapsed / 60)} min decorridos`;
     card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}&retomar=1`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Retomar treino</span>';
-    dailyBrief.workout = `Retomar ${routine.nome}`;
+    setFocusCandidate('workout', {
+      module: 'treino',
+      cardId: 'today-card',
+      priority: 100,
+      eyebrow: 'Treino em andamento',
+      title: `Retomar ${routine.nome}`,
+      subtitle: `${done}/${series.length} séries concluídas · ${Math.floor(elapsed / 60)} min decorridos.`,
+      context: 'O app guarda o treino em andamento para você voltar direto para a execução.',
+      href: card.href,
+      label: 'Retomar',
+      icon: 'play'
+    });
   } else if (routines.length) {
     const scheduled = routines.find(r => (r.diasSemana || []).map(Number).includes(new Date().getDay()));
     const routine = selectRoutine(routines); const series = (routine.exercicios || []).reduce((sum, ex) => sum + (ex.series?.length || 0), 0);
@@ -123,11 +184,33 @@ function setToday(routines, user) {
     $('today-workout-subtitle').textContent = `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${estimatedWorkoutMinutes(routine)} min`;
     card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Iniciar treino</span>';
-    dailyBrief.workout = scheduled ? `Hoje: ${routine.nome}` : `Próximo: ${routine.nome}`;
+    setFocusCandidate('workout', {
+      module: 'treino',
+      cardId: 'today-card',
+      priority: scheduled ? 80 : 45,
+      eyebrow: scheduled ? 'Treino de hoje' : 'Próximo treino',
+      title: scheduled ? `Hoje é dia de ${routine.nome}` : routine.nome,
+      subtitle: `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${estimatedWorkoutMinutes(routine)} min.`,
+      context: scheduled ? 'Como este treino já está planejado para hoje, ele vira a ação principal.' : 'Sem treino marcado para hoje, o app deixa sua próxima rotina pronta.',
+      href: card.href,
+      label: 'Iniciar',
+      icon: 'dumbbell'
+    });
   } else {
     $('today-eyebrow').textContent = 'Comece por aqui'; $('today-workout-title').textContent = 'Crie sua primeira rotina'; $('today-workout-subtitle').textContent = 'Monte uma ficha ou use um modelo pronto para treinar hoje.';
     card.href = './pages/treino.html?acao=nova'; card.innerHTML = '<i data-lucide="plus" class="h-4 w-4"></i><span>Criar rotina</span>';
-    dailyBrief.workout = 'Criar rotina';
+    setFocusCandidate('workout', {
+      module: 'treino',
+      cardId: 'today-card',
+      priority: 70,
+      eyebrow: 'Primeiro passo',
+      title: 'Crie sua primeira rotina',
+      subtitle: 'Sem rotina cadastrada, treino e histórico ainda ficam vazios.',
+      context: 'Monte uma ficha própria ou use um modelo pronto para começar.',
+      href: './pages/treino.html?acao=nova',
+      label: 'Criar rotina',
+      icon: 'plus'
+    });
   }
   updateDailyBrief();
   renderIcons();
@@ -140,17 +223,28 @@ function setNextMeal(meals) {
   const now = today.toTimeString().slice(0, 5);
   const normalized = normalizeDietMeals(meals);
   const { meal, tomorrow } = nextMeal(normalized, now);
-  if (!meal) { card.dataset.available = 'false'; card.classList.add('hidden'); dailyBrief.meal = 'Sem refeição planejada'; updateDailyBrief(); return; }
+  if (!meal) { card.dataset.available = 'false'; card.classList.add('hidden'); setFocusCandidate('meal', null); return; }
   card.dataset.available = 'true';
   $('next-meal-name').textContent = meal.nome || 'Refeição';
   const foods = mealFoods(meal);
   const nutrients = foods.reduce((sum, food) => sum + foodNutrients(food).kcal, 0);
   $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${foods.length} alimento(s) · ${Math.round(nutrients)} kcal`;
   const targetDay = (today.getDay() + (tomorrow ? 1 : 0)) % 7;
-  dailyBrief.meal = `${meal.hora} - ${meal.nome || 'Refeição'}`;
-  card.querySelector('a')?.setAttribute('href', `./pages/dieta.html?meal=${encodeURIComponent(meal.id)}&day=${targetDay}`);
+  const href = `./pages/dieta.html?meal=${encodeURIComponent(meal.id)}&day=${targetDay}`;
+  card.querySelector('a')?.setAttribute('href', href);
   card.classList.remove('hidden');
-  updateDailyBrief();
+  setFocusCandidate('meal', {
+    module: 'dieta',
+    cardId: 'next-meal-card',
+    priority: tomorrow ? 20 : 60,
+    eyebrow: tomorrow ? 'Amanhã cedo' : 'Próxima refeição',
+    title: `${meal.hora} · ${meal.nome || 'Refeição'}`,
+    subtitle: `${foods.length} alimento(s) · ${Math.round(nutrients)} kcal.`,
+    context: 'Abrir direto daqui leva para a refeição certa dentro da dieta, sem precisar procurar no plano inteiro.',
+    href,
+    label: 'Ver refeição',
+    icon: 'utensils'
+  });
 }
 
 function setFastingCard(settings) {
@@ -199,7 +293,8 @@ async function loadNextMeal(userId) {
 }
 
 function setupDashboardCards() {
-  const sections = [...document.querySelectorAll('main > section')];
+  const sections = [...document.querySelectorAll('main section')];
+  const grid = document.getElementById('dashboard-card-grid') || document.querySelector('main');
   const weekly = sections.find(section => section.querySelector('#weekly-title'));
   const insights = sections.find(section => section.querySelector('#performance-summary'));
   if (weekly) weekly.id = 'weekly-card';
@@ -211,24 +306,24 @@ function setupDashboardCards() {
     card.tabIndex = 0; card.setAttribute('role', 'link'); card.setAttribute('aria-label', 'Abrir histórico de treinos');
     card.onclick = () => { window.location.href = './pages/historico.html'; };
     card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); } };
-    document.getElementById('weekly-card').after(card);
+    insertAfterOrAppend(document.getElementById('weekly-card'), card, grid);
   }
   if (!document.getElementById('next-meal-card')) {
     const card = document.createElement('section'); card.id = 'next-meal-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
     card.innerHTML = '<a href="./pages/dieta.html" class="flex items-start justify-between gap-4" aria-label="Abrir próxima refeição na dieta"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400" aria-live="polite"></p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></span></a>';
-    document.getElementById('today-card').after(card);
+    insertAfterOrAppend(document.getElementById('today-card'), card, grid);
   }
   if (!document.getElementById('fasting-card')) {
     const card = document.createElement('section'); card.id = 'fasting-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
     card.innerHTML = '<div class="flex items-start justify-between gap-4"><div class="min-w-0"><p id="fasting-eyebrow" class="text-xs font-semibold uppercase tracking-wider text-neon">Jejum</p><h2 id="fasting-title" class="mt-1 text-lg font-extrabold">Carregando jejum…</h2><p id="fasting-meta" class="mt-1 text-sm text-gray-400"></p></div><div id="fasting-actions" class="flex shrink-0 flex-col items-end gap-2"><a href="./pages/dieta.html" class="min-h-9 rounded-xl bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">Configurar</a></div></div>';
-    document.getElementById('next-meal-card').after(card);
+    insertAfterOrAppend(document.getElementById('next-meal-card'), card, grid);
   }
   if (!document.getElementById('weight-card')) {
     const card = document.createElement('section'); card.id = 'weight-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
     card.innerHTML = '<a href="./pages/perfil.html" class="flex items-center justify-between" aria-label="Abrir evolução corporal no perfil"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold" aria-live="polite">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></span></a>';
     const weightLink = card.querySelector('a'); weightLink.href = './pages/evolucao.html'; weightLink.setAttribute('aria-label', 'Abrir evolução corporal');
     card.querySelector('#dashboard-weight-meta').textContent = 'Registre seu peso em Evolução.';
-    document.getElementById('last-session-card').after(card);
+    insertAfterOrAppend(document.getElementById('last-session-card'), card, grid);
   }
   const header = document.querySelector('header');
   const headerContent = header.querySelector('div');
@@ -246,9 +341,11 @@ function setupDashboardCards() {
 function applyDashboardCards() {
   dashboardCards.forEach(card => {
     const element = document.getElementById(card.id);
-    if (element) element.classList.toggle('hidden', !card.visible || !cardAllowed(card.id, appModules) || (card.id === 'next-meal-card' && element.dataset.available === 'false'));
+    const hiddenByData = card.id === 'next-meal-card' && element?.dataset.available === 'false';
+    if (element) element.classList.toggle('hidden', !card.visible || !cardAllowed(card.id, appModules) || hiddenByData || card.id === spotlightCardId);
   });
-  const main = document.querySelector('main'); dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) main.appendChild(element); });
+  const grid = document.getElementById('dashboard-card-grid') || document.querySelector('main');
+  dashboardCards.forEach(card => { const element = document.getElementById(card.id); if (element) grid.appendChild(element); });
 }
 
 async function saveDashboardCards() {

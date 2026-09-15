@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body id="app-body" class="app-surface dashboard-surface min-h-screen has-app-nav text-white" aria-busy="true">
-  <main class="mx-auto max-w-md px-5">
-    <header class="flex items-start justify-between gap-4 pt-8 pb-7">
+  <main class="mx-auto max-w-6xl px-5 lg:px-8">
+    <header class="flex items-start justify-between gap-4 pt-8 pb-7 lg:pt-10">
       <div class="min-w-0">
         <a id="dashboard-brand" class="mol-brand" href="./index.html" aria-label="Ir para o início"><img src="./assets/mol-mark.svg" alt="">Mol</a>
         <p id="week-label" class="mt-3 text-xs font-semibold uppercase tracking-[.16em] text-neon">Carregando</p>
@@ -31,19 +31,23 @@
       </a>
     </header>
 
-    <section id="daily-brief-card" class="glass-card mb-4 rounded-3xl p-5 animate-slide-up">
-      <div class="flex items-start justify-between gap-4">
+    <section id="daily-brief-card" class="glass-card mb-4 rounded-3xl p-5 animate-slide-up lg:p-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0">
-          <p class="text-xs font-semibold uppercase tracking-wider text-neon">Resumo de hoje</p>
-          <h2 id="daily-brief-title" class="mt-1 text-lg font-extrabold">Preparando seu dia</h2>
-          <p id="daily-brief-subtitle" class="mt-1 text-sm text-gray-500">Treino, refeição e progresso aparecem aqui.</p>
+          <p id="daily-brief-eyebrow" class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima ação</p>
+          <h2 id="daily-brief-title" class="mt-1 text-xl font-extrabold lg:text-2xl">Preparando seu dia</h2>
+          <p id="daily-brief-subtitle" class="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500">O app destaca uma prioridade por vez para evitar informação repetida.</p>
         </div>
-        <span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="sparkles" class="h-5 w-5"></i></span>
+        <div class="flex shrink-0 items-center gap-3">
+          <span id="daily-brief-icon" class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="sparkles" class="h-5 w-5"></i></span>
+          <a id="daily-brief-action" href="./pages/treino.html" class="flex min-h-11 items-center justify-center rounded-2xl bg-neon px-4 text-sm font-extrabold text-white">Abrir</a>
+        </div>
       </div>
-      <div id="daily-brief-items" class="mt-4 grid gap-2 text-xs sm:grid-cols-3"></div>
+      <div id="daily-brief-context" class="mt-4 rounded-2xl bg-white/5 px-4 py-3 text-sm text-gray-400" aria-live="polite">Carregando seus dados principais.</div>
     </section>
 
-    <section id="today-card" class="glass-card relative mb-4 overflow-hidden rounded-3xl p-5 animate-slide-up">
+    <div id="dashboard-card-grid" class="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+    <section id="today-card" class="glass-card relative mb-4 overflow-hidden rounded-3xl p-5 animate-slide-up lg:mb-0">
       <div class="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-neon/15 blur-2xl"></div>
       <div class="relative flex items-start justify-between gap-3">
         <div>
@@ -56,7 +60,7 @@
       <a id="today-workout-cta" href="./pages/treino.html" class="relative mt-5 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-neon py-3.5 text-sm font-extrabold text-white"><i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Ver treinos</span></a>
     </section>
 
-    <section class="glass-card mb-4 rounded-3xl p-5 animate-slide-up">
+    <section class="glass-card mb-4 rounded-3xl p-5 animate-slide-up lg:mb-0">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Esta semana</p>
@@ -72,13 +76,14 @@
       </div>
     </section>
 
-    <section class="mb-4">
-      <a href="./pages/progresso.html" class="glass-card block rounded-2xl p-4">
+    <section class="mb-4 lg:mb-0">
+      <a href="./pages/progresso.html" class="glass-card block h-full rounded-2xl p-4">
         <i data-lucide="chart-no-axes-combined" class="h-5 w-5 text-neon"></i>
         <h2 class="mt-4 font-bold">Progresso</h2>
         <p id="performance-summary" class="mt-1 text-xs leading-relaxed text-gray-500">Seu desempenho aparecerá aqui.</p>
       </a>
     </section>
+    </div>
   </main>
 
   <nav class="mol-app-nav" data-mol-app-nav="true" aria-label="Navegação principal"></nav>
