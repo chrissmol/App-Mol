@@ -1,6 +1,6 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -11,6 +11,18 @@ const $ = id => document.getElementById(id);
 const renderIcons = () => window.lucide?.createIcons();
 const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
 const profileCacheKey = uid => `mol-profile-cache-${uid}`;
+const FRAME_OPTIONS = [
+  { id: 'plastic', label: 'Base', required: 0 },
+  { id: 'wood', label: 'Madeira', required: 5 },
+  { id: 'bronze', label: 'Bronze', required: 15 },
+  { id: 'silver', label: 'Prata', required: 30 },
+  { id: 'gold', label: 'Ouro', required: 60 },
+  { id: 'diamond', label: 'Diamante', required: 100 },
+  { id: 'boss', label: 'Chefão', required: 0, adminOnly: true }
+];
+let currentAccount = null;
+let currentProfile = {};
+let completedWorkouts = 0;
 
 function withTimeout(promise, label, milliseconds = 8000) {
   let timer;
@@ -23,6 +35,59 @@ function withTimeout(promise, label, milliseconds = 8000) {
 function safeJSON(value, fallback = null) {
   try { return value ? JSON.parse(value) : fallback; }
   catch { return fallback; }
+}
+
+function isAdmin(account = currentAccount) {
+  return String(account?.email || '').toLowerCase() === ADMIN_EMAIL;
+}
+
+function unlockedFrame(option, account = currentAccount) {
+  if (!option) return false;
+  return option.adminOnly ? isAdmin(account) : completedWorkouts >= option.required;
+}
+
+function normalizeFrame(value, account = currentAccount) {
+  const requested = String(value || '').replace(/[^a-z]/g, '');
+  const option = FRAME_OPTIONS.find(item => item.id === requested);
+  if (option && unlockedFrame(option, account)) return option.id;
+  if (isAdmin(account)) return 'boss';
+  return FRAME_OPTIONS.filter(item => !item.adminOnly && completedWorkouts >= item.required).at(-1)?.id || 'plastic';
+}
+
+function applyAvatarFrame(frameId) {
+  const frame = $('avatar-frame');
+  if (!frame) return;
+  frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim();
+  frame.classList.add(`avatar-frame--${frameId}`);
+  const label = FRAME_OPTIONS.find(item => item.id === frameId)?.label || 'perfil';
+  frame.setAttribute('aria-label', `Foto do perfil · moldura ${label}`);
+}
+
+function renderAvatarFramePicker(account = currentAccount, profile = currentProfile) {
+  const picker = $('avatar-frame-picker');
+  if (!picker) return;
+  const active = normalizeFrame(profile.avatarFrame, account);
+  const choices = FRAME_OPTIONS.filter(option => !option.adminOnly || isAdmin(account)).map(option => {
+    const unlocked = unlockedFrame(option, account);
+    const label = unlocked ? option.label : `${option.required} treinos`;
+    return `<button type="button" data-avatar-frame="${option.id}" class="avatar-frame-choice avatar-frame-choice--${option.id} ${active === option.id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${active === option.id}"><span>${label}</span></button>`;
+  }).join('');
+  picker.innerHTML = `<p class="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Moldura do perfil</p><div class="avatar-frame-picker" role="group" aria-label="Escolher cor da moldura do perfil">${choices}</div><p class="mt-2 text-xs leading-relaxed text-gray-500">${isAdmin(account) ? 'Chefão desbloqueado só para sua conta.' : 'Novas cores aparecem conforme você conclui treinos.'}</p>`;
+  picker.querySelectorAll('[data-avatar-frame]').forEach(button => {
+    button.onclick = async () => {
+      const frameId = button.dataset.avatarFrame;
+      if (!unlockedFrame(FRAME_OPTIONS.find(item => item.id === frameId), account)) return;
+      currentProfile = { ...currentProfile, avatarFrame: frameId };
+      applyAvatarFrame(frameId);
+      renderAvatarFramePicker(account, currentProfile);
+      try {
+        await updateDoc(doc(db, 'users', account.uid), { avatarFrame: frameId });
+        setSessionItem(profileCacheKey(account.uid), JSON.stringify(currentProfile));
+      } catch (error) {
+        console.warn('Moldura salva apenas neste dispositivo:', error.message);
+      }
+    };
+  });
 }
 
 function renderIdentity(account, profile = {}) {
@@ -41,7 +106,10 @@ function renderIdentity(account, profile = {}) {
     fallback.classList.add('hidden');
   }
 
-  const canMonitor = String(account.email || '').toLowerCase() === ADMIN_EMAIL;
+  applyAvatarFrame(normalizeFrame(profile.avatarFrame, account));
+  renderAvatarFramePicker(account, profile);
+
+  const canMonitor = isAdmin(account);
   $('admin-link')?.classList.toggle('hidden', !canMonitor);
   $('admin-link')?.classList.toggle('flex', canMonitor);
 }
@@ -61,14 +129,21 @@ function setPageReady(message = '') {
 }
 
 async function loadProfile(account) {
+  currentAccount = account;
   const cachedProfile = safeJSON(getSessionItem(profileCacheKey(account.uid)), {});
+  currentProfile = cachedProfile;
   renderIdentity(account, cachedProfile);
   applyProfileModules(cachedProfile);
   setPageReady();
 
   try {
-    const snapshot = await withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil');
+    const [snapshot, sessionsSnapshot] = await Promise.all([
+      withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil'),
+      withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas')
+    ]);
     const profile = snapshot.exists() ? snapshot.data() : {};
+    currentProfile = profile;
+    completedWorkouts = sessionsSnapshot.size;
     setSessionItem(profileCacheKey(account.uid), JSON.stringify(profile));
     applyProfileModules(profile);
     renderIdentity(account, profile);

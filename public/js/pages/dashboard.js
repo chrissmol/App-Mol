@@ -44,6 +44,8 @@ const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, 
 const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
 const profileCacheKey = uid => `mol-profile-dashboard-${uid}`;
 const mealCacheKey = uid => `mol-meal-dashboard-${uid}`;
+const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
+const VALID_AVATAR_FRAMES = ['plastic', 'wood', 'bronze', 'silver', 'gold', 'diamond', 'boss'];
 const cacheFresh = value => value?.savedAt && Date.now() - value.savedAt < 1000 * 60 * 60 * 6;
 const writeDashboardDataCache = (uid, patch) => {
   const current = safeJSON(getSessionItem(dashboardCacheKey(uid)), {}) || {};
@@ -143,7 +145,14 @@ function insertAfterOrAppend(anchor, element, fallback) {
 function setWeek(sessions, goal = 1) {
   const tier = avatarTier(profileStats(sessions, goal).workouts);
   const frame = $('dashboard-avatar-frame');
-  if (frame) { frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim() + ` avatar-frame--${tier.id}`; frame.setAttribute('aria-label', `Abrir perfil · moldura de ${tier.label}`); }
+  if (frame) {
+    const savedFrame = String(profileData.avatarFrame || '').replace(/[^a-z]/g, '');
+    const adminFrame = String(dashboardUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+    const frameId = adminFrame ? 'boss' : (VALID_AVATAR_FRAMES.includes(savedFrame) && savedFrame !== 'boss' ? savedFrame : tier.id);
+    const frameLabel = frameId === 'boss' ? 'Chefão' : (frameId === tier.id ? tier.label : frameId);
+    frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim() + ` avatar-frame--${frameId}`;
+    frame.setAttribute('aria-label', `Abrir perfil · moldura de ${frameLabel}`);
+  }
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);

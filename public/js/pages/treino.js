@@ -264,7 +264,7 @@ function configurarPainelDescanso() {
       <div class="mt-5 grid place-items-center">
         <div id="rest-ring" class="rest-ring relative">
           <div class="text-center">
-            <span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Restam</span>
+            <span class="rest-ring-label block text-[10px] font-bold uppercase tracking-[.12em] text-neon">Tempo</span>
             <span id="rest-time" class="rest-time-display mt-1 block font-extrabold leading-none tabular-nums">01:30</span>
           </div>
         </div>
@@ -348,6 +348,7 @@ async function carregarRotinasDoBanco() {
 }
 
 function esconderTudo() {
+  document.body.classList.remove('workout-detail-active');
   viewRotinas.classList.add('hidden');
   viewDetalhe.classList.add('hidden');
   viewNovaRotina.classList.add('hidden');
@@ -476,8 +477,19 @@ function atualizarDescanso() {
   if (restMiniTime) restMiniTime.textContent = display;
   if (restProgress) restProgress.style.width = `${progress * 100}%`;
   if (restMiniProgress) restMiniProgress.style.width = `${progress * 100}%`;
-  if (restRing) restRing.style.setProperty('--rest-progress', String(progress));
-  if (restTimer) restTimer.style.setProperty('--rest-progress', String(progress));
+  if (restRing) {
+    restRing.style.setProperty('--rest-progress', String(progress));
+    restRing.style.setProperty('--rest-deg', `${progress * 360}deg`);
+    restRing.style.setProperty('--rest-angle', `${(1 - progress) * 360}deg`);
+  }
+  if (restTimer) {
+    restTimer.style.setProperty('--rest-progress', String(progress));
+    restTimer.style.setProperty('--rest-deg', `${progress * 360}deg`);
+  }
+  if (restTimer) {
+    restTimer.classList.toggle('is-ending', descansoSegundos > 0 && descansoSegundos <= 10 && !descansoPausado);
+    restTimer.classList.toggle('is-paused', descansoPausado);
+  }
   if (restExercise && descansoContexto) restExercise.textContent = descansoContexto.title;
   if (restNext && descansoContexto) restNext.textContent = descansoContexto.nextTitle;
   if (restMiniTitle && descansoContexto) restMiniTitle.textContent = descansoContexto.title;
@@ -1334,6 +1346,7 @@ function abrirRotina(id) {
 
   esconderTudo();
   viewDetalhe.classList.remove('hidden');
+  document.body.classList.add('workout-detail-active');
   viewDetalhe.classList.toggle('workout-compact', treinoIniciado && modoCompacto);
   renderIcons();
   atualizarDisplayTempo();

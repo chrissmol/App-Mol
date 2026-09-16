@@ -25,7 +25,8 @@ service cloud.firestore {
         'metaSemanal', 'alturaCm', 'metaPesoKg', 'objetivo',
         'preferenciasAcessibilidade', 'dashboardCards', 'dashboardCardsUpdatedAt',
         'exerciseLibraryPreferences', 'medidasHistorico', 'fotosProgresso',
-        'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas', 'appModules'
+        'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas', 'appModules',
+        'avatarFrame'
       ];
     }
 
@@ -89,6 +90,7 @@ service cloud.firestore {
         && validAppModules()
         && validExerciseLibraryPreferences()
         && (!('unidadePeso' in request.resource.data) || request.resource.data.unidadePeso in ['kg', 'lb'])
+        && (!('avatarFrame' in request.resource.data) || request.resource.data.avatarFrame in ['plastic', 'wood', 'bronze', 'silver', 'gold', 'diamond'] || (request.resource.data.avatarFrame == 'boss' && isAdmin()))
         && (!('perfilPrivado' in request.resource.data) || request.resource.data.perfilPrivado is bool)
         && (!('compartilharEstatisticas' in request.resource.data) || request.resource.data.compartilharEstatisticas is bool)
         && (!('metaSemanal' in request.resource.data) || (request.resource.data.metaSemanal is number && request.resource.data.metaSemanal >= 1 && request.resource.data.metaSemanal <= 7))
