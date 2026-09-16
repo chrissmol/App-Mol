@@ -124,6 +124,10 @@ export const getDocs = async reference => {
   if (path.includes('pesos')) return querySnapshot([]);
   return querySnapshot([]);
 };
+export const getCountFromServer = async reference => {
+  const snapshot = await getDocs(reference);
+  return { data: () => ({ count: snapshot.docs.length }) };
+};
 export const setDoc = async () => {};
 export const updateDoc = async () => {};
 export const deleteDoc = async () => {};
