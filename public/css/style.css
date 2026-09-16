@@ -954,12 +954,12 @@ html[data-theme="light"] a:focus-visible {
   }
 }
 
-.dashboard-surface .text-neon { color: #57d493 !important; }
-.dashboard-surface .bg-neon { background-color: var(--mol-brand-green) !important; }
-html[data-theme="light"] body.dashboard-surface .text-neon { color: #0f5f3a !important; }
-.app-surface .text-neon { color: #57d493 !important; }
-.app-surface .text-gray-500, .app-surface .text-gray-600 { color: #8b9a91 !important; }
-html[data-theme="light"] body.app-surface .text-neon { color: #0f5f3a !important; }
+.dashboard-surface .text-neon { color: #57d493; }
+.dashboard-surface .bg-neon { background-color: var(--mol-brand-green); }
+html[data-theme="light"] body.dashboard-surface .text-neon { color: #0f5f3a; }
+.app-surface .text-neon { color: #57d493; }
+.app-surface .text-gray-500, .app-surface .text-gray-600 { color: #8b9a91; }
+html[data-theme="light"] body.app-surface .text-neon { color: #0f5f3a; }
 html[data-theme="light"] body.app-surface .text-gray-500,
 html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
 .app-surface main > header:first-child,

@@ -8,6 +8,7 @@ import { setupTelemetry } from '../modules/telemetry.js';
 import { setupAppNavigation } from './app-nav.js';
 import { applyModuleVisibility, isPageAllowed, showDisabledModuleScreen, syncAppModulesForUser } from './app-modules.js';
 import { watchAuthState } from '../modules/auth.js';
+import { registerServiceWorker } from './service-worker.js';
 
 
 function setupSkipLink() {
@@ -69,6 +70,7 @@ export function setupAppShell() {
   setupSkipLink();
   initializeAccessibility();
   initializeLanguage();
+  registerServiceWorker();
   setupConnectivityIndicator();
   startReminderMonitor();
   setupTelemetry();

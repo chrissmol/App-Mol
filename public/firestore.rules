@@ -160,6 +160,26 @@ service cloud.firestore {
         && validFasting();
     }
 
+    function validPresence() {
+      return request.resource.data.keys().hasOnly(['userId', 'email', 'name', 'page', 'online', 'lastSeen'])
+        && request.resource.data.userId == request.auth.uid
+        && (!('email' in request.resource.data) || request.resource.data.email is string && request.resource.data.email.size() <= 254)
+        && (!('name' in request.resource.data) || request.resource.data.name is string && request.resource.data.name.size() <= 80)
+        && (!('page' in request.resource.data) || request.resource.data.page is string && request.resource.data.page.size() <= 240)
+        && (!('online' in request.resource.data) || request.resource.data.online is bool);
+    }
+
+    function validClientError() {
+      return request.resource.data.keys().hasOnly(['userId', 'email', 'message', 'stack', 'page', 'url', 'userAgent', 'createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && (!('email' in request.resource.data) || request.resource.data.email is string && request.resource.data.email.size() <= 254)
+        && (!('message' in request.resource.data) || request.resource.data.message is string && request.resource.data.message.size() <= 1000)
+        && (!('stack' in request.resource.data) || request.resource.data.stack is string && request.resource.data.stack.size() <= 4000)
+        && (!('page' in request.resource.data) || request.resource.data.page is string && request.resource.data.page.size() <= 240)
+        && (!('url' in request.resource.data) || request.resource.data.url is string && request.resource.data.url.size() <= 500)
+        && (!('userAgent' in request.resource.data) || request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 500);
+    }
+
     match /users/{userId} {
       allow read, delete: if signedIn() && request.auth.uid == userId;
       allow create: if signedIn() && request.auth.uid == userId && validNewUserProfile();
@@ -194,13 +214,13 @@ service cloud.firestore {
     match /presence/{userId} {
       allow read: if isAdmin() || (signedIn() && request.auth.uid == userId);
       allow create, update: if signedIn() && request.auth.uid == userId
-        && request.resource.data.userId == request.auth.uid;
+        && validPresence();
       allow delete: if signedIn() && request.auth.uid == userId;
     }
 
     match /clientErrors/{errorId} {
       allow read, delete: if isAdmin();
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && validClientError();
       allow update: if false;
     }
   }

@@ -1,6 +1,6 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, query, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -139,11 +139,11 @@ async function loadProfile(account) {
   try {
     const [snapshot, sessionsSnapshot] = await Promise.all([
       withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil'),
-      withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas')
+      withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas')
     ]);
     const profile = snapshot.exists() ? snapshot.data() : {};
     currentProfile = profile;
-    completedWorkouts = sessionsSnapshot.size;
+    completedWorkouts = sessionsSnapshot.data().count;
     setSessionItem(profileCacheKey(account.uid), JSON.stringify(profile));
     applyProfileModules(profile);
     renderIdentity(account, profile);

@@ -1,22 +1,14 @@
 (() => {
-  async function clearAppCaches() {
-    if (!('caches' in window)) return;
-    const names = await caches.keys();
-    await Promise.all(names.map(name => caches.delete(name)));
-  }
-
-  async function unregisterServiceWorkers() {
-    if (!('serviceWorker' in navigator)) return;
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map(registration => registration.unregister()));
-  }
-
+  if (!('serviceWorker' in navigator)) return;
+  const allowed = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!allowed || window.__molServiceWorkerListener) return;
+  window.__molServiceWorkerListener = true;
   window.addEventListener('load', () => {
-    Promise.allSettled([clearAppCaches(), unregisterServiceWorkers()]).then(() => {
-      if (navigator.serviceWorker?.controller && !sessionStorage.getItem('mol-sw-cleared-v1')) {
-        sessionStorage.setItem('mol-sw-cleared-v1', 'true');
-        window.location.reload();
-      }
-    });
-  });
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        window.__molServiceWorkerRegistration = registration;
+        registration.update().catch(() => undefined);
+      })
+      .catch(error => console.warn('Service worker não registrado:', error.message));
+  }, { once: true });
 })();
