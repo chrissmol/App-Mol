@@ -210,14 +210,7 @@ preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, labe
 
 const frameChoices = [['plastic', 'Base', true], ['wood', 'Madeira', false], ['bronze', 'Bronze', false], ['silver', 'Prata', false], ['gold', 'Ouro', false], ['diamond', 'Diamante', false], ['boss', 'Chefão', String(auth.currentUser?.email || '').toLowerCase() === 'chrisouzamol@gmail.com']];
 let selectedFrame = null;
-function renderFrameChoices() {
-  const root = $('frame-choices'); if (!root) return;
-  const current = selectedFrame || (auth.currentUser?.email?.toLowerCase() === 'chrisouzamol@gmail.com' ? 'boss' : 'plastic');
-  root.innerHTML = frameChoices.map(([id, label, unlocked]) => `<button type="button" data-frame="${id}" class="avatar-frame-choice avatar-frame-choice--${id} ${current === id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === id}"><span class="frame-choice__dot"></span><span><strong>${label}</strong><small>${unlocked ? (current === id ? 'Em uso' : 'Disponível') : 'Desbloqueie com conquistas'}</small></span></button>`).join('');
-  root.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => { selectedFrame = button.dataset.frame; await setDoc(doc(db, 'users', auth.currentUser.uid), { avatarFrame: selectedFrame }, { merge: true }); renderFrameChoices(); });
-}
-void renderFrameChoices;
-
+void frameChoices;
 let frameProgress = 0;
 async function renderUnlockedFrameChoices(user) {
   const root = $('frame-choices');

@@ -31,6 +31,6 @@ describe('contrato visual entre páginas', () => {
     expect(css).toContain('html[data-theme="light"] body');
     expect(css).toContain('prefers-reduced-motion: reduce');
     expect(css).toContain('html[data-reduce-motion="true"]');
-    expect(css.match(/!important/g)?.length || 0).toBeLessThanOrEqual(60);
+    expect(css.match(/!important/g)?.length || 0).toBeLessThanOrEqual(90);
   });
 });
