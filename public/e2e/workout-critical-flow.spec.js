@@ -24,16 +24,16 @@ test('iniciar treino, concluir serie e voltar cancelando nao gera erro', async (
   await expect(page.getByRole('dialog', { name: /Como voc/ })).toBeVisible();
   await page.getByRole('button', { name: /Iniciar treino/ }).click();
 
-  await expect(page.getByRole('heading', { name: /Upper/ })).toBeVisible();
+  await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
   await page.locator('input[id^="kg-"]').first().fill('80');
   await page.locator('input[id^="reps-"]').first().fill('10');
   await page.locator('input[id^="rir-"]').first().fill('2');
   await page.getByRole('button', { name: /Concluir s/ }).first().click();
   await expect(page.locator('#rest-label')).toContainText(/Descanso/i);
 
-  await page.getByRole('button', { name: /Voltar para as rotinas/i }).click();
+  await page.locator('#btn-voltar').click();
   await expect(page.getByRole('dialog', { name: /Encerrar treino/ })).toBeVisible();
   await page.getByRole('button', { name: /^Cancelar$/ }).click();
-  await expect(page.getByRole('heading', { name: /Upper/ })).toBeVisible();
+  await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
   expect(pageErrors).toEqual([]);
 });

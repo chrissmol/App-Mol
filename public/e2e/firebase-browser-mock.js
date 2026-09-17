@@ -24,8 +24,10 @@ export const browserPopupRedirectResolver = {};
 export const indexedDBLocalPersistence = {};
 export const inMemoryPersistence = {};
 export class GoogleAuthProvider {}
+export class ReCaptchaEnterpriseProvider {}
 export const EmailAuthProvider = { credential: () => ({}) };
 export const initializeApp = config => ({ config });
+export const initializeAppCheck = () => ({});
 export const initializeAuth = () => authInstance;
 export const onAuthStateChanged = (_auth, listener) => {
   listeners.add(listener);

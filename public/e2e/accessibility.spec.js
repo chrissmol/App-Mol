@@ -36,6 +36,8 @@ async function prepare(page, path, theme = 'dark') {
 }
 
 test.describe('acessibilidade automatizada', () => {
+  test.describe.configure({ mode: 'serial' });
+
   for (const theme of ['dark', 'light']) {
     for (const path of pages) {
       test(`${path} não tem violações sérias no tema ${theme}`, async ({ page }) => {

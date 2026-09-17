@@ -12,7 +12,7 @@ async function openDiet(page) {
     }));
   });
   await page.goto('/pages/dieta.html');
-  await expect(page.getByRole('heading', { name: 'Dieta' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dieta', exact: true })).toBeVisible();
   await expect(page.locator('#diet-content')).toBeVisible();
 }
 

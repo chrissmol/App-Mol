@@ -14,7 +14,7 @@ async function openActiveWorkout(page) {
   await page.goto('/pages/treino.html');
   await page.getByRole('button', { name: /^Iniciar$/ }).first().click();
   await page.getByRole('button', { name: /Iniciar treino/ }).click();
-  await expect(page.getByRole('heading', { name: /Upper/ })).toBeVisible();
+  await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
 }
 
 test('altera metodo de serie durante treino em andamento sem erro', async ({ page }) => {
@@ -28,5 +28,5 @@ test('altera metodo de serie durante treino em andamento sem erro', async ({ pag
   const methodDialog = page.getByRole('dialog', { name: /Supino reto/i });
   await expect(methodDialog).toBeVisible();
   await expect(methodDialog.getByText(/Rest-Pause/i)).toBeVisible();
-  await page.getByRole('button', { name: /Fechar/i }).click();
+  await methodDialog.getByRole('button', { name: 'Fechar', exact: true }).click();
 });

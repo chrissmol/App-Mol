@@ -9,6 +9,7 @@ export default defineConfig({
     alias: process.env.MOL_E2E === '1'
       ? [
           { find: 'firebase/app', replacement: firebaseBrowserMock },
+          { find: 'firebase/app-check', replacement: firebaseBrowserMock },
           { find: 'firebase/auth', replacement: firebaseBrowserMock },
           { find: 'firebase/firestore', replacement: firebaseBrowserMock },
         ]
