@@ -753,6 +753,10 @@ html[data-theme="light"] body .theme-segments button.is-active { background:#1e7
 .frame-choice strong, .frame-choice small { display:block; }
 .frame-choice small { margin-top:.15rem; color:var(--mol-muted); font-size:.72rem; }
 .frame-choice__dot { width:1.8rem; height:1.8rem; flex:0 0 auto; border-radius:50%; border:3px solid var(--frame-color, var(--mol-brand-text)); box-shadow:0 0 10px var(--frame-glow, transparent); }
+.avatar-frame-choice { display:flex; align-items:center; gap:.75rem; min-height:3.5rem; padding:.65rem .8rem; border:1px solid var(--mol-border); border-radius:1rem; background:var(--mol-surface-soft); color:var(--mol-text); text-align:left; }
+.avatar-frame-choice.is-active { border-color:var(--mol-neon); background:color-mix(in srgb, var(--mol-neon) 10%, var(--mol-surface-soft)); box-shadow:0 0 0 1px color-mix(in srgb, var(--mol-neon) 20%, transparent); }
+.avatar-frame-choice strong, .avatar-frame-choice small { display:block; }
+.avatar-frame-choice small { margin-top:.15rem; color:var(--mol-muted); font-size:.72rem; }
 html[data-density="compact"] .glass-card, html[data-density="compact"] .mol-card { padding-top: .85rem; padding-bottom: .85rem; }
 html[data-card-style="discreet"] .glass-card, html[data-card-style="discreet"] .mol-card { box-shadow: none; }
 html[data-card-style="neon"] .glass-card, html[data-card-style="neon"] .mol-card { box-shadow: 0 0 22px color-mix(in srgb, var(--mol-brand) 18%, transparent); }
@@ -3244,4 +3248,40 @@ html[data-theme="light"] body .mol-brand img {
   .diet-page #diet-mode-tabs {
     width: min(100%, 32rem);
   }
+}
+
+/* iPad e tablets largos: nao usar o shell de desktop mesmo quando o navegador
+   anuncia mouse/hover. Cada pagina volta a um fluxo amplo e legivel. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .app-surface main,
+  .dashboard-surface main,
+  .workout-page main {
+    display: block !important;
+    width: min(100%, 64rem) !important;
+    max-width: 64rem !important;
+    margin: 0 auto !important;
+    padding: 2rem !important;
+  }
+  .dashboard-surface main > *,
+  .diet-page main > *,
+  .profile-page main > *,
+  .settings-page main > *,
+  .workout-page main > * {
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    grid-column: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 1rem !important;
+  }
+  .dashboard-surface main > header { display: flex; }
+  .dashboard-surface main > #today-card,
+  .dashboard-surface main > section { min-height: 0; }
+  .diet-page #diet-content:not(.hidden),
+  .diet-page #diet-edit-content:not(.hidden) { display: block !important; }
+  .diet-page #diet-content > *,
+  .diet-page #diet-edit-content > * { width: 100% !important; max-width: none !important; }
+  #view-rotinas { display: block !important; }
+  #view-rotinas > * { width: 100% !important; max-width: none !important; }
 }

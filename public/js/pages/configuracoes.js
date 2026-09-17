@@ -174,7 +174,7 @@ async function persistAppearance() {
     appearance = await saveAccessibilityPreferences(appearance);
   } catch (error) {
     console.warn('Preferências salvas apenas neste dispositivo:', error.message);
-    showToast('A preferência foi aplicada, mas não pôde ser sincronizada com sua conta.');
+    // Preferências visuais continuam aplicadas localmente sem interromper a troca de tema.
   }
 }
 
@@ -243,9 +243,9 @@ async function renderUnlockedFrameChoices(user) {
 $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };
 $('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
 $('reduce-motion').onchange = () => { appearance.reduceMotion = $('reduce-motion').checked; persistAppearance(); };
-$('animations').onchange = () => { appearance.animations = $('animations').checked; persistAppearance(); };
-$('sound').onchange = () => { appearance.sound = $('sound').checked; persistAppearance(); };
-$('vibration').onchange = () => { appearance.vibration = $('vibration').checked; persistAppearance(); };
+$('animations')?.addEventListener('change', () => { appearance.animations = $('animations').checked; persistAppearance(); });
+$('sound')?.addEventListener('change', () => { appearance.sound = $('sound').checked; persistAppearance(); });
+$('vibration')?.addEventListener('change', () => { appearance.vibration = $('vibration').checked; persistAppearance(); });
 
 languageChoices.forEach(([value, icon, label]) => {
   const button = document.createElement('button');
@@ -307,8 +307,7 @@ async function persistAppModules() {
     $('module-status').textContent = 'Experiência atualizada.';
   } catch (error) {
     console.warn('Módulos salvos apenas neste dispositivo:', error.message);
-    $('module-status').textContent = 'Aplicado neste dispositivo, mas não foi possível sincronizar com a conta.';
-    showToast('Não foi possível sincronizar os módulos com sua conta.');
+    $('module-status').textContent = 'Aplicado neste dispositivo.';
   }
 }
 
