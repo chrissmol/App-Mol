@@ -122,6 +122,11 @@ const themeChoices = [
   ['dark', 'moon', 'Escuro'],
   ['light', 'sun', 'Claro']
 ];
+const visualStyleChoices = [
+  ['classic', 'star', 'Clássico', 'Mol limpo, foco no treino e verde como assinatura.'],
+  ['gamer', 'monitor', 'Gamer neon', 'Mais brilho, contraste de LED e energia noturna.'],
+  ['cave', 'lock-keyhole', 'Caveira', 'Mais escuro, seco e concentrado, sem trocar o verde.']
+];
 const languageChoices = [
   ['system', 'smartphone', 'Sistema'],
   ...supportedLanguages.map(language => [language.code, 'languages', language.label])
@@ -139,6 +144,11 @@ function applyAppearance() {
   appearance = applyAccessibilityPreferences(appearance);
   $('theme-segments').querySelectorAll('button').forEach(button => {
     const selected = button.dataset.theme === appearance.theme;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  $('visual-style-segments').querySelectorAll('button').forEach(button => {
+    const selected = button.dataset.visualStyle === appearance.visualStyle;
     button.classList.toggle('is-active', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
@@ -174,6 +184,16 @@ themeChoices.forEach(([value, icon, label]) => {
   button.innerHTML = `<i data-lucide="${icon}" class="h-4 w-4"></i><span>${label}</span>`;
   button.onclick = () => { appearance.theme = value; persistAppearance(); };
   $('theme-segments').appendChild(button);
+});
+
+visualStyleChoices.forEach(([value, icon, label, description]) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.visualStyle = value;
+  button.className = `visual-style-choice visual-style-choice--${value}`;
+  button.innerHTML = `<span class="visual-style-choice__swatch" aria-hidden="true"></span><span class="min-w-0"><strong>${label}</strong><small>${description}</small></span><i data-lucide="${icon}" class="h-4 w-4 shrink-0"></i>`;
+  button.onclick = () => { appearance.visualStyle = value; persistAppearance(); };
+  $('visual-style-segments').appendChild(button);
 });
 
 $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };

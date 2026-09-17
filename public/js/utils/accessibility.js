@@ -5,7 +5,7 @@ import { auth, db } from '../config/firebase-config.js';
 const STORAGE_KEY = 'mol-accessibility';
 const PROFILE_FIELD = 'preferenciasAcessibilidade';
 const languageDefaults = { mode: 'system', value: 'pt-BR' };
-const defaults = { theme: 'system', contrast: false, largeText: false, reduceMotion: false, language: languageDefaults };
+const defaults = { theme: 'system', visualStyle: 'classic', contrast: false, largeText: false, reduceMotion: false, language: languageDefaults };
 
 function normalizeLanguage(value = {}) {
   const source = value && typeof value === 'object' ? value : {};
@@ -18,6 +18,7 @@ export function normalizeAccessibility(value = {}) {
   const legacyTheme = value.theme === '' ? 'dark' : value.theme;
   return {
     theme: ['system', 'dark', 'light'].includes(legacyTheme) ? legacyTheme : defaults.theme,
+    visualStyle: ['classic', 'gamer', 'cave'].includes(value.visualStyle) ? value.visualStyle : defaults.visualStyle,
     contrast: value.contrast === true,
     largeText: value.largeText === true,
     reduceMotion: value.reduceMotion === true,
@@ -43,12 +44,14 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
       ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
       : preferences.theme;
     document.documentElement.dataset.theme = resolvedTheme;
+    document.documentElement.dataset.visualStyle = preferences.visualStyle;
     document.documentElement.dataset.highContrast = preferences.contrast ? 'true' : 'false';
     document.documentElement.dataset.largeText = preferences.largeText ? 'true' : 'false';
     document.documentElement.dataset.reduceMotion = preferences.reduceMotion ? 'true' : 'false';
     document.documentElement.style.colorScheme = resolvedTheme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'light' ? '#f4f7f5' : '#070a08');
     document.body.dataset.theme = resolvedTheme;
+    document.body.dataset.visualStyle = preferences.visualStyle;
     document.body.dataset.highContrast = document.documentElement.dataset.highContrast;
     document.body.dataset.reduceMotion = document.documentElement.dataset.reduceMotion;
   }

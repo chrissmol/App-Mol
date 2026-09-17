@@ -1,6 +1,6 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { collection, doc, getCountFromServer, getDoc, query, updateDoc, where } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, query, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -21,7 +21,6 @@ const FRAME_OPTIONS = [
   { id: 'boss', label: 'Chefão', required: 0, adminOnly: true }
 ];
 let currentAccount = null;
-let currentProfile = {};
 let completedWorkouts = 0;
 
 function withTimeout(promise, label, milliseconds = 8000) {
@@ -63,33 +62,6 @@ function applyAvatarFrame(frameId) {
   frame.setAttribute('aria-label', `Foto do perfil · moldura ${label}`);
 }
 
-function renderAvatarFramePicker(account = currentAccount, profile = currentProfile) {
-  const picker = $('avatar-frame-picker');
-  if (!picker) return;
-  const active = normalizeFrame(profile.avatarFrame, account);
-  const choices = FRAME_OPTIONS.filter(option => !option.adminOnly || isAdmin(account)).map(option => {
-    const unlocked = unlockedFrame(option, account);
-    const label = unlocked ? option.label : `${option.required} treinos`;
-    return `<button type="button" data-avatar-frame="${option.id}" class="avatar-frame-choice avatar-frame-choice--${option.id} ${active === option.id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${active === option.id}"><span>${label}</span></button>`;
-  }).join('');
-  picker.innerHTML = `<p class="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Moldura do perfil</p><div class="avatar-frame-picker" role="group" aria-label="Escolher cor da moldura do perfil">${choices}</div><p class="mt-2 text-xs leading-relaxed text-gray-500">${isAdmin(account) ? 'Chefão desbloqueado só para sua conta.' : 'Novas cores aparecem conforme você conclui treinos.'}</p>`;
-  picker.querySelectorAll('[data-avatar-frame]').forEach(button => {
-    button.onclick = async () => {
-      const frameId = button.dataset.avatarFrame;
-      if (!unlockedFrame(FRAME_OPTIONS.find(item => item.id === frameId), account)) return;
-      currentProfile = { ...currentProfile, avatarFrame: frameId };
-      applyAvatarFrame(frameId);
-      renderAvatarFramePicker(account, currentProfile);
-      try {
-        await updateDoc(doc(db, 'users', account.uid), { avatarFrame: frameId });
-        setSessionItem(profileCacheKey(account.uid), JSON.stringify(currentProfile));
-      } catch (error) {
-        console.warn('Moldura salva apenas neste dispositivo:', error.message);
-      }
-    };
-  });
-}
-
 function renderIdentity(account, profile = {}) {
   const name = String(account.displayName || profile.name || profile.nome || 'Usuário').trim().slice(0, 80) || 'Usuário';
   $('user-name').textContent = name;
@@ -107,7 +79,6 @@ function renderIdentity(account, profile = {}) {
   }
 
   applyAvatarFrame(normalizeFrame(profile.avatarFrame, account));
-  renderAvatarFramePicker(account, profile);
 
   const canMonitor = isAdmin(account);
   $('admin-link')?.classList.toggle('hidden', !canMonitor);
@@ -131,7 +102,6 @@ function setPageReady(message = '') {
 async function loadProfile(account) {
   currentAccount = account;
   const cachedProfile = safeJSON(getSessionItem(profileCacheKey(account.uid)), {});
-  currentProfile = cachedProfile;
   renderIdentity(account, cachedProfile);
   applyProfileModules(cachedProfile);
   setPageReady();
@@ -142,7 +112,6 @@ async function loadProfile(account) {
       withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas')
     ]);
     const profile = snapshot.exists() ? snapshot.data() : {};
-    currentProfile = profile;
     completedWorkouts = sessionsSnapshot.data().count;
     setSessionItem(profileCacheKey(account.uid), JSON.stringify(profile));
     applyProfileModules(profile);

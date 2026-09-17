@@ -3,6 +3,7 @@
 
   const storageKey = 'mol-accessibility';
   const allowedThemes = new Set(['system', 'dark', 'light']);
+  const allowedVisualStyles = new Set(['classic', 'gamer', 'cave']);
 
   function bootstrapMolDeviceClasses() {
     const root = document.documentElement;
@@ -26,6 +27,7 @@
     const source = value && typeof value === 'object' ? value : {};
     return {
       theme: allowedThemes.has(source.theme) ? source.theme : 'system',
+      visualStyle: allowedVisualStyles.has(source.visualStyle) ? source.visualStyle : 'classic',
       contrast: source.contrast === true,
       largeText: source.largeText === true,
       reduceMotion: source.reduceMotion === true,
@@ -48,6 +50,7 @@
     const theme = resolve(preferences);
     const root = document.documentElement;
     root.dataset.theme = theme;
+    root.dataset.visualStyle = preferences.visualStyle;
     root.dataset.highContrast = preferences.contrast ? 'true' : 'false';
     root.dataset.largeText = preferences.largeText ? 'true' : 'false';
     root.dataset.reduceMotion = preferences.reduceMotion ? 'true' : 'false';
@@ -61,6 +64,7 @@
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f4f7f5' : '#070a08');
     if (document.body) {
       document.body.dataset.theme = theme;
+      document.body.dataset.visualStyle = preferences.visualStyle;
       document.body.dataset.highContrast = root.dataset.highContrast;
       document.body.dataset.reduceMotion = root.dataset.reduceMotion;
     }
