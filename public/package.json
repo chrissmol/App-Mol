@@ -21,6 +21,7 @@
     "security:semgrep": "cross-env OTEL_SDK_DISABLED=true SEMGREP_SEND_METRICS=off semgrep --metrics=off --config .semgrep.yml --exclude node_modules --exclude dist --exclude vendor --exclude css/tailwind.css --exclude package-lock.json .",
     "security:check": "npm run audit && npm run security:scan",
     "css:check": "node scripts/css-audit.mjs",
+    "agents": "node scripts/micro-agents.mjs",
     "check": "npm run lint && npm test && npm run test:html && npm run css:check && npm run build",
     "check:full": "npm run check && npm run security:check && npm run test:e2e",
     "test:watch": "vitest"
