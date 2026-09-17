@@ -748,6 +748,20 @@ html[data-theme="light"] body .theme-segments button.is-active { background:#1e7
   background: radial-gradient(circle at 30% 30%, #26322b, #050706 64%), linear-gradient(135deg, #0b0f0d, #1a6a44);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
 }
+.frame-choice { display:flex; align-items:center; gap:.75rem; min-height:3.75rem; padding:.7rem .8rem; border:1px solid var(--mol-border); border-radius:1rem; text-align:left; background:var(--mol-surface-soft); }
+.frame-choice:disabled { opacity:.45; cursor:not-allowed; }
+.frame-choice strong, .frame-choice small { display:block; }
+.frame-choice small { margin-top:.15rem; color:var(--mol-muted); font-size:.72rem; }
+.frame-choice__dot { width:1.8rem; height:1.8rem; flex:0 0 auto; border-radius:50%; border:3px solid var(--frame-color, var(--mol-brand-text)); box-shadow:0 0 10px var(--frame-glow, transparent); }
+html[data-density="compact"] .glass-card, html[data-density="compact"] .mol-card { padding-top: .85rem; padding-bottom: .85rem; }
+html[data-card-style="discreet"] .glass-card, html[data-card-style="discreet"] .mol-card { box-shadow: none; }
+html[data-card-style="neon"] .glass-card, html[data-card-style="neon"] .mol-card { box-shadow: 0 0 22px color-mix(in srgb, var(--mol-brand) 18%, transparent); }
+@media (min-width: 768px) and (max-width: 1100px) {
+  .dashboard-surface main { display:block; max-width:64rem; }
+  .dashboard-surface main > * { width:100%; max-width:none; margin-bottom:1rem !important; }
+  .diet-page main, .profile-page main, .settings-page main { display:block; }
+  .diet-page main > *, .profile-page main > *, .settings-page main > * { width:100%; max-width:none; }
+}
 
 html[data-visual-style="gamer"] body.app-surface,
 html[data-visual-style="gamer"] body.dashboard-surface {

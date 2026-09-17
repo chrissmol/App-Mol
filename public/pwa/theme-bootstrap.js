@@ -51,6 +51,9 @@
     const root = document.documentElement;
     root.dataset.theme = theme;
     root.dataset.visualStyle = preferences.visualStyle;
+    root.dataset.density = preferences.density;
+    root.dataset.cardStyle = preferences.cardStyle;
+    root.dataset.dashboardLayout = preferences.dashboardLayout;
     root.dataset.highContrast = preferences.contrast ? 'true' : 'false';
     root.dataset.largeText = preferences.largeText ? 'true' : 'false';
     root.dataset.reduceMotion = preferences.reduceMotion ? 'true' : 'false';

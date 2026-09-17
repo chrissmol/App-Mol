@@ -5,7 +5,7 @@ import { auth, db } from '../config/firebase-config.js';
 const STORAGE_KEY = 'mol-accessibility';
 const PROFILE_FIELD = 'preferenciasAcessibilidade';
 const languageDefaults = { mode: 'system', value: 'pt-BR' };
-const defaults = { theme: 'system', visualStyle: 'classic', contrast: false, largeText: false, reduceMotion: false, language: languageDefaults };
+const defaults = { theme: 'system', visualStyle: 'classic', density: 'comfortable', cardStyle: 'elevated', dashboardLayout: 'automatic', sound: true, vibration: true, animations: true, contrast: false, largeText: false, reduceMotion: false, language: languageDefaults };
 
 function normalizeLanguage(value = {}) {
   const source = value && typeof value === 'object' ? value : {};
@@ -19,6 +19,12 @@ export function normalizeAccessibility(value = {}) {
   return {
     theme: ['system', 'dark', 'light'].includes(legacyTheme) ? legacyTheme : defaults.theme,
     visualStyle: ['classic', 'gamer', 'cave'].includes(value.visualStyle) ? value.visualStyle : defaults.visualStyle,
+    density: ['comfortable', 'compact'].includes(value.density) ? value.density : defaults.density,
+    cardStyle: ['discreet', 'elevated', 'neon'].includes(value.cardStyle) ? value.cardStyle : defaults.cardStyle,
+    dashboardLayout: ['automatic', 'custom'].includes(value.dashboardLayout) ? value.dashboardLayout : defaults.dashboardLayout,
+    sound: value.sound !== false,
+    vibration: value.vibration !== false,
+    animations: value.animations !== false,
     contrast: value.contrast === true,
     largeText: value.largeText === true,
     reduceMotion: value.reduceMotion === true,
@@ -45,6 +51,9 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
       : preferences.theme;
     document.documentElement.dataset.theme = resolvedTheme;
     document.documentElement.dataset.visualStyle = preferences.visualStyle;
+    document.documentElement.dataset.density = preferences.density;
+    document.documentElement.dataset.cardStyle = preferences.cardStyle;
+    document.documentElement.dataset.dashboardLayout = preferences.dashboardLayout;
     document.documentElement.dataset.highContrast = preferences.contrast ? 'true' : 'false';
     document.documentElement.dataset.largeText = preferences.largeText ? 'true' : 'false';
     document.documentElement.dataset.reduceMotion = preferences.reduceMotion ? 'true' : 'false';
@@ -52,6 +61,8 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'light' ? '#f4f7f5' : '#070a08');
     document.body.dataset.theme = resolvedTheme;
     document.body.dataset.visualStyle = preferences.visualStyle;
+    document.body.dataset.density = preferences.density;
+    document.body.dataset.cardStyle = preferences.cardStyle;
     document.body.dataset.highContrast = document.documentElement.dataset.highContrast;
     document.body.dataset.reduceMotion = document.documentElement.dataset.reduceMotion;
   }

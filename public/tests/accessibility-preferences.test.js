@@ -6,7 +6,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('preferências universais de acessibilidade', () => {
   it('normaliza valores persistidos inválidos', () => {
-    expect(normalizeAccessibility({ theme: 'sepia', visualStyle: 'rainbow', contrast: 'true', largeText: 1, reduceMotion: 'yes', language: { mode: 'fr-FR' } })).toEqual({ theme: 'system', visualStyle: 'classic', contrast: false, largeText: false, reduceMotion: false, language: { mode: 'system', value: 'pt-BR' } });
+    expect(normalizeAccessibility({ theme: 'sepia', visualStyle: 'rainbow', contrast: 'true', largeText: 1, reduceMotion: 'yes', language: { mode: 'fr-FR' } })).toEqual({ theme: 'system', visualStyle: 'classic', density: 'comfortable', cardStyle: 'elevated', dashboardLayout: 'automatic', sound: true, vibration: true, animations: true, contrast: false, largeText: false, reduceMotion: false, language: { mode: 'system', value: 'pt-BR' } });
   });
 
   it('aplica tema, contraste, texto e cor do navegador ao documento inteiro', () => {
@@ -22,7 +22,7 @@ describe('preferências universais de acessibilidade', () => {
     expect(dom.window.document.documentElement.style.colorScheme).toBe('light');
     expect(dom.window.document.documentElement.dataset.largeText).toBe('true');
     expect(dom.window.document.querySelector('meta[name="theme-color"]').content).toBe('#f4f7f5');
-    expect(JSON.parse(dom.window.localStorage.getItem('mol-accessibility'))).toEqual({ theme: 'light', visualStyle: 'gamer', contrast: true, largeText: true, reduceMotion: true, language: { mode: 'en-US', value: 'en-US' } });
+    expect(JSON.parse(dom.window.localStorage.getItem('mol-accessibility'))).toEqual({ theme: 'light', visualStyle: 'gamer', density: 'comfortable', cardStyle: 'elevated', dashboardLayout: 'automatic', sound: true, vibration: true, animations: true, contrast: true, largeText: true, reduceMotion: true, language: { mode: 'en-US', value: 'en-US' } });
     dom.window.close();
   });
 });

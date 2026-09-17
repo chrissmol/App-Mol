@@ -25,10 +25,18 @@
       <p class="app-page-header__copy">Personalize a experiência e gerencie sua conta.</p>
     </header>
 
-    <section class="glass-card mt-6 rounded-3xl p-5" aria-labelledby="appearance-title">
+    <section class="glass-card mt-6 rounded-3xl p-5" aria-labelledby="personalization-title">
+      <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="palette" class="h-5 w-5"></i></span><div><p class="app-page-header__eyebrow">Personalização</p><h2 id="personalization-title" class="mt-1 text-lg font-extrabold">Seu Mol, do seu jeito</h2></div></div>
+      <fieldset class="mt-5"><legend class="text-xs font-bold text-gray-400">Estilo visual</legend><div id="visual-style-segments" class="mt-2 grid gap-2" role="group" aria-label="Estilo visual do aplicativo"></div></fieldset>
+      <div id="frame-choices" class="mt-4 grid gap-2" role="group" aria-label="Molduras do perfil"></div>
+      <div class="mx-auto mt-4 flex h-20 w-20 items-center justify-center"><div id="avatar-preview" class="avatar-frame avatar-frame--plastic flex h-16 w-16 items-center justify-center overflow-hidden rounded-full mol-field"><i data-lucide="user" class="h-7 w-7 text-neon"></i></div></div>
+      <fieldset class="mt-5"><legend class="text-xs font-bold text-gray-400">Densidade</legend><div id="density-segments" class="theme-segments mt-2 grid grid-cols-2 gap-2" role="group"></div></fieldset>
+      <fieldset class="mt-5"><legend class="text-xs font-bold text-gray-400">Estilo dos cards</legend><div id="card-style-segments" class="theme-segments mt-2 grid grid-cols-3 gap-2" role="group"></div></fieldset>
+      <fieldset class="mt-5"><legend class="text-xs font-bold text-gray-400">Organização do início</legend><div id="dashboard-layout-segments" class="theme-segments mt-2 grid grid-cols-2 gap-2" role="group"></div></fieldset>
+    </section>
+    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="appearance-title">
       <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="palette" class="h-5 w-5"></i></span><div><p class="app-page-header__eyebrow">Acessibilidade</p><h2 id="appearance-title" class="mt-1 text-lg font-extrabold">Aparência</h2></div></div>
       <fieldset class="mt-5"><legend class="text-xs font-bold text-gray-400">Tema</legend><div id="theme-segments" class="theme-segments mt-2 grid grid-cols-3 gap-2" role="group" aria-label="Tema do aplicativo"></div></fieldset>
-      <fieldset class="mt-5"><legend class="text-xs font-bold text-gray-400">Estilo visual</legend><div id="visual-style-segments" class="mt-2 grid gap-2" role="group" aria-label="Estilo visual do aplicativo"></div></fieldset>
       <div class="mt-5 divide-y divide-white/5 rounded-2xl bg-white/5 px-4">
         <label class="flex min-h-16 cursor-pointer items-center justify-between gap-4"><span><strong class="block text-sm">Contraste elevado</strong><small class="mt-1 block text-xs text-gray-500">Reforça a separação entre elementos.</small></span><span class="relative shrink-0"><input id="contrast" type="checkbox" class="peer sr-only"><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label>
         <label class="flex min-h-16 cursor-pointer items-center justify-between gap-4"><span><strong class="block text-sm">Texto ampliado</strong><small class="mt-1 block text-xs text-gray-500">Aumenta os textos em todo o app.</small></span><span class="relative shrink-0"><input id="large-text" type="checkbox" class="peer sr-only"><span class="block h-7 w-12 rounded-full bg-white/10 transition-colors peer-checked:bg-neon"></span><span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span></span></label>

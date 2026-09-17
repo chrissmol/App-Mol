@@ -1,7 +1,7 @@
 import { setupAppShell } from '../utils/app-shell.js';
 import { auth, db, googleProvider } from '../config/firebase-config.js';
 import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
-import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
+import { clearIndexedDbPersistence, collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
@@ -155,6 +155,8 @@ function applyAppearance() {
   $('contrast').checked = appearance.contrast;
   $('large-text').checked = appearance.largeText;
   $('reduce-motion').checked = appearance.reduceMotion;
+  ['animations', 'sound', 'vibration'].forEach(id => { if ($(id)) $(id).checked = appearance[id]; });
+  [['density-segments', 'density'], ['card-style-segments', 'cardStyle'], ['dashboard-layout-segments', 'dashboardLayout']].forEach(([id, key]) => $(id)?.querySelectorAll('button').forEach(button => button.classList.toggle('is-active', button.dataset.value === appearance[key])));
   $('language-segments').querySelectorAll('button').forEach(button => {
     const selected = button.dataset.language === appearance.language.mode;
     button.classList.toggle('is-active', selected);
@@ -196,9 +198,54 @@ visualStyleChoices.forEach(([value, icon, label, description]) => {
   $('visual-style-segments').appendChild(button);
 });
 
+const preferenceSegments = [
+  ['density-segments', 'density', [['comfortable', 'Confortável'], ['compact', 'Compacta']]],
+  ['card-style-segments', 'cardStyle', [['discreet', 'Discreto'], ['elevated', 'Elevado'], ['neon', 'Neon']]],
+  ['dashboard-layout-segments', 'dashboardLayout', [['automatic', 'Automática'], ['custom', 'Personalizada']]]
+];
+preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, label]) => {
+  const button = document.createElement('button'); button.type = 'button'; button.dataset.value = value; button.className = 'theme-segment'; button.textContent = label;
+  button.onclick = () => { appearance[key] = value; persistAppearance(); }; $(id)?.appendChild(button);
+}));
+
+const frameChoices = [['plastic', 'Base', true], ['wood', 'Madeira', false], ['bronze', 'Bronze', false], ['silver', 'Prata', false], ['gold', 'Ouro', false], ['diamond', 'Diamante', false], ['boss', 'Chefão', String(auth.currentUser?.email || '').toLowerCase() === 'chrisouzamol@gmail.com']];
+let selectedFrame = null;
+function renderFrameChoices() {
+  const root = $('frame-choices'); if (!root) return;
+  const current = selectedFrame || (auth.currentUser?.email?.toLowerCase() === 'chrisouzamol@gmail.com' ? 'boss' : 'plastic');
+  root.innerHTML = frameChoices.map(([id, label, unlocked]) => `<button type="button" data-frame="${id}" class="avatar-frame-choice avatar-frame-choice--${id} ${current === id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === id}"><span class="frame-choice__dot"></span><span><strong>${label}</strong><small>${unlocked ? (current === id ? 'Em uso' : 'Disponível') : 'Desbloqueie com conquistas'}</small></span></button>`).join('');
+  root.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => { selectedFrame = button.dataset.frame; await setDoc(doc(db, 'users', auth.currentUser.uid), { avatarFrame: selectedFrame }, { merge: true }); renderFrameChoices(); });
+}
+void renderFrameChoices;
+
+let frameProgress = 0;
+async function renderUnlockedFrameChoices(user) {
+  const root = $('frame-choices');
+  if (!root || !user) return;
+  const profileSnapshot = await getDoc(doc(db, 'users', user.uid));
+  const sessionCount = await getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', user.uid)));
+  frameProgress = Number(sessionCount.data().count || 0);
+  const admin = String(user.email || '').toLowerCase() === 'chrisouzamol@gmail.com';
+  const options = [['plastic', 'Base', 0], ['wood', 'Madeira', 5], ['bronze', 'Bronze', 15], ['silver', 'Prata', 30], ['gold', 'Ouro', 60], ['diamond', 'Diamante', 100], ['boss', 'Chefao', 0]];
+  const current = selectedFrame || profileSnapshot.data()?.avatarFrame || (admin ? 'boss' : 'plastic');
+  root.innerHTML = options.map(([id, label, required]) => {
+    const unlocked = id === 'boss' ? admin : frameProgress >= required;
+    const detail = unlocked ? (current === id ? 'Em uso' : 'Disponivel') : `Desbloqueie com ${required} treinos`;
+    return `<button type="button" data-frame="${id}" class="avatar-frame-choice avatar-frame-choice--${id} ${current === id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === id}"><span class="frame-choice__dot"></span><span><strong>${label}</strong><small>${detail}</small></span></button>`;
+  }).join('');
+  root.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => {
+    selectedFrame = button.dataset.frame;
+    await setDoc(doc(db, 'users', user.uid), { avatarFrame: selectedFrame }, { merge: true });
+    renderUnlockedFrameChoices(user);
+  });
+}
+
 $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };
 $('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
 $('reduce-motion').onchange = () => { appearance.reduceMotion = $('reduce-motion').checked; persistAppearance(); };
+$('animations').onchange = () => { appearance.animations = $('animations').checked; persistAppearance(); };
+$('sound').onchange = () => { appearance.sound = $('sound').checked; persistAppearance(); };
+$('vibration').onchange = () => { appearance.vibration = $('vibration').checked; persistAppearance(); };
 
 languageChoices.forEach(([value, icon, label]) => {
   const button = document.createElement('button');
@@ -383,6 +430,7 @@ function authErrorMessage(error, fallback) {
 watchProtectedPage(async user => {
   try {
     appearance = await syncAccessibilityForUser(user);
+    await renderUnlockedFrameChoices(user);
     applyAppearance();
   } catch (error) {
     console.warn('Preferências da conta não carregadas:', error.message);
