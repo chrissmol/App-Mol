@@ -210,7 +210,6 @@ preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, labe
 
 const frameChoices = [['plastic', 'Base', true], ['wood', 'Madeira', false], ['bronze', 'Bronze', false], ['silver', 'Prata', false], ['gold', 'Ouro', false], ['diamond', 'Diamante', false], ['boss', 'Chefão', String(auth.currentUser?.email || '').toLowerCase() === 'chrisouzamol@gmail.com']];
 let selectedFrame = null;
-void frameChoices;
 let frameProgress = 0;
 async function renderUnlockedFrameChoices(user) {
   const root = $('frame-choices');
@@ -219,7 +218,8 @@ async function renderUnlockedFrameChoices(user) {
   const sessionCount = await getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', user.uid)));
   frameProgress = Number(sessionCount.data().count || 0);
   const admin = String(user.email || '').toLowerCase() === 'chrisouzamol@gmail.com';
-  const options = [['plastic', 'Base', 0], ['wood', 'Madeira', 5], ['bronze', 'Bronze', 15], ['silver', 'Prata', 30], ['gold', 'Ouro', 60], ['diamond', 'Diamante', 100], ['boss', 'Chefao', 0]];
+  const requirements = [0, 5, 15, 30, 60, 100, 0];
+  const options = frameChoices.map(([id, label], index) => [id, label, requirements[index]]);
   const current = selectedFrame || profileSnapshot.data()?.avatarFrame || (admin ? 'boss' : 'plastic');
   root.innerHTML = options.map(([id, label, required]) => {
     const unlocked = id === 'boss' ? admin : frameProgress >= required;

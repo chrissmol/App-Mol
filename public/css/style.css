@@ -767,6 +767,72 @@ html[data-card-style="neon"] .glass-card, html[data-card-style="neon"] .mol-card
   .diet-page main > *, .profile-page main > *, .settings-page main > * { width:100%; max-width:none; }
 }
 
+/* iPad em paisagem pode reportar mais de 1100px CSS. O ponteiro coarse e a
+   capacidade touch sao o sinal correto para manter o layout de tablet. */
+@media (min-width: 768px) and (max-width: 1400px) and (pointer: coarse) {
+  .app-surface main, .dashboard-surface main, .workout-page main {
+    display: block !important;
+    width: min(100%, 72rem) !important;
+    max-width: 72rem !important;
+    margin: 0 auto !important;
+    padding: 2rem !important;
+  }
+  .dashboard-surface main > *, .diet-page main > *, .profile-page main > *,
+  .settings-page main > *, .workout-page main > * {
+    width: 100% !important;
+    max-width: none !important;
+    grid-column: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 1rem !important;
+  }
+  .dashboard-surface main > header { display: flex; }
+  .diet-page #diet-content:not(.hidden), .diet-page #diet-edit-content:not(.hidden),
+  #view-rotinas { display: block !important; }
+  .diet-page #diet-content > *, .diet-page #diet-edit-content > *, #view-rotinas > * {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* Layout fluido: a quantidade de colunas nasce do espaco disponivel, nao do
+   modelo do aparelho. Cada card conserva uma largura minima de leitura. */
+@media (min-width: 768px) {
+  .dashboard-surface main,
+  .diet-page main,
+  .profile-page main,
+  .settings-page main,
+  .evolution-page main,
+  .personal-page main,
+  .history-page main,
+  .progress-page main {
+    container-type: inline-size;
+  }
+  .dashboard-surface main {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  }
+  .dashboard-surface main > header { grid-column: 1 / -1; }
+  .dashboard-surface main > section,
+  .dashboard-surface main > article { grid-column: auto; min-width: 0; }
+  .diet-page #meal-list,
+  .diet-page #diet-edit-list,
+  #rotinas-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: var(--mol-desktop-gap, 1rem);
+  }
+  .diet-page #meal-list > *,
+  .diet-page #diet-edit-list > *,
+  #rotinas-list > * { min-width: 0; margin: 0 !important; }
+}
+
+@container (max-width: 54rem) {
+  .dashboard-surface main,
+  .diet-page main,
+  .profile-page main,
+  .settings-page main { padding-inline: clamp(1rem, 4cqi, 2rem); }
+}
+
 html[data-visual-style="gamer"] body.app-surface,
 html[data-visual-style="gamer"] body.dashboard-surface {
   background:
