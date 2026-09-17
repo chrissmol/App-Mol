@@ -32,6 +32,40 @@ jobs:
       - run: npm run css:check
       - run: npm run build
       - run: node scripts/performance-audit.mjs
+      - name: Run Lighthouse CI on public pages
+        shell: bash
+        run: |
+          npm run preview -- --host 0.0.0.0 > /tmp/mol-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+
+          ready=false
+          for attempt in {1..30}; do
+            if curl --fail --silent \
+              http://127.0.0.1:4173/pages/login.html > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" != "true" ]; then
+            cat /tmp/mol-preview.log
+            exit 1
+          fi
+
+          npx --yes @lhci/cli@0.15.1 autorun \
+            --config=./lighthouserc.json
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: |
+            public/lighthouse-reports
+            public/.lighthouseci
+          if-no-files-found: warn
+          retention-days: 14
       - run: npm run security:check
       - name: Install Semgrep
         run: python -m pip install semgrep
