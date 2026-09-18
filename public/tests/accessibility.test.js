@@ -25,8 +25,11 @@ describe('acessibilidade estrutural das páginas', () => {
       expect(document.title).toBe('Mol');
       expect(document.querySelector('link[rel="icon"]')?.getAttribute('href')).toContain('mol-mark.svg');
       const viewport = document.querySelector('meta[name="viewport"]')?.getAttribute('content') || '';
-      expect(viewport).toContain('maximum-scale=1');
-      expect(viewport).toContain('user-scalable=no');
+      expect(viewport).toContain('width=device-width');
+      expect(viewport).toContain('initial-scale=1');
+      expect(viewport).toContain('viewport-fit=cover');
+      expect(viewport).not.toContain('maximum-scale');
+      expect(viewport).not.toContain('user-scalable');
       expect(document.querySelector('meta[name="mobile-web-app-capable"]')?.getAttribute('content')).toBe('yes');
       expect(document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.getAttribute('content')).toBe('yes');
       expect(document.querySelector('meta[name="format-detection"]')?.getAttribute('content')).toContain('telephone=no');
@@ -53,7 +56,6 @@ describe('acessibilidade estrutural das páginas', () => {
         rules: { 'color-contrast': { enabled: false } }
       });
       const violations = result.violations
-        .filter(({ id }) => id !== 'meta-viewport')
         .map(({ id, help, nodes }) => ({
           id,
           help,

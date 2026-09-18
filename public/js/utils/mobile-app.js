@@ -1,4 +1,4 @@
-const APP_VIEWPORT = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+const APP_VIEWPORT = 'width=device-width,initial-scale=1,viewport-fit=cover';
 
 function ensureMeta(name, content) {
   let meta = document.querySelector(`meta[name="${name}"]`);

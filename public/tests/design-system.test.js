@@ -12,6 +12,7 @@ const htmlFiles = [
   '../pages/evolucao.html',
   '../pages/dados-pessoais.html',
   '../pages/login.html',
+  '../pages/admin.html',
 ];
 
 describe('contrato visual entre páginas', () => {
@@ -22,7 +23,12 @@ describe('contrato visual entre páginas', () => {
     expect(bootstrapIndex).toBeGreaterThan(-1);
     expect(styleIndex).toBeGreaterThan(bootstrapIndex);
     expect(html).toContain('<title>Mol</title>');
-    expect(html).toContain('user-scalable=no');
+    const viewport = html.match(/<meta\s+name=["']viewport["']\s+content=["']([^"']+)["']/i)?.[1] || '';
+    expect(viewport).toContain('width=device-width');
+    expect(viewport).toContain('initial-scale=1');
+    expect(viewport).toContain('viewport-fit=cover');
+    expect(viewport).not.toContain('maximum-scale');
+    expect(viewport).not.toContain('user-scalable');
   });
 
   it('as regras visuais dependem do tema no html, disponível na primeira pintura', async () => {
