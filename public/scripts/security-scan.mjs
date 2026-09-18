@@ -2,7 +2,17 @@ import { readdir, readFile } from 'node:fs/promises';
 import { extname, join, relative } from 'node:path';
 
 const root = process.cwd();
-const excluded = new Set(['.git', 'dist', 'node_modules', 'tests', 'vendor', 'playwright-report', 'test-results']);
+const excluded = new Set([
+  '.git',
+  '.lighthouseci',
+  'dist',
+  'lighthouse-reports',
+  'node_modules',
+  'tests',
+  'vendor',
+  'playwright-report',
+  'test-results'
+]);
 const extensions = new Set(['.js', '.mjs', '.html', '.json', '.rules']);
 const rules = [
   ['segredo de servidor', /(?:private[_-]?key|client[_-]?secret|service[_-]?account|sk-[a-z0-9_-]{20,})\s*[:=]/i],
