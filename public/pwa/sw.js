@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mol-app-shell-v2';
+const CACHE_VERSION = 'mol-app-shell-v3';
 const SHELL_URLS = [
   '/',
   '/index.html',

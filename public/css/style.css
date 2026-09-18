@@ -2819,6 +2819,13 @@ html[data-theme="light"] body .mol-brand img {
   filter: saturate(1.12) contrast(1.18);
 }
 
+/* O painel interno precisa ocupar a grade inteira do shell; caso contrario, os cards ficam comprimidos em uma unica coluna. */
+.dashboard-surface #dashboard-card-grid {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
 /* Desktop web: layout de monitor, com proporcoes previsiveis e leitura por mouse/teclado. */
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   :root {
@@ -3313,6 +3320,28 @@ html[data-theme="light"] body .mol-brand img {
 
   .diet-page #diet-mode-tabs {
     width: min(100%, 32rem);
+  }
+}
+
+/* Grade do dashboard: nao deixar media queries genericas converterem o painel interno em bloco estreito. */
+.dashboard-surface #dashboard-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  max-width: none !important;
+  grid-column: 1 / -1 !important;
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .dashboard-surface #dashboard-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-surface #dashboard-card-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

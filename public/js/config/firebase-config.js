@@ -15,6 +15,7 @@ import {
   initializeAuth,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
 const firebaseConfig = {
@@ -30,6 +31,20 @@ const firebaseConfig = {
 
 // Inicializa o app Firebase
 const app = initializeApp(firebaseConfig);
+
+// App Check usa uma Site Key pública. O enforcement permanece desligado no Firebase
+// até concluirmos a fase de monitoramento e validarmos todos os fluxos do app.
+export const appCheck = typeof window === 'undefined' ? null : (() => {
+  try {
+    return initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider('6LeHhMAtAAAAAKY5kHpN5K79KWr_oXElJ2lYgndW'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch (error) {
+    console.warn('[Mol] App Check indisponível; seguindo sem token:', error?.message || error);
+    return null;
+  }
+})();
 
 // Exporta instâncias prontas para uso em outros arquivos
 const browserAuthDependencies = typeof window === 'undefined'

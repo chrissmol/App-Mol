@@ -8,6 +8,8 @@ let currentUser = null;
 let heartbeat = 0;
 let errorQueue = [];
 const MAX_ERROR_QUEUE = 20;
+const ERROR_DEDUP_WINDOW_MS = 60 * 1000;
+const recentErrors = new Map();
 
 function isAdmin(user) { return String(user?.email || '').toLowerCase() === ADMIN_EMAIL; }
 function safeText(value, max = 2000) { return String(value || '').slice(0, max); }
@@ -17,7 +19,13 @@ async function writePresence(online) {
 }
 async function flushError(error) {
   if (!currentUser || isAdmin(currentUser)) return;
-  const payload = { userId: currentUser.uid, email: safeText(currentUser.email, 254), message: safeText(error.message || error, 1000), stack: safeText(error.stack, 4000), page: location.pathname, url: safeText(`${location.origin}${location.pathname}`, 500), userAgent: navigator.userAgent.slice(0, 500), createdAt: serverTimestamp() };
+  const message = safeText(error.message || error, 1000);
+  const dedupKey = `${location.pathname}:${message}`;
+  const previous = recentErrors.get(dedupKey) || 0;
+  if (Date.now() - previous < ERROR_DEDUP_WINDOW_MS) return;
+  recentErrors.set(dedupKey, Date.now());
+  if (recentErrors.size > 100) recentErrors.delete(recentErrors.keys().next().value);
+  const payload = { userId: currentUser.uid, email: safeText(currentUser.email, 254), message, stack: safeText(error.stack, 4000), page: location.pathname, url: safeText(`${location.origin}${location.pathname}`, 500), userAgent: navigator.userAgent.slice(0, 500), createdAt: serverTimestamp() };
   try { await addDoc(collection(db, 'clientErrors'), payload); } catch { errorQueue.push(payload); if (errorQueue.length > MAX_ERROR_QUEUE) errorQueue.shift(); }
 }
 async function retryQueuedErrors() {
@@ -36,5 +44,5 @@ export function setupTelemetry() {
   window.addEventListener('unhandledrejection', event => { void flushError(event.reason instanceof Error ? event.reason : { message: event.reason }); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void writePresence(true); });
   window.addEventListener('pagehide', () => { void writePresence(false); });
-  onAuthStateChanged(auth, async user => { currentUser = user; clearInterval(heartbeat); if (!user) { errorQueue = []; return; } await writePresence(true); await retryQueuedErrors(); heartbeat = window.setInterval(() => { void writePresence(true); void retryQueuedErrors(); }, 30000); });
+  onAuthStateChanged(auth, async user => { currentUser = user; clearInterval(heartbeat); if (!user) { errorQueue = []; recentErrors.clear(); return; } await writePresence(true); await retryQueuedErrors(); heartbeat = window.setInterval(() => { void writePresence(true); void retryQueuedErrors(); }, 90000); });
 }

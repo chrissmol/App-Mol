@@ -1,3 +1,4 @@
+export { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 export { initializeApp } from 'firebase/app';
 export {
   deleteUser, EmailAuthProvider, getAuth, GoogleAuthProvider,
