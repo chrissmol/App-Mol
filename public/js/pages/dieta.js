@@ -1,4 +1,4 @@
-﻿import { db } from '../config/firebase-config.js';
+import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { DIET_PLANS } from '../data/diet-plans.js';
@@ -361,6 +361,12 @@ function openFoodForm(mealId, catalogFood) {
   $('save-food').onclick = async () => { const value = { id: newId(), nome: $('food-name').value.trim(), gramas: Number($('food-grams').value), kcal100: Number($('food-kcal').value), proteina100: Number($('food-protein').value), carbo100: Number($('food-carbs').value), gordura100: Number($('food-fat').value) }; const error = validateFood(value); if (error) return showToast(error); const next = clone(meals); const target = next.find(item => item.id === mealId); if (!target) return; if (target.alimentos.length >= 50) return showToast('O limite é de 50 alimentos por refeição.'); target.alimentos.push(value); $('save-food').disabled = true; if (await persist(next)) { closeModal(); openMeal(mealId); showToast('Alimento adicionado.', 'success'); } else $('save-food').disabled = false; };
 }
 
+function openNutritionPlanner() {
+  const options = meals.map(meal => `<label class="flex items-center gap-3 rounded-xl mol-soft p-3"><input type="checkbox" data-plan-meal="${escapeHTML(meal.id)}" checked><span class="min-w-0 flex-1"><strong class="block text-sm">${escapeHTML(meal.nome)}</strong><span class="text-xs text-gray-500">${meal.hora} · ${mealFoods(meal).map(food => food.nome).join(', ')}</span></span></label>`).join('');
+  modal('Planejador nutricional', `<div class="space-y-4"><label class="block text-xs font-bold text-gray-400">Período<select id="plan-days" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3"><option value="1">Hoje</option><option value="7" selected>Próximos 7 dias</option><option value="30">Próximos 30 dias</option></select></label><div><p class="text-xs font-bold text-gray-400">Refeições incluídas</p><div class="mt-2 space-y-2 max-h-48 overflow-auto">${options || '<p class="text-sm text-gray-500">Cadastre uma refeição primeiro.</p>'}</div></div><label class="block text-xs font-bold text-gray-400">Buscar ingrediente<input id="plan-food" type="search" placeholder="Ex.: frango, arroz" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><label class="block text-xs font-bold text-gray-400">Já tenho em casa (g)<input id="plan-stock" type="number" min="0" step="1" value="0" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><div id="plan-result" class="rounded-2xl mol-soft p-4" role="status"></div></div>`);
+  const calculate = () => { const days = Number($('plan-days').value) || 1; const selected = [...$('diet-modal').querySelectorAll('[data-plan-meal]:checked')].map(input => meals.find(meal => meal.id === input.dataset.planMeal)).filter(Boolean); const query = $('plan-food').value.trim(); const allFoods = selected.flatMap(mealFoods); const names = [...new Set(allFoods.map(food => food.nome))]; const chosen = names.find(name => name.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR'))) || names[0]; const food = allFoods.find(item => item.nome === chosen); const totals = nutritionTotals(selected); if (!food) { $('plan-result').innerHTML = '<p class="text-sm text-gray-500">Selecione uma refeição para calcular.</p>'; return; } const required = food.gramas * days; const stock = Math.max(0, Number($('plan-stock').value) || 0); const buy = Math.max(0, required - stock); $('plan-result').innerHTML = `<p class="text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(food.nome)}</p><div class="mt-3 grid grid-cols-2 gap-2 text-center"><span class="rounded-xl bg-white/5 p-3"><strong class="block text-lg">${Math.round(required).toLocaleString('pt-BR')} g</strong><small class="text-xs text-gray-500">necessário</small></span><span class="rounded-xl bg-neon/15 p-3"><strong class="block text-lg">${Math.round(buy).toLocaleString('pt-BR')} g</strong><small class="text-xs text-gray-500">comprar</small></span></div><p class="mt-3 text-xs text-gray-500">${selected.length} refeição(ões) repetidas por ${days} dia(s) · ${Math.round(totals.kcal * days).toLocaleString('pt-BR')} kcal planejadas</p>`; };
+  $('diet-modal').querySelectorAll('input,select').forEach(input => input.addEventListener('input', calculate)); calculate();
+}
 function openRequestedMeal() {
   if (!pendingRequestedMealId) return;
   const target = meals.find(meal => meal.id === pendingRequestedMealId);
@@ -431,4 +437,5 @@ $('edit-add-meal').onclick = () => openMealForm();
 $('import-diet-plan').onclick = openDietPlanImport;
 $('diet-mode-view').onclick = () => setDietMode('view');
 $('diet-mode-edit').onclick = () => setDietMode('edit');
+document.getElementById('open-nutrition-planner')?.addEventListener('click', openNutritionPlanner);
 watchProtectedPage(account => { user = account; void load(); });
