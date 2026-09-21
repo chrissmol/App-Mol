@@ -37,7 +37,11 @@ jobs:
         run: |
           npm run preview -- --host 0.0.0.0 > /tmp/mol-preview.log 2>&1 &
           preview_pid=$!
-          trap 'kill "$preview_pid"' EXIT
+          cleanup_preview() {
+            kill "$preview_pid" 2>/dev/null || true
+            pkill -TERM -P "$preview_pid" 2>/dev/null || true
+          }
+          trap cleanup_preview EXIT INT TERM
 
           ready=false
           for attempt in {1..30}; do
