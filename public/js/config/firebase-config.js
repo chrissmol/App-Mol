@@ -36,6 +36,8 @@ const app = initializeApp(firebaseConfig);
 // até concluirmos a fase de monitoramento e validarmos todos os fluxos do app.
 export const appCheck = typeof window === 'undefined' ? null : (() => {
   try {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return null;
     return initializeAppCheck(app, {
       provider: new ReCaptchaEnterpriseProvider('6LeHhMAtAAAAAKY5kHpN5K79KWr_oXElJ2lYgndW'),
       isTokenAutoRefreshEnabled: true
