@@ -238,7 +238,7 @@ export function confirmAction({ title, message, confirmText = "Confirmar", cance
  * por um spinner e desabilitando cliques repetidos.
  * @param {HTMLButtonElement} button
  * @param {boolean} isLoading
- * @param {string} originalHTML - HTML original do botão (para restaurar)
+ * @param {string} [originalHTML] - HTML original do botão (para restaurar)
  */
 export function setButtonLoading(button, isLoading, originalHTML) {
   if (isLoading) {

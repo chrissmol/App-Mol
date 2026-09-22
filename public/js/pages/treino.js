@@ -12,6 +12,7 @@ import { WORKOUT_TEMPLATES } from '../modules/workout-templates.js';
 import { detailedExerciseGroup as grupoDetalhado, exerciseEquipment as equipamentoDo, exerciseGuidance as orientacaoDo } from '../modules/exercise-presentation.js';
 import { buildExercisePerformanceHistory, MAX_CUSTOM_EXERCISES, normalizeExerciseLibraryPreferences } from '../modules/exercise-library.js';
 import { getLocalItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
+import { notify as notifyDevice } from '../utils/reminders.js';
 setupAppShell();
 const renderIcons = (root = document) => window.lucide?.createIcons({ root });
 
@@ -518,7 +519,15 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
   atualizarDescanso();
   descansoInterval = setInterval(() => {
     atualizarDescanso();
-    if (descansoSegundos <= 0) { pararDescanso(); showToast('Descanso concluido. Vamos para a proxima!', 'success'); }
+    if (descansoSegundos <= 0) {
+      const exercicioEmDescanso = descansoContexto?.title;
+      const avisarDispositivo = document.hidden && 'Notification' in window && Notification.permission === 'granted';
+      pararDescanso();
+      showToast('Descanso concluido. Vamos para a proxima!', 'success');
+      if (avisarDispositivo) {
+        notifyDevice('Descanso concluído', exercicioEmDescanso ? `Hora de voltar para ${exercicioEmDescanso}.` : 'Hora de continuar o treino.').catch(() => {});
+      }
+    }
   }, 1000);
   renderIcons(restTimer);
 }
@@ -648,6 +657,17 @@ function resumoComparativo(volume) {
   ];
   const match = comparisons.find(([threshold]) => volume >= threshold);
   return match ? `Seu volume foi equivalente a levantar ${match[1]} (comparação divertida).` : 'Cada quilo conta — hoje você colocou a força em movimento.';
+}
+
+function melhorE1rmHistorico(nomeExercicio) {
+  return (historicoPerformance.get(nomeExercicio) || []).reduce((best, item) => Math.max(best, estimate1RM(item.kg, item.reps)), 0);
+}
+
+function avisarSeRecordePessoal(nomeExercicio, serie) {
+  const atual = estimate1RM(serie.kg, serie.reps);
+  if (!atual) return;
+  const anterior = melhorE1rmHistorico(nomeExercicio);
+  if (anterior > 0 && atual > anterior) showToast(`🏆 Novo recorde em ${nomeExercicio}!`, 'success');
 }
 
 function novosRecordesDaSessao(exercicios) {
@@ -1452,6 +1472,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
       serie.details = validacao.values.details;
       syncSetLegacyFields(serie);
       serie.concluida = true;
+      avisarSeRecordePessoal(rotina.exercicios[indexEx].nome, serie);
     }
     salvarRascunho({ force: true });
     abrirRotina(rotinaAbertaId);
@@ -1482,6 +1503,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
     serie.reps = validacao.values.reps;
     serie.rir = validacao.values.rir ?? '';
     if (dadosDaSerie.usadoAnterior) showToast('Série concluída com os dados do último treino.', 'success');
+    avisarSeRecordePessoal(rotina.exercicios[indexEx].nome, serie);
   }
   salvarRascunho({ force: true });
   abrirRotina(rotinaAbertaId);

@@ -33,7 +33,7 @@ export function saveReminderPreferences(prefs) {
   }
 }
 
-async function notify(title, body) {
+export async function notify(title, body) {
   if (!('Notification' in window)) throw new Error('Este navegador não oferece notificações.');
   if (Notification.permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
   const options = { body, icon: notificationIcon, tag: `mol-${title}`, renotify: false, data: { url: '/' } };

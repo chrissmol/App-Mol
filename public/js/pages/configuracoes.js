@@ -380,6 +380,34 @@ async function deleteUserData(user) {
   await finalBatch.commit();
 }
 
+async function exportUserData(user) {
+  const names = ['treinos', 'sessoes', 'pesos'];
+  const [collections, profile, diet] = await Promise.all([
+    Promise.all(names.map(name => getDocs(query(collection(db, name), where('userId', '==', user.uid))))),
+    getDoc(doc(db, 'users', user.uid)),
+    getDoc(doc(db, 'dietas', user.uid))
+  ]);
+  const toDocs = snapshot => snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+  const payload = {
+    exportadoEm: new Date().toISOString(),
+    conta: { uid: user.uid, email: user.email },
+    perfil: profile.exists() ? profile.data() : null,
+    dieta: diet.exists() ? diet.data() : null,
+    treinos: toDocs(collections[0]),
+    sessoes: toDocs(collections[1]),
+    pesos: toDocs(collections[2])
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `mol-dados-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function requestPassword() {
   return new Promise(resolve => {
     const modal = document.createElement('div');
@@ -437,6 +465,20 @@ watchProtectedPage(async user => {
     renderAppModules();
   }
   $('session-email').textContent = user.email || user.displayName || 'Conta conectada';
+
+  $('export-data').onclick = async () => {
+    const button = $('export-data');
+    setButtonLoading(button, true);
+    try {
+      await exportUserData(user);
+      showToast('Dados exportados.', 'success');
+    } catch (error) {
+      showToast(authErrorMessage(error, 'Não foi possível exportar seus dados.'));
+    } finally {
+      setButtonLoading(button, false);
+      window.lucide?.createIcons();
+    }
+  };
 
   $('sign-out').onclick = async () => {
     const confirmed = await confirmAction({ title: 'Sair desta conta?', message: 'Você precisará entrar novamente para acessar seus dados.', confirmText: 'Sair' });
