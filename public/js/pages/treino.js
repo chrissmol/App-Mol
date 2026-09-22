@@ -247,7 +247,7 @@ function configurarPainelDescanso() {
         <span class="min-w-0 flex-1"><span class="block text-[10px] font-bold uppercase tracking-[.16em] text-neon">Descanso</span><span id="rest-mini-title" class="block truncate text-xs font-bold text-gray-400">Proxima serie</span></span>
         <span id="rest-mini-time" class="shrink-0 text-lg font-extrabold tabular-nums">01:30</span>
       </button>
-      <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-mini-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
+      <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div id="rest-mini-progress" class="h-full w-full bg-neon transition-[width] duration-1000 ease-linear"></div></div>
     </div>
     <div class="rest-expanded">
       <div class="flex items-start justify-between gap-3">
@@ -273,7 +273,7 @@ function configurarPainelDescanso() {
         <button type="button" id="btn-add-rest" aria-label="Adicionar 15 segundos" class="rest-action-btn"><i data-lucide="plus" class="h-4 w-4"></i><span class="rest-action-label">15s</span></button>
         <button type="button" id="btn-skip-rest" class="rest-action-btn rest-action-btn--primary"><i data-lucide="skip-forward" class="h-4 w-4"></i><span class="rest-action-label">Pular</span></button>
       </div>
-      <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
+      <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000 ease-linear"></div></div>
     </div>`;
 }
 
@@ -479,7 +479,6 @@ function atualizarDescanso() {
   if (restRing) {
     restRing.style.setProperty('--rest-progress', String(progress));
     restRing.style.setProperty('--rest-deg', `${progress * 360}deg`);
-    restRing.style.setProperty('--rest-angle', `${(1 - progress) * 360}deg`);
   }
   if (restTimer) {
     restTimer.style.setProperty('--rest-progress', String(progress));
