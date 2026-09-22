@@ -348,7 +348,6 @@ async function carregarRotinasDoBanco() {
 }
 
 function esconderTudo() {
-  document.body.classList.remove('workout-detail-active');
   viewRotinas.classList.add('hidden');
   viewDetalhe.classList.add('hidden');
   viewNovaRotina.classList.add('hidden');
@@ -1383,7 +1382,6 @@ function abrirRotina(id) {
 
   esconderTudo();
   viewDetalhe.classList.remove('hidden');
-  document.body.classList.add('workout-detail-active');
   viewDetalhe.classList.toggle('workout-compact', treinoIniciado && modoCompacto);
   renderIcons();
   atualizarDisplayTempo();

@@ -978,7 +978,7 @@ html { scrollbar-gutter: stable; }
 .workout-page main { min-width: 0; max-width: 100%; overflow-x: hidden; }
 .workout-exercise-card { min-width: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
 .workout-exercise-card > * { min-width: 0; max-width: 100%; }
-input, textarea, select { font-size: max(16px, 1em); }
+input, textarea, select { font-size: max(16px, 1em) !important; }
 
 button,
 a,
@@ -1200,11 +1200,11 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
   padding-bottom: .55rem;
 }
 
-body.workout-detail-active .app-surface main {
+.app-surface main > *:has(> .mol-screen-header.sticky:first-child) {
   padding-top: 0;
 }
 
-body.workout-detail-active .app-surface .mol-screen-header.sticky {
+.app-surface main > *:has(> .mol-screen-header.sticky:first-child) > .mol-screen-header.sticky {
   top: 0;
   min-height: calc(4rem + env(safe-area-inset-top, 0px));
   padding-top: calc(env(safe-area-inset-top, 0px) + .65rem);
