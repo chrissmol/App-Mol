@@ -82,7 +82,7 @@ const dictionary = {
     'Carregando…': 'Loading…',
     'Sair desta conta': 'Sign out of this account',
     'Zona de risco': 'Danger zone',
-    'Exclui permanentemente perfil, fotos, treinos, sessões, pesos e dieta.': 'Permanently deletes profile, photos, workouts, sessions, weights and diet.',
+    'Exclui permanentemente perfil, treinos, sessões, pesos e dieta.': 'Permanently deletes profile, workouts, sessions, weights and diet.',
     'Excluir conta e dados': 'Delete account and data',
     'Seu perfil': 'Your profile',
     'Dados e metas': 'Data and goals',

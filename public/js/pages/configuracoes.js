@@ -497,7 +497,7 @@ watchProtectedPage(async user => {
   };
 
   $('delete-account').onclick = async () => {
-    const confirmed = await confirmAction({ title: 'Excluir conta permanentemente?', message: 'Perfil, fotos, treinos, sessões, pesos e dieta serão apagados. Essa ação não pode ser desfeita.', confirmText: 'Excluir tudo', danger: true });
+    const confirmed = await confirmAction({ title: 'Excluir conta permanentemente?', message: 'Perfil, treinos, sessões, pesos e dieta serão apagados. Essa ação não pode ser desfeita.', confirmText: 'Excluir tudo', danger: true });
     if (!confirmed) return;
     const button = $('delete-account');
     setButtonLoading(button, true);

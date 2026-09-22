@@ -34,7 +34,11 @@ const app = initializeApp(firebaseConfig);
 
 // App Check usa uma Site Key pública. O enforcement permanece desligado no Firebase
 // até concluirmos a fase de monitoramento e validarmos todos os fluxos do app.
-export const appCheck = typeof window === 'undefined' ? null : (() => {
+// A inicialização é adiada (setTimeout 0) para não competir por rede/CPU com as
+// primeiras leituras de auth/Firestore no carregamento crítico da página — como
+// o enforcement está desligado, nenhuma leitura depende do token estar pronto.
+export let appCheck = null;
+function initAppCheckDeferred() {
   try {
     const hostname = window.location.hostname;
     if (hostname === 'localhost' || hostname === '127.0.0.1') return null;
@@ -46,7 +50,10 @@ export const appCheck = typeof window === 'undefined' ? null : (() => {
     console.warn('[Mol] App Check indisponível; seguindo sem token:', error?.message || error);
     return null;
   }
-})();
+}
+if (typeof window !== 'undefined') {
+  setTimeout(() => { appCheck = initAppCheckDeferred(); }, 0);
+}
 
 // Exporta instâncias prontas para uso em outros arquivos
 const browserAuthDependencies = typeof window === 'undefined'
