@@ -1762,7 +1762,12 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 .rest-mini-button {
   background: color-mix(in srgb, var(--mol-surface) 94%, transparent);
   color: var(--mol-text);
-  box-shadow: 0 10px 24px rgba(0,0,0,.16);
+  box-shadow: 0 10px 24px rgba(0,0,0,.16), 0 0 0 1px color-mix(in srgb, var(--mol-neon) 14%, transparent);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.rest-mini-button:active {
+  transform: scale(.97);
 }
 
 .rest-mini-ring {
@@ -1781,7 +1786,9 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
   color: var(--mol-text);
   font-size: clamp(1.75rem, 8vw, 2.25rem);
   letter-spacing: 0;
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--mol-surface) 80%, transparent);
+  text-shadow:
+    0 0 22px color-mix(in srgb, var(--mol-neon) 45%, transparent),
+    0 1px 0 color-mix(in srgb, var(--mol-surface) 80%, transparent);
 }
 
 .rest-ring-label {
@@ -1841,9 +1848,21 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
   z-index: 1;
 }
 
-@keyframes restBreath {
-  0%, 100% { transform: scale(.96) rotate(0deg); opacity: .42; }
-  50% { transform: scale(1.02) rotate(12deg); opacity: .9; }
+@keyframes restGlowPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--mol-neon) 18%, transparent),
+      0 0 28px color-mix(in srgb, var(--mol-neon) 14%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--mol-neon) 34%, transparent),
+      0 0 48px color-mix(in srgb, var(--mol-neon) 30%, transparent);
+  }
+}
+
+.rest-timer-panel.is-expanded:not(.is-paused):not(.is-ending) .rest-ring {
+  animation: restGlowPulse 2.8s ease-in-out infinite;
 }
 
 .rest-timer-panel.is-expanded .rest-ring {
@@ -1877,11 +1896,52 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
   50% { transform: scale(1.035); }
 }
 
+.rest-action-btn {
+  display: flex;
+  min-height: 3.25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--mol-surface-soft) 100%, transparent);
+  color: var(--mol-muted-strong);
+  transition: transform .15s ease, background-color .2s ease, color .2s ease;
+}
+
+.rest-action-btn:active {
+  transform: scale(.93);
+}
+
+.rest-action-label {
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+.rest-action-btn--primary {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--mol-neon) 96%, white), color-mix(in srgb, var(--mol-neon) 78%, black));
+  color: #05140c;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--mol-neon) 32%, transparent);
+}
+
+.rest-icon-play {
+  display: none;
+}
+
+.rest-timer-panel.is-paused .rest-icon-pause {
+  display: none;
+}
+
+.rest-timer-panel.is-paused .rest-icon-play {
+  display: block;
+}
+
 /* O cronômetro é flutuante, mas nunca deve cobrir as últimas opções da ficha. */
-body.rest-active .workout-page main {
+.workout-page:has(#rest-timer:not(.hidden)) main {
   padding-bottom: calc(var(--mol-app-nav-reserve) + 1.4rem);
 }
-body.rest-active .workout-page .workout-compact {
+.workout-page:has(#rest-timer:not(.hidden)) .workout-compact {
   scroll-padding-bottom: calc(var(--mol-app-nav-reserve) + 1.4rem);
 }
 
@@ -2127,7 +2187,7 @@ html[data-reduce-motion="true"] *::after {
   #rotinas-list > * { margin-top: 0 !important; margin-bottom: 0 !important; }
   #view-detalhe, #view-biblioteca, #view-explorar, #view-nova-rotina { max-width: 44rem; margin-left: auto; margin-right: auto; }
   #exercicios-list { max-width: 44rem; margin-left: auto; margin-right: auto; }
-  body.rest-active .workout-page main { padding-bottom: calc(var(--mol-app-nav-reserve) + 5.5rem); }
+  .workout-page:has(#rest-timer:not(.hidden)) main { padding-bottom: calc(var(--mol-app-nav-reserve) + 5.5rem); }
 }
 
 /* Tablets largos e desktop: conteúdo não fica esticado; dados ganham espaço lateral. */

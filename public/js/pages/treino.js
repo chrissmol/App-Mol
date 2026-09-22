@@ -271,10 +271,10 @@ function configurarPainelDescanso() {
       </div>
       <p id="rest-hint" class="mt-4 min-h-5 text-center text-xs font-semibold text-gray-400">Recupere a respiracao</p>
       <div class="mt-5 grid grid-cols-4 gap-2">
-        <button type="button" id="btn-sub-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">-15s</button>
-        <button type="button" id="btn-pause-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">Pausar</button>
-        <button type="button" id="btn-add-rest" class="min-h-11 rounded-xl bg-white/5 text-xs font-bold text-gray-300">+15s</button>
-        <button type="button" id="btn-skip-rest" class="min-h-11 rounded-xl bg-neon text-xs font-bold text-black">Pular</button>
+        <button type="button" id="btn-sub-rest" aria-label="Tirar 15 segundos" class="rest-action-btn"><i data-lucide="minus" class="h-4 w-4"></i><span class="rest-action-label">15s</span></button>
+        <button type="button" id="btn-pause-rest" class="rest-action-btn"><i data-lucide="pause" class="h-4 w-4 rest-icon-pause"></i><i data-lucide="play" class="h-4 w-4 rest-icon-play"></i><span id="rest-pause-label" class="rest-action-label">Pausar</span></button>
+        <button type="button" id="btn-add-rest" aria-label="Adicionar 15 segundos" class="rest-action-btn"><i data-lucide="plus" class="h-4 w-4"></i><span class="rest-action-label">15s</span></button>
+        <button type="button" id="btn-skip-rest" class="rest-action-btn rest-action-btn--primary"><i data-lucide="skip-forward" class="h-4 w-4"></i><span class="rest-action-label">Pular</span></button>
       </div>
       <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"><div id="rest-progress" class="h-full w-full bg-neon transition-[width] duration-1000"></div></div>
     </div>`;
@@ -291,7 +291,7 @@ const restRing = document.getElementById('rest-ring');
 const restExercise = document.getElementById('rest-exercise');
 const restNext = document.getElementById('rest-next');
 const restHint = document.getElementById('rest-hint');
-const btnPauseRest = document.getElementById('btn-pause-rest');
+const restPauseLabel = document.getElementById('rest-pause-label');
 document.getElementById('btn-concluir-treino')?.addEventListener('click', () => window.finalizarEConcluirTreino());
 
 watchProtectedPage(user => {
@@ -493,7 +493,7 @@ function atualizarDescanso() {
   if (restNext && descansoContexto) restNext.textContent = descansoContexto.nextTitle;
   if (restMiniTitle && descansoContexto) restMiniTitle.textContent = descansoContexto.title;
   if (restHint && descansoContexto) restHint.textContent = descansoPausado ? 'Descanso pausado' : descansoContexto.hint;
-  if (btnPauseRest) btnPauseRest.textContent = descansoPausado ? 'Retomar' : 'Pausar';
+  if (restPauseLabel) restPauseLabel.textContent = descansoPausado ? 'Retomar' : 'Pausar';
 }
 
 function pararDescanso() {
@@ -504,7 +504,6 @@ function pararDescanso() {
   descansoContexto = null;
   restTimer.classList.add('hidden');
   restTimer.classList.remove('is-expanded');
-  document.body.classList.remove('rest-active');
 }
 
 function iniciarDescanso(indexExercicio, indexSerie = 0) {
@@ -516,7 +515,6 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
   descansoPausado = false;
   restTimer.classList.remove('hidden');
   restTimer.classList.remove('is-expanded');
-  document.body.classList.add('rest-active');
   atualizarDescanso();
   descansoInterval = setInterval(() => {
     atualizarDescanso();

@@ -4,8 +4,8 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
   CalendarCheck2, ClipboardList, Compass, Copy, createIcons, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2,
   Flame, Footprints, Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole,
-  LogOut, Medal, Minus, Monitor, Moon, Palette, Pencil, Play, Plus, Replace, Ruler, Scale,
-  Search, Send, Settings2, Share2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star,
+  LogOut, Medal, Minus, Monitor, Moon, Palette, Pause, Pencil, Play, Plus, Replace, Ruler, Scale,
+  Search, Send, Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star,
   Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Upload, User,
   Utensils, Weight, X
 } from 'lucide';
@@ -16,8 +16,8 @@ const icons = {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, ClipboardList, Clock3,
   Compass, Copy, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2, Flame, Footprints, Info, Languages,
   CalendarCheck2, Layers3, LayoutDashboard, LayoutTemplate, LockKeyhole, LogOut, Medal,
-  Minus, Monitor, Moon, Palette, Pencil, Play, Plus, Replace, Ruler, Scale, Search, Send,
-  Settings2, Share2, ShieldCheck, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
+  Minus, Monitor, Moon, Palette, Pause, Pencil, Play, Plus, Replace, Ruler, Scale, Search, Send,
+  Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
   TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Upload, User, Utensils, Weight, X
 };
 

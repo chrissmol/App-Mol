@@ -223,7 +223,9 @@ async function renderUnlockedFrameChoices(user) {
   const current = selectedFrame || profileSnapshot.data()?.avatarFrame || (admin ? 'boss' : 'plastic');
   root.innerHTML = options.map(([id, label, required]) => {
     const unlocked = id === 'boss' ? admin : frameProgress >= required;
-    const detail = unlocked ? (current === id ? 'Em uso' : 'Disponivel') : `Desbloqueie com ${required} treinos`;
+    const detail = unlocked
+      ? (current === id ? 'Em uso' : 'Disponivel')
+      : (id === 'boss' ? 'Exclusivo da equipe Mol' : `Desbloqueie com ${required} treinos`);
     return `<button type="button" data-frame="${id}" class="avatar-frame-choice avatar-frame-choice--${id} ${current === id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === id}"><span class="frame-choice__dot"></span><span><strong>${label}</strong><small>${detail}</small></span></button>`;
   }).join('');
   root.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => {

@@ -173,7 +173,6 @@ const dictionary = {
     'Histórico de peso': 'Weight history',
     'Edite ou remova registros incorretos.': 'Edit or remove incorrect records.',
     'Relembre sua frequência e os resultados de cada treino.': 'Review your frequency and workout results.',
-    'Treinos concluídos': 'Completed workouts',
     'carregando histórico': 'loading history',
     'Volume acumulado': 'Total volume',
     'quilogramas movimentados': 'kilograms moved',
