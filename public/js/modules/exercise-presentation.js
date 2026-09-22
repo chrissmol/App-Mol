@@ -18,6 +18,49 @@ export function detailedExerciseGroup(exercise = {}) {
   return group;
 }
 
+const MUSCLE_ZONE_BY_GROUP = {
+  Peito: 'peito', Costas: 'costas', Ombros: 'ombros', Abdômen: 'abdomen',
+  Bíceps: 'biceps', Tríceps: 'triceps', Antebraço: 'antebraco',
+  Panturrilha: 'panturrilha', Panturrilhas: 'panturrilha'
+};
+
+// Zonas do mapa muscular. Segue a mesma lógica de palavras-chave de
+// detailedExerciseGroup para separar pernas em quadríceps/posterior/glúteo,
+// mas mantém braços separados (bíceps/tríceps/antebraço) em vez de
+// agrupar em "Braços", porque o mapa corporal precisa da granularidade.
+export function primaryMuscleZone(exercise = {}) {
+  const name = String(exercise.nome || '').toLocaleLowerCase('pt-BR');
+  const group = String(exercise.grupo || '');
+  if (MUSCLE_ZONE_BY_GROUP[group]) return MUSCLE_ZONE_BY_GROUP[group];
+  if (['flexora', 'stiff', 'romeno', 'nórdica', 'good morning'].some(term => name.includes(term))) return 'posterior';
+  if (['glúteo', 'pélvica', 'abdutora', 'abdução', 'hip thrust'].some(term => name.includes(term))) return 'gluteo';
+  if (group === 'Pernas') return 'quadriceps';
+  return 'outros';
+}
+
+const SECONDARY_MUSCLE_RULES = [
+  { terms: ['supino', 'chest press', 'crucifixo', 'peck deck', 'crossover'], zones: ['triceps', 'ombros'] },
+  { terms: ['agachamento', 'leg press', 'hack', 'afundo', 'búlgaro', 'passada'], zones: ['gluteo', 'posterior'] },
+  { terms: ['stiff', 'romeno', 'terra', 'good morning'], zones: ['gluteo', 'costas'] },
+  // Restrito a "Costas" porque "puxada"/"remada" também aparecem em nomes
+  // de exercícios de perna (ex.: "Mesa Flexora com Ponta do Pé Puxada").
+  { terms: ['puxada', 'pulldown', 'remada', 'barra fixa'], zones: ['biceps'], onlyGroup: 'Costas' },
+  { terms: ['desenvolvimento', 'arnold press', 'militar'], zones: ['triceps'] },
+  { terms: ['elevação pélvica', 'hip thrust', 'ponte'], zones: ['posterior'] }
+];
+
+export function secondaryMuscleZones(exercise = {}) {
+  const name = String(exercise.nome || '').toLocaleLowerCase('pt-BR');
+  const primary = primaryMuscleZone(exercise);
+  const zones = new Set();
+  SECONDARY_MUSCLE_RULES.forEach(rule => {
+    if (rule.onlyGroup && exercise.grupo !== rule.onlyGroup) return;
+    if (rule.terms.some(term => name.includes(term))) rule.zones.forEach(zone => zones.add(zone));
+  });
+  zones.delete(primary);
+  return [...zones];
+}
+
 const guidanceRules = [
   {
     terms: ['supino', 'chest press'],

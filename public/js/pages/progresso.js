@@ -1,7 +1,8 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { exerciseTrends, personalRecords, trainingBalance, volumeByGroup } from '../modules/workout-analytics.js';
+import { exerciseTrends, personalRecords, trainingBalance, volumeByGroup, volumeByMuscleZone } from '../modules/workout-analytics.js';
+import { muscleMapLegendEntries, renderMuscleMap } from '../modules/muscle-map.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML, showToast } from '../utils/ui.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
@@ -61,6 +62,14 @@ function renderRecords(records) {
   $('toggle-records')?.addEventListener('click', () => { showAllRecords = !showAllRecords; renderRecords(records); });
 }
 
+function renderMuscleHeatmap(scores) {
+  const entries = muscleMapLegendEntries(scores);
+  const legend = entries.length
+    ? `<div class="mol-muscle-legend mt-4">${entries.map(entry => `<span class="mol-muscle-legend-item"><span class="mol-muscle-legend-dot" style="background:color-mix(in srgb, var(--mol-neon) ${Math.round(Math.max(0.28, entry.score / entries[0].score) * 100)}%, var(--mol-surface-soft))"></span>${escapeHTML(entry.label)}</span>`).join('')}</div>`
+    : `<p class="mt-4 text-center text-xs text-gray-500">Nenhum músculo treinado no período. Conclua um treino para colorir o mapa.</p>`;
+  $('muscle-map').innerHTML = `${renderMuscleMap(scores)}${legend}`;
+}
+
 function renderInsight(volume) {
   const insight = trainingBalance(volume);
   const tones = { empty: 'text-gray-400', focused: 'text-blue-400', concentrated: 'text-orange-400', distributed: 'text-neon' };
@@ -81,6 +90,7 @@ function renderTrends(trends) {
 }
 function renderProgress() {
   const volume = volumeByGroup(sessions, selectedDays);
+  const muscleScores = volumeByMuscleZone(sessions, selectedDays);
   const records = personalRecords(sessions);
   const trends = exerciseTrends(sessions, Math.max(selectedDays, 30));
   $('period-label').textContent = `Últimos ${selectedDays} dias`;
@@ -90,7 +100,7 @@ function renderProgress() {
     button.className = `min-h-10 rounded-xl px-4 text-xs font-bold ${active ? 'bg-neon text-black' : 'bg-white/5 text-gray-400'}`;
     button.setAttribute('aria-pressed', String(active));
   });
-  renderSummary(volume, records); renderInsight(volume); renderVolume(volume); renderTrends(trends); renderRecords(records);
+  renderSummary(volume, records); renderInsight(volume); renderMuscleHeatmap(muscleScores); renderVolume(volume); renderTrends(trends); renderRecords(records);
   window.lucide?.createIcons();
 }
 
@@ -112,6 +122,7 @@ async function shareProgress() {
 function renderError() {
   $('weekly-sets').textContent = '—'; $('trained-groups').textContent = '—'; $('record-count').textContent = '—';
   $('volume').innerHTML = '<div class="mol-state"><p class="mol-state-title">Não foi possível carregar a distribuição.</p><button id="retry-progress" type="button" class="mol-state-action mt-4">Tentar novamente</button></div>';
+  $('muscle-map').innerHTML = '<p class="text-center text-xs text-gray-500">Mapa muscular indisponível.</p>';
   $('prs').innerHTML = '<div class="mol-state"><p class="mol-state-copy">Os recordes estarão disponíveis após recarregar os dados.</p></div>';
   $('retry-progress')?.addEventListener('click', loadProgress);
 }

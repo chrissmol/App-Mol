@@ -3440,3 +3440,46 @@ html[data-theme="light"] body .mol-brand img {
   #view-rotinas { display: block !important; }
   #view-rotinas > * { width: 100% !important; max-width: none !important; }
 }
+
+.mol-muscle-map {
+  width: 100%;
+  max-width: 22rem;
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.mol-muscle-map .mol-muscle-segment {
+  transition: fill .5s ease;
+}
+
+.mol-muscle-map .mol-muscle-caption {
+  fill: var(--mol-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.mol-muscle-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem .5rem;
+  justify-content: center;
+}
+
+.mol-muscle-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  border-radius: 999px;
+  background: var(--mol-surface-soft);
+  padding: .3rem .65rem;
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--mol-muted-strong);
+}
+
+.mol-muscle-legend-dot {
+  height: .55rem;
+  width: .55rem;
+  border-radius: 999px;
+}

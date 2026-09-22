@@ -1,4 +1,5 @@
 import { setVolume } from './workout-session.js';
+import { primaryMuscleZone, secondaryMuscleZones } from './exercise-presentation.js';
 
 export function completedSets(session) {
   return (Array.isArray(session?.exercicios) ? session.exercicios : []).slice(0, 60).flatMap(ex => (Array.isArray(ex?.series) ? ex.series : []).slice(0, 60).filter(set => set?.concluida === true).map(set => ({ ...set, exercicio: String(ex.nome || '').slice(0, 80), grupo: String(ex.grupo || 'Outros').slice(0, 40) })));
@@ -49,6 +50,31 @@ export function volumeByGroup(sessions, days = 7, now = new Date()) {
 }
 
 export function weeklyVolume(sessions, now = new Date()) { return volumeByGroup(sessions, 7, now); }
+
+// Pontuação por zona do mapa muscular: 1 ponto por série concluída no
+// músculo primário, 0.5 nos secundários (estímulo parcial). Ignora
+// séries de aquecimento (tipo W), igual volumeByGroup.
+export function muscleZoneScores(sets) {
+  /** @type {Record<string, number>} */
+  const scores = {};
+  (Array.isArray(sets) ? sets : []).forEach(set => {
+    if (String(set.tipo || 'N').toUpperCase() === 'W') return;
+    const exercise = { nome: set.exercicio, grupo: set.grupo };
+    const primary = primaryMuscleZone(exercise);
+    if (primary !== 'outros') scores[primary] = (scores[primary] || 0) + 1;
+    secondaryMuscleZones(exercise).forEach(zone => { scores[zone] = (scores[zone] || 0) + 0.5; });
+  });
+  return scores;
+}
+
+export function volumeByMuscleZone(sessions, days = 7, now = new Date()) {
+  const source = Array.isArray(sessions) ? sessions : [];
+  const end = now.getTime();
+  const period = Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 7;
+  const since = end - period * 24 * 60 * 60 * 1000;
+  const sets = source.filter(session => { const time = workoutDate(session)?.getTime(); return time >= since && time <= end; }).flatMap(completedSets);
+  return muscleZoneScores(sets);
+}
 
 export function estimate1RM(weight, reps) {
   const load = Number(weight);
