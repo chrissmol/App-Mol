@@ -1,4 +1,5 @@
 import { db } from '../config/firebase-config.js';
+import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { setButtonLoading, showToast } from '../utils/ui.js';
@@ -12,13 +13,6 @@ const $ = id => document.getElementById(id);
 let currentUser;
 let currentProfile = {};
 const profileCacheKey = uid => `mol-profile-cache-${uid}`;
-function withTimeout(promise, label, milliseconds = 9000) {
-  let timer;
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
-  ]).finally(() => clearTimeout(timer));
-}
 
 function safeJSON(value, fallback = null) {
   try { return value ? JSON.parse(value) : fallback; }

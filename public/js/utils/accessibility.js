@@ -1,6 +1,7 @@
 import { watchAuthState } from '../modules/auth.js';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase-config.js';
+import { withTimeout } from './timeout.js';
 
 const STORAGE_KEY = 'mol-accessibility';
 const PROFILE_FIELD = 'preferenciasAcessibilidade';
@@ -72,7 +73,7 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
 export async function syncAccessibilityForUser(user) {
   if (!user) return applyAccessibilityPreferences(getAccessibilityPreferences());
   const reference = doc(db, 'users', user.uid);
-  const snapshot = await getDoc(reference);
+  const snapshot = await withTimeout(getDoc(reference), 'As preferências de acessibilidade');
   const remote = snapshot.data()?.[PROFILE_FIELD];
   if (remote) return applyAccessibilityPreferences(remote);
   const local = getAccessibilityPreferences();

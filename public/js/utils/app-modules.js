@@ -2,6 +2,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase-config.js';
 import { escapeHTML, showToast } from './ui.js';
 import { getLocalItem, setLocalItem } from './storage.js';
+import { withTimeout } from './timeout.js';
 
 export const APP_MODULE_FIELD = 'appModules';
 export const MODULE_PRESETS = {
@@ -55,7 +56,7 @@ export function cacheAppModules(value, uid = auth.currentUser?.uid) {
 
 export async function syncAppModulesForUser(user = auth.currentUser) {
   if (!user) return cacheAppModules(getStoredAppModules());
-  const snapshot = await getDoc(doc(db, 'users', user.uid));
+  const snapshot = await withTimeout(getDoc(doc(db, 'users', user.uid)), 'Os módulos do app');
   const remote = snapshot.data()?.[APP_MODULE_FIELD];
   if (remote) return cacheAppModules(remote, user.uid);
   const local = getStoredAppModules(user.uid);

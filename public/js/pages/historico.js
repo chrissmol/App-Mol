@@ -1,6 +1,7 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
+import { withTimeout } from '../utils/timeout.js';
 import { filterHistory, historySummary, sessionsByDay, sortSessionsNewest } from '../modules/history-analytics.js';
 import { sessionMetrics, workoutDate } from '../modules/workout-analytics.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
@@ -150,7 +151,7 @@ async function loadHistory({ ignoreCache = false } = {}) {
     $('sessions').innerHTML = '<div class="glass-card rounded-2xl p-4 text-sm text-gray-500">Carregando sessões…</div>';
   }
   try {
-    const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)));
+    const snapshot = await withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid))), 'O histórico');
     sessions = sortSessionsNewest(snapshot.docs.map(item => ({ id: item.id, ...item.data() }))); writeCache(currentUser.uid); renderAll();
   } catch (error) { console.error('Erro ao carregar histórico:', error); renderError(); showToast('Não foi possível carregar o histórico.'); }
 }

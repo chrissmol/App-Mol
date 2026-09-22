@@ -1,4 +1,5 @@
 import { db } from '../config/firebase-config.js';
+import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -20,13 +21,6 @@ let now = new Date();
 let visibleMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 let selectedCalendarDay = null;
 const evolutionCacheKey = uid => `mol-evolution-cache-${uid}`;
-function withTimeout(promise, label, milliseconds = 9000) {
-  let timer;
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
-  ]).finally(() => clearTimeout(timer));
-}
 
 function safeJSON(value, fallback = null) {
   try { return value ? JSON.parse(value) : fallback; }

@@ -10,6 +10,7 @@ import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { MODULE_DEFINITIONS, MODULE_PRESETS, normalizeAppModules, presetFromModules, saveAppModules, syncAppModulesForUser } from '../utils/app-modules.js';
+import { withTimeout } from '../utils/timeout.js';
 
 setupAppShell();
 
@@ -214,8 +215,10 @@ let frameProgress = 0;
 async function renderUnlockedFrameChoices(user) {
   const root = $('frame-choices');
   if (!root || !user) return;
-  const profileSnapshot = await getDoc(doc(db, 'users', user.uid));
-  const sessionCount = await getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', user.uid)));
+  const [profileSnapshot, sessionCount] = await Promise.all([
+    withTimeout(getDoc(doc(db, 'users', user.uid)), 'O perfil'),
+    withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', user.uid))), 'A contagem de treinos')
+  ]);
   frameProgress = Number(sessionCount.data().count || 0);
   const admin = String(user.email || '').toLowerCase() === 'chrisouzamol@gmail.com';
   const requirements = [0, 5, 15, 30, 60, 100, 0];
@@ -450,20 +453,18 @@ function authErrorMessage(error, fallback) {
 }
 
 watchProtectedPage(async user => {
-  try {
-    appearance = await syncAccessibilityForUser(user);
-    await renderUnlockedFrameChoices(user);
-    applyAppearance();
-  } catch (error) {
-    console.warn('Preferências da conta não carregadas:', error.message);
-  }
-  try {
-    appModules = await syncAppModulesForUser(user);
-    renderAppModules();
-  } catch (error) {
-    console.warn('Módulos da conta não carregados:', error.message);
-    renderAppModules();
-  }
+  // As três sincronizações abaixo são independentes (temas, molduras de
+  // avatar, módulos ativos) — rodam em paralelo em vez de em série, que
+  // antes podia somar até ~27s de espera numa rede lenta.
+  const [accessibilityResult, , modulesResult] = await Promise.allSettled([
+    syncAccessibilityForUser(user).then(value => { appearance = value; }),
+    renderUnlockedFrameChoices(user).catch(error => console.warn('Molduras não carregadas:', error.message)),
+    syncAppModulesForUser(user).then(value => { appModules = value; })
+  ]);
+  if (accessibilityResult.status === 'rejected') console.warn('Preferências da conta não carregadas:', accessibilityResult.reason?.message);
+  applyAppearance();
+  if (modulesResult.status === 'rejected') console.warn('Módulos da conta não carregados:', modulesResult.reason?.message);
+  renderAppModules();
   $('session-email').textContent = user.email || user.displayName || 'Conta conectada';
 
   $('export-data').onclick = async () => {

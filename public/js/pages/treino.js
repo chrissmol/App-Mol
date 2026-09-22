@@ -1,6 +1,7 @@
 ﻿// js/pages/treino.js
 document.title = 'Mol';
 import { db } from '../config/firebase-config.js';
+import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { activateDialog, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
@@ -39,13 +40,6 @@ let modoCompacto = getLocalItem('mol-workout-compact') === 'true';
 let substituirExercicioIndex = null;
 const requestedWorkout = new URLSearchParams(window.location.search);
 
-function withTimeout(promise, label, milliseconds = 9000) {
-  let timer;
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} excedeu o tempo de resposta.`)), milliseconds); })
-  ]).finally(() => clearTimeout(timer));
-}
 const draftKey = (id) => `mol-workout-draft-${id}`;
 const routinesCacheKey = id => `mol-workout-routines-${id}`;
 function readRoutinesCache(id) {

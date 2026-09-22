@@ -1,6 +1,7 @@
 import { db } from '../config/firebase-config.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { withTimeout } from '../utils/timeout.js';
 import { exerciseTrends, personalRecords, trainingBalance, volumeByGroup, volumeByMuscleZone } from '../modules/workout-analytics.js';
 import { muscleMapLegendEntries, renderMuscleMap } from '../modules/muscle-map.js';
 import { setupAppShell } from '../utils/app-shell.js';
@@ -139,7 +140,7 @@ async function loadProgress() {
     $('prs').innerHTML = '<p class="text-sm text-gray-500">Carregando recordes…</p>';
   }
   try {
-    const snapshot = await getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid)));
+    const snapshot = await withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', currentUser.uid))), 'O progresso');
     sessions = snapshot.docs.map(item => item.data()); writeCache(currentUser.uid, sessions); renderProgress();
   } catch (error) {
     console.error('Erro ao carregar progresso:', error); renderError(); showToast('Não foi possível carregar seu progresso.');
