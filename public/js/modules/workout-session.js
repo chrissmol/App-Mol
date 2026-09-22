@@ -182,6 +182,7 @@ export function normalizeRoutineExercises(exercises) {
       repsMax,
       rirAlvo,
       descansoSegundos,
+      supersetComProximo: exercise.supersetComProximo === true,
       series
     }];
   });

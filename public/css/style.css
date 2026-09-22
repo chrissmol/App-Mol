@@ -978,6 +978,23 @@ html { scrollbar-gutter: stable; }
 .workout-page main { min-width: 0; max-width: 100%; overflow-x: hidden; }
 .workout-exercise-card { min-width: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
 .workout-exercise-card > * { min-width: 0; max-width: 100%; }
+
+.workout-superset-linked {
+  border-top-left-radius: .5rem;
+  border-top-right-radius: .5rem;
+  border-top-color: color-mix(in srgb, var(--mol-neon) 35%, transparent);
+}
+.workout-superset-badge {
+  display: inline-block;
+  margin-bottom: .3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mol-neon) 16%, transparent);
+  color: var(--mol-neon);
+  padding: .15rem .55rem;
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
 input, textarea, select { font-size: max(16px, 1em) !important; }
 
 button,

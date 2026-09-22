@@ -424,6 +424,9 @@ function proximaSerie(indexExercicio, indexSerie) {
 }
 
 function descansoSugerido(exercicio, serie) {
+  // Em superset, o descanso "de verdade" acontece só depois do exercicio
+  // seguinte — entre os dois, é só o tempo de trocar de estacao/equipamento.
+  if (exercicio?.supersetComProximo) return 20;
   const base = Number(exercicio?.descansoSegundos) || 90;
   let ajuste = 0;
   if (serie?.tipo === 'W') ajuste -= 30;
@@ -573,6 +576,7 @@ document.addEventListener('click', event => {
   if (action === 'start-edit-workout') return void window.iniciarTreinoDaEdicao();
   if (action === 'save-routine-name') return void window.salvarNomeRotina();
   if (action === 'move-exercise') return void window.moverExercicio(exIndex, direction);
+  if (action === 'toggle-superset') return void window.alternarSuperset(exIndex);
   if (action === 'delete-exercise') return void window.excluirExercicio(exIndex);
   if (action === 'replace-exercise') return void window.abrirSubstituicao(exIndex);
   if (action === 'show-workout-info') return void window.mostrarInfoTreino(button.dataset.info);
@@ -1300,11 +1304,22 @@ function abrirRotina(id) {
       const notaHTML = notaExercicio ? `<section class="mb-3 rounded-xl border border-neon/15 bg-neon/5 p-3 text-neon"><div class="flex items-start gap-2"><i data-lucide="clipboard-list" class="mt-0.5 h-4 w-4 shrink-0"></i><p class="text-[11px] leading-relaxed">${escapeHTML(notaExercicio)}</p></div></section>` : '';
       const editorNotaHTML = treinoIniciado ? '' : `<details class="mb-3 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Observações do exercício</summary><label class="mt-3 block text-[10px] font-bold uppercase tracking-wider text-gray-500" for="nota-exercicio-${indexEx}">Orientação, ajuste de máquina ou detalhe técnico</label><textarea id="nota-exercicio-${indexEx}" maxlength="500" rows="3" class="mt-2 min-h-24 w-full resize-y rounded-xl border border-white/10 mol-field p-3 text-sm text-white outline-none transition-colors focus:border-neon" placeholder="Ex.: usar máquina Technogym, polia abaixo das escápulas, atenção ao desconforto..." data-workout-action="update-exercise-note" data-ex-index="${indexEx}">${escapeHTML(notaExercicio)}</textarea><p class="mt-2 text-[11px] text-gray-500">Salva automaticamente ao sair do campo.</p></details>`;
 
+      const exercicioAnterior = rotina.exercicios[indexEx - 1];
+      const continuaSupersetDoAnterior = exercicioAnterior?.supersetComProximo === true;
+      const supersetClass = continuaSupersetDoAnterior ? 'workout-superset-linked' : '';
+      const cardMargin = ex.supersetComProximo ? 'mb-1' : 'mb-4';
+      const supersetBadgeHTML = ex.supersetComProximo || continuaSupersetDoAnterior
+        ? '<span class="workout-superset-badge">SUPERSET</span>'
+        : '';
+      const toggleSupersetHTML = !treinoIniciado && indexEx < rotina.exercicios.length - 1
+        ? `<button type="button" data-workout-action="toggle-superset" data-ex-index="${indexEx}" aria-pressed="${ex.supersetComProximo ? 'true' : 'false'}" aria-label="${ex.supersetComProximo ? 'Desfazer superset com o próximo exercício' : 'Unir com o próximo exercício em superset'}" class="h-10 w-10 rounded-xl ${ex.supersetComProximo ? 'text-neon' : 'text-gray-400'} active:bg-white/10"><i data-lucide="link-2" class="w-4 h-4"></i></button>`
+        : '';
+
       return `
-      <article class="workout-exercise-card ${currentClass} mol-panel rounded-2xl pt-4 pb-2 px-4 border border-white/5 mb-4">
+      <article class="workout-exercise-card ${currentClass} ${supersetClass} mol-panel rounded-2xl pt-4 pb-2 px-4 border border-white/5 ${cardMargin}">
         <div class="flex items-center justify-between mb-4">
-          <div><h4 class="font-bold text-sm text-neon">${escapeHTML(ex.nome)}</h4><p class="mt-1 text-[11px] text-gray-500">Meta: ${ex.repsMin || 8}–${ex.repsMax || 12} reps · RIR ${ex.rirAlvo ?? 2} · ${ex.descansoSegundos || 90}s</p></div>
-          <div class="flex gap-1"><button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="-1" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="1" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" data-workout-action="delete-exercise" data-ex-index="${indexEx}" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+          <div>${supersetBadgeHTML}<h4 class="font-bold text-sm text-neon">${escapeHTML(ex.nome)}</h4><p class="mt-1 text-[11px] text-gray-500">Meta: ${ex.repsMin || 8}–${ex.repsMax || 12} reps · RIR ${ex.rirAlvo ?? 2} · ${ex.descansoSegundos || 90}s</p></div>
+          <div class="flex gap-1">${toggleSupersetHTML}<button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="-1" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="1" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" data-workout-action="delete-exercise" data-ex-index="${indexEx}" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
         </div>
         ${notaHTML}
         <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p><p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p></div></div></section>
@@ -1622,6 +1637,15 @@ window.moverExercicio = async (indexEx, direcao) => {
   [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]];
   try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); abrirRotina(rotinaAbertaId); }
   catch (error) { [rotina.exercicios[indexEx], rotina.exercicios[destino]] = [rotina.exercicios[destino], rotina.exercicios[indexEx]]; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível reordenar o exercício.'); }
+};
+
+window.alternarSuperset = async (indexEx) => {
+  const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
+  if (!rotina?.exercicios?.[indexEx] || indexEx >= rotina.exercicios.length - 1) return;
+  const anterior = rotina.exercicios[indexEx].supersetComProximo === true;
+  rotina.exercicios[indexEx].supersetComProximo = !anterior;
+  try { await updateDoc(doc(db, 'treinos', rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) }); abrirRotina(rotinaAbertaId); }
+  catch (error) { rotina.exercicios[indexEx].supersetComProximo = anterior; abrirRotina(rotinaAbertaId); console.error(error); showToast('Não foi possível atualizar o superset.'); }
 };
 
 window.excluirExercicio = async (indexEx) => {

@@ -11,7 +11,11 @@ import { createRequire } from 'node:module';
 // $ = id => document.getElementById(id) retorna HTMLElement genérico,
 // não HTMLButtonElement). Corrigir isso de vez exige tipar $ com
 // generics por call site em toda a base, fora do escopo desta mudança.
-const CEILING = 445;
+// 447: +2 por window.alternarSuperset (feature de superset) — mesmo
+// padrão pré-existente de toda funcao pendurada em `window.*` no
+// treino.js (nunca declarada em global.d.ts), erra uma vez na
+// atribuicao e uma vez em cada uso.
+const CEILING = 447;
 
 // Chama o entrypoint do tsc via node diretamente (em vez de "npx tsc"),
 // que evita a resolução de .cmd do npx no Windows.
