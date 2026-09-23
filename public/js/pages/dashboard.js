@@ -142,6 +142,18 @@ function insertAfterOrAppend(anchor, element, fallback) {
   else fallback.appendChild(element);
 }
 
+// Cards secundários da home começam neutros (ícone cinza) e só ganham a
+// cor da marca quando têm dado de verdade pra mostrar — evita a parede
+// de cards idênticos e verdes que um usuário novo via antes.
+function setCardBadgeActive(badgeId, active) {
+  const badge = $(badgeId);
+  if (!badge) return;
+  badge.classList.toggle('bg-neon/15', active);
+  badge.classList.toggle('text-neon', active);
+  badge.classList.toggle('bg-white/5', !active);
+  badge.classList.toggle('text-gray-500', !active);
+}
+
 function setWeek(sessions, goal = 1) {
   const tier = avatarTier(profileStats(sessions, goal).workouts);
   const frame = $('dashboard-avatar-frame');
@@ -153,6 +165,8 @@ function setWeek(sessions, goal = 1) {
     frame.className = frame.className.replace(/avatar-frame--\w+/g, '').trim() + ` avatar-frame--${frameId}`;
     frame.setAttribute('aria-label', `Abrir perfil · moldura de ${frameLabel}`);
   }
+  $('weekly-stats')?.classList.toggle('hidden', sessions.length === 0);
+  $('weekly-empty-note')?.classList.toggle('hidden', sessions.length > 0);
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);
@@ -183,7 +197,10 @@ function setWeek(sessions, goal = 1) {
   const previousVolume = previous ? sessionMetrics(previous).volume : 0;
   const trend = previousVolume ? ((lastVolume - previousVolume) / previousVolume) * 100 : null;
   $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${Math.round(lastVolume).toLocaleString('pt-BR')} kg${trend === null ? '.' : ` · ${trend.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })}% versus a sessão anterior.`}` : 'Conclua o primeiro treino para acompanhar sua evolução.';
+  $('progress-card-icon')?.classList.toggle('text-neon', Boolean(last));
+  $('progress-card-icon')?.classList.toggle('text-gray-500', !last);
   if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg · ${sessionMetrics(last).sets} séries`; }
+  setCardBadgeActive('last-session-badge', Boolean(last));
 }
 
 function setToday(routines, user) {
@@ -335,7 +352,7 @@ function setupDashboardCards() {
   if (!document.getElementById('last-session-card')) {
     const card = document.createElement('section');
     card.id = 'last-session-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
-    card.innerHTML = '<div class="flex items-center justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Última sessão</p><h2 id="last-session-title" class="mt-1 text-lg font-extrabold">Ainda não há sessões</h2><p id="last-session-meta" class="mt-1 text-sm text-gray-500">Conclua um treino para acompanhar.</p></div><i data-lucide="clock-3" class="h-5 w-5 text-neon"></i></div>';
+    card.innerHTML = '<div class="flex items-center justify-between"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Última sessão</p><h2 id="last-session-title" class="mt-1 text-lg font-extrabold">Ainda não há sessões</h2><p id="last-session-meta" class="mt-1 text-sm text-gray-500">Conclua um treino para acompanhar.</p></div><span id="last-session-badge" class="rounded-2xl bg-white/5 p-3 text-gray-500"><i data-lucide="clock-3" class="h-5 w-5"></i></span></div>';
     card.tabIndex = 0; card.setAttribute('role', 'link'); card.setAttribute('aria-label', 'Abrir histórico de treinos');
     card.onclick = () => { window.location.href = './pages/historico.html'; };
     card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); } };
@@ -353,7 +370,7 @@ function setupDashboardCards() {
   }
   if (!document.getElementById('weight-card')) {
     const card = document.createElement('section'); card.id = 'weight-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
-    card.innerHTML = '<a href="./pages/perfil.html" class="flex items-center justify-between" aria-label="Abrir evolução corporal no perfil"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold" aria-live="polite">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="scale" class="h-5 w-5"></i></span></a>';
+    card.innerHTML = '<a href="./pages/perfil.html" class="flex items-center justify-between" aria-label="Abrir evolução corporal no perfil"><div><p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Evolução corporal</p><h2 id="dashboard-weight" class="mt-1 text-lg font-extrabold" aria-live="polite">Sem registro de peso</h2><p id="dashboard-weight-meta" class="mt-1 text-sm text-gray-500">Registre seu peso no Perfil.</p></div><span id="weight-card-badge" class="rounded-2xl bg-white/5 p-3 text-gray-500"><i data-lucide="scale" class="h-5 w-5"></i></span></a>';
     const weightLink = card.querySelector('a'); weightLink.href = './pages/evolucao.html'; weightLink.setAttribute('aria-label', 'Abrir evolução corporal');
     card.querySelector('#dashboard-weight-meta').textContent = 'Registre seu peso em Evolução.';
     insertAfterOrAppend(document.getElementById('last-session-card'), card, grid);
@@ -450,6 +467,7 @@ watchProtectedPage(async user => {
         $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
         $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
       }
+      setCardBadgeActive('weight-card-badge', Boolean(last));
     }
     document.body.setAttribute('aria-busy', 'false');
     renderIcons();
@@ -528,6 +546,7 @@ watchProtectedPage(async user => {
         $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
         $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
       }
+      setCardBadgeActive('weight-card-badge', Boolean(last));
     } catch(error) { console.warn('Peso não carregado:',error.message); $('dashboard-weight').textContent='Peso indisponível'; $('dashboard-weight-meta').textContent='Toque para abrir Evolução e tentar novamente.'; }
   };
   await Promise.allSettled([loadRoutines(), loadSessions(), loadWeights()]);
