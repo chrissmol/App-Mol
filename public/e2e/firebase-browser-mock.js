@@ -49,6 +49,9 @@ export const signInWithEmailAndPassword = async () => {
 };
 export const createUserWithEmailAndPassword = signInWithEmailAndPassword;
 export const sendPasswordResetEmail = async () => {};
+export const updateProfile = async (user, { displayName } = {}) => {
+  if (displayName !== undefined) user.displayName = displayName;
+};
 export const signOut = async () => {
   localStorage.removeItem('__mol_e2e_user');
   authInstance.currentUser = null;

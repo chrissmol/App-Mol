@@ -4,9 +4,11 @@ import { setButtonLoading } from '../utils/ui.js';
 import { initializeAccessibility } from '../utils/accessibility.js';
 import { setSessionItem } from '../utils/storage.js';
 import { setupMobileAppMode } from '../utils/mobile-app.js';
+import '../utils/icons.js';
 
 setupMobileAppMode();
 initializeAccessibility();
+window.lucide?.createIcons();
 
 const googleBtn = document.getElementById('googleLoginBtn');
 const errorEl = document.getElementById('loginError');
@@ -107,6 +109,8 @@ document.querySelectorAll('[data-legal]').forEach(button => {
 });
 
 const emailForm = document.getElementById('emailAuthForm');
+const nameField = document.getElementById('authNameField');
+const nameInput = document.getElementById('authName');
 const emailInput = document.getElementById('authEmail');
 const passwordInput = document.getElementById('authPassword');
 const submitBtn = document.getElementById('emailAuthSubmit');
@@ -117,6 +121,8 @@ let isRegisterMode = false;
 function updateEmailFormMode() {
   submitBtn.textContent = isRegisterMode ? 'Criar conta' : 'Entrar';
   toggleModeBtn.textContent = isRegisterMode ? 'Já tenho conta' : 'Criar conta';
+  nameField.classList.toggle('hidden', !isRegisterMode);
+  nameInput.required = isRegisterMode;
 }
 
 toggleModeBtn.addEventListener('click', () => {
@@ -135,7 +141,9 @@ emailForm.addEventListener('submit', async event => {
   try {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    const user = isRegisterMode ? await registerWithEmail(email, password) : await loginWithEmail(email, password);
+    const user = isRegisterMode
+      ? await registerWithEmail(email, password, nameInput.value.trim())
+      : await loginWithEmail(email, password);
     await withTimeout(ensureUserProfile(user), 8000).catch(profileError =>
       console.warn('Perfil inicial será preparado novamente no próximo acesso:', profileError.message));
     navigateHome();

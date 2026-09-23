@@ -48,41 +48,55 @@
       <!-- Mensagem de erro (escondida por padrão, controlada via JS) -->
       <p id="loginError" role="alert" aria-live="assertive" class="hidden text-danger text-xs font-medium text-center"></p>
 
-      <!-- Botão principal: Entrar com Google -->
-      <button
-        type="button"
-        id="googleLoginBtn"
-        class="w-full bg-white text-black font-bold text-sm rounded-2xl py-4 flex items-center justify-center gap-3 transition-fluid active:scale-[0.98] hover:shadow-glow-sm"
-      >
-        <!-- Logo oficial do Google em SVG (multi-cor) -->
-        <svg class="w-5 h-5" viewBox="0 0 48 48">
-          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.8-.4-4.5z"/>
-          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/>
-          <path fill="#4CAF50" d="M24 45c5.5 0 10.5-2.1 14.3-5.5l-6.6-5.6C29.6 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/>
-          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.9 36 44 30.6 44 24c0-1.4-.1-2.8-.4-3.5z"/>
-        </svg>
-        Continuar com Google
-      </button>
+      <div class="glass-card rounded-3xl border border-neon/15 p-5 shadow-glow-sm">
 
-      <!-- Divisor -->
-      <div class="flex items-center gap-3 py-1">
-        <span class="flex-1 h-px bg-white/10"></span>
-        <span class="text-[11px] text-gray-400 font-medium">OU COM E-MAIL</span>
-        <span class="flex-1 h-px bg-white/10"></span>
-      </div>
+        <!-- Botão principal: Entrar com Google -->
+        <button
+          type="button"
+          id="googleLoginBtn"
+          class="w-full bg-white text-black font-bold text-sm rounded-2xl py-4 flex items-center justify-center gap-3 transition-fluid active:scale-[0.98] hover:shadow-glow-sm"
+        >
+          <!-- Logo oficial do Google em SVG (multi-cor) -->
+          <svg class="w-5 h-5" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.8-.4-4.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 45c5.5 0 10.5-2.1 14.3-5.5l-6.6-5.6C29.6 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.9 36 44 30.6 44 24c0-1.4-.1-2.8-.4-3.5z"/>
+          </svg>
+          Continuar com Google
+        </button>
 
-      <!-- Login/cadastro com e-mail e senha -->
-      <form id="emailAuthForm" class="space-y-3" novalidate>
-        <label for="authEmail" class="sr-only">E-mail</label>
-        <input id="authEmail" name="email" type="email" autocomplete="email" required placeholder="E-mail" class="w-full min-h-12 rounded-2xl mol-field px-4 text-sm text-white placeholder:text-gray-500">
-        <label for="authPassword" class="sr-only">Senha</label>
-        <input id="authPassword" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Senha" class="w-full min-h-12 rounded-2xl mol-field px-4 text-sm text-white placeholder:text-gray-500">
-        <button type="submit" id="emailAuthSubmit" class="w-full min-h-12 rounded-2xl bg-neon text-sm font-bold text-black transition-fluid active:scale-[0.98]">Entrar</button>
-        <div class="flex items-center justify-between text-xs">
-          <button type="button" id="toggleAuthMode" class="text-gray-400 underline underline-offset-2">Criar conta</button>
-          <button type="button" id="forgotPassword" class="text-gray-400 underline underline-offset-2">Esqueci a senha</button>
+        <!-- Divisor -->
+        <div class="flex items-center gap-3 py-4">
+          <span class="flex-1 h-px bg-white/10"></span>
+          <span class="text-[11px] text-gray-400 font-medium">OU COM E-MAIL</span>
+          <span class="flex-1 h-px bg-white/10"></span>
         </div>
-      </form>
+
+        <!-- Login/cadastro com e-mail e senha -->
+        <form id="emailAuthForm" class="space-y-3" novalidate>
+          <div id="authNameField" class="relative hidden">
+            <i data-lucide="user" class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"></i>
+            <label for="authName" class="sr-only">Nome</label>
+            <input id="authName" name="name" type="text" autocomplete="name" placeholder="Nome" class="w-full min-h-12 rounded-2xl mol-field pl-11 pr-4 text-sm text-white placeholder:text-gray-500">
+          </div>
+          <div class="relative">
+            <i data-lucide="mail" class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"></i>
+            <label for="authEmail" class="sr-only">E-mail</label>
+            <input id="authEmail" name="email" type="email" autocomplete="email" required placeholder="E-mail" class="w-full min-h-12 rounded-2xl mol-field pl-11 pr-4 text-sm text-white placeholder:text-gray-500">
+          </div>
+          <div class="relative">
+            <i data-lucide="lock-keyhole" class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"></i>
+            <label for="authPassword" class="sr-only">Senha</label>
+            <input id="authPassword" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Senha" class="w-full min-h-12 rounded-2xl mol-field pl-11 pr-4 text-sm text-white placeholder:text-gray-500">
+          </div>
+          <button type="submit" id="emailAuthSubmit" class="w-full min-h-12 rounded-2xl bg-neon text-sm font-bold text-black transition-fluid active:scale-[0.98] hover:shadow-glow-sm">Entrar</button>
+          <div class="flex items-center justify-between text-xs">
+            <button type="button" id="toggleAuthMode" class="text-gray-400 underline underline-offset-2">Criar conta</button>
+            <button type="button" id="forgotPassword" class="text-gray-400 underline underline-offset-2">Esqueci a senha</button>
+          </div>
+        </form>
+      </div>
 
       <!-- Termos atualizados para Mol -->
       <p class="text-[11px] text-gray-400 text-center leading-relaxed px-4">

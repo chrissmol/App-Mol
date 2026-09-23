@@ -17,6 +17,7 @@ import {
   signInWithRedirect,
   signOut,
   onAuthStateChanged,
+  updateProfile,
 } from 'firebase/auth';
 import {
   doc,
@@ -108,11 +109,12 @@ export async function loginWithEmail(email, password) {
 }
 
 /** Cria uma conta nova com e-mail/senha. */
-export async function registerWithEmail(email, password) {
+export async function registerWithEmail(email, password, name) {
   assertAuthAttemptAllowed();
   try {
     await authReady;
     const result = await createUserWithEmailAndPassword(auth, email, password);
+    if (name) await updateProfile(result.user, { displayName: name });
     clearAuthThrottle();
     return result.user;
   } catch (error) {
