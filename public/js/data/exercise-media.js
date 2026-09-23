@@ -24,7 +24,22 @@ export const EXERCISE_MEDIA = {
   'Tríceps na Polia com Barra Reta (Invertida/Supinada)': 'Triceps_Pushdown',
   'Elevação Pélvica na Máquina Smith': 'Barbell_Hip_Thrust',
   'Panturrilha em Pé no Smith com Pés em Rotação Interna (Foco Lateral)': 'Standing_Calf_Raises',
-  'Prancha Frontal com Apoio nos Antebraços e Elevação de Perna': 'Plank'
+  'Prancha Frontal com Apoio nos Antebraços e Elevação de Perna': 'Plank',
+  'Supino Declinado (Barra)': 'Decline_Barbell_Bench_Press',
+  'Crucifixo Inclinado (Halter)': 'Incline_Dumbbell_Flyes',
+  'Crossover com Polia Alta (Inclinado para frente)': 'Cable_Crossover',
+  'Remada Unilateral (Serrote com Halter)': 'One-Arm_Dumbbell_Row',
+  'Remada Cavalinho com Apoio de Peito (Chest-supported T-Bar)': 'Lying_T-Bar_Row',
+  'Elevação Frontal com Anilhas': 'Front_Dumbbell_Raise',
+  'Crucifixo Inverso na Polia Alta (Cruzado / Face Pull Style)': 'Face_Pull',
+  'Rosca Martelo Alternada com Halter': 'Alternate_Hammer_Curl',
+  'Rosca Scott com Barra Reta': 'Preacher_Curl',
+  'Paralelas com Carga (Cinto de Mergulho)': 'Parallel_Bar_Dip',
+  'Tríceps Francês com Barra W': 'Lying_Triceps_Press',
+  'Panturrilha Sentado com Barra Livre sobre os Joelhos': 'Barbell_Seated_Calf_Raise',
+  'Prancha Lateral com Elevação de Quadril': 'Side_Bridge',
+  'Elevação de Pernas Estendidas na Barra Fixa': 'Hanging_Leg_Raise',
+  'Stiff com Halteres no Banco Inclinado (De Costas)': 'Stiff-Legged_Dumbbell_Deadlift'
 };
 
 // A base precisa ser um literal estático em new URL(..., import.meta.url):
