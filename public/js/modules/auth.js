@@ -21,6 +21,7 @@ import {
 } from 'firebase/auth';
 import { auth, authReady, getDb, googleProvider } from "../config/firebase-config.js";
 import { subscribeAfterAuthReady } from '../utils/auth-state.js';
+import { clearUserCaches } from '../utils/storage.js';
 
 const AUTH_THROTTLE_KEY = 'mol-auth-throttle-v1';
 const AUTH_THROTTLE_WINDOW_MS = 10 * 60 * 1000;
@@ -174,6 +175,7 @@ export async function ensureUserProfile(user) {
 
 /** Desconecta o usuário atual. */
 export function logout() {
+  clearUserCaches();
   return signOut(auth);
 }
 
