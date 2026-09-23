@@ -19,4 +19,9 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: /code-review high --comment
+          prompt: |
+            Review the diff of this pull request for correctness bugs, security
+            issues, and unnecessary complexity. Read the changed files and their
+            callers as needed to understand the change, not just the diff lines.
+            Post inline comments on the specific lines with real, high-confidence
+            findings. If you find nothing worth flagging, do not post a comment.
