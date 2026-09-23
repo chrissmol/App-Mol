@@ -44,6 +44,44 @@ export function showToast(message, type = "error") {
   }, 3200);
 }
 
+const CONFETTI_COLORS = ['#57d493', '#1e7349', '#e1b12c', '#ffffff', '#7cffbd'];
+
+/**
+ * Dispara uma rajada de confete (sem dependência externa) pra celebrar
+ * um momento — recorde pessoal, treino concluído. Respeita
+ * prefers-reduced-motion (não anima nada, só o toast segue avisando).
+ * @param {{ count?: number, originY?: number }} [options]
+ */
+export function celebrate({ count = 22, originY = 0.32 } = {}) {
+  const reducedMotion = document.documentElement.dataset.reduceMotion === 'true'
+    || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (reducedMotion) return;
+  const container = document.createElement('div');
+  container.className = 'mol-confetti-burst';
+  container.setAttribute('aria-hidden', 'true');
+  const pieces = Array.from({ length: count }, () => {
+    const piece = document.createElement('span');
+    const drift = (Math.random() - 0.5) * 70;
+    const fall = 55 + Math.random() * 30;
+    const spin = Math.round((Math.random() - 0.5) * 560);
+    const delay = Math.random() * 0.18;
+    const duration = 1.4 + Math.random() * 0.9;
+    piece.className = 'mol-confetti-piece';
+    piece.style.left = `${50 + (Math.random() - 0.5) * 60}%`;
+    piece.style.top = `${originY * 100}%`;
+    piece.style.setProperty('--mol-confetti-color', CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]);
+    piece.style.setProperty('--mol-confetti-drift', `${drift}vw`);
+    piece.style.setProperty('--mol-confetti-fall', `${fall}vh`);
+    piece.style.setProperty('--mol-confetti-spin', `${spin}deg`);
+    piece.style.animationDelay = `${delay}s`;
+    piece.style.animationDuration = `${duration}s`;
+    return piece;
+  });
+  pieces.forEach(piece => container.appendChild(piece));
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 2600);
+}
+
 /** Escapa conteúdo textual antes de inseri-lo em um template HTML. */
 export function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>'"]/g, character => ({

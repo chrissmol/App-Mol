@@ -3475,3 +3475,33 @@ html[data-theme="light"] body .mol-brand img {
   width: .55rem;
   border-radius: 999px;
 }
+
+.mol-confetti-burst {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mol-confetti-piece {
+  position: absolute;
+  width: .5rem;
+  height: .8rem;
+  background: var(--mol-confetti-color, var(--mol-neon));
+  border-radius: .15rem;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation-name: mol-confetti-fall;
+  animation-timing-function: cubic-bezier(.15, .55, .35, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes mol-confetti-fall {
+  0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
+  85% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--mol-confetti-drift, 0)), var(--mol-confetti-fall, 60vh)) rotate(var(--mol-confetti-spin, 360deg));
+  }
+}

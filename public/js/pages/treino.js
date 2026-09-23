@@ -4,7 +4,7 @@ import { db } from '../config/firebase-config.js';
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { activateDialog, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
+import { activateDialog, celebrate, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { SET_METHODS, cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, defaultMethodDetails, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, setMethod, setSummary, setVolume, validateContextualSet, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
 import { matchesExerciseSearch, progressionAdvice, rankExerciseSubstitutes } from '../modules/workout-coach.js';
@@ -666,7 +666,7 @@ function avisarSeRecordePessoal(nomeExercicio, serie) {
   const atual = estimate1RM(serie.kg, serie.reps);
   if (!atual) return;
   const anterior = melhorE1rmHistorico(nomeExercicio);
-  if (anterior > 0 && atual > anterior) showToast(`🏆 Novo recorde em ${nomeExercicio}!`, 'success');
+  if (anterior > 0 && atual > anterior) { celebrate(); showToast(`🏆 Novo recorde em ${nomeExercicio}!`, 'success'); }
 }
 
 function novosRecordesDaSessao(exercicios) {
@@ -741,6 +741,7 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDe
   modal.setAttribute('aria-describedby', 'workout-summary-description');
   modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p>${destaqueHTML}${mapaMuscularHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
   document.body.appendChild(modal);
+  if (records > 0) celebrate({ count: 32 });
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   modal.querySelector('[data-close]').onclick = close;
   modal.querySelector('[data-share]').onclick = () => void compartilharResumoTreino({ series, volume, exercicios, minutos, records, comparison });
