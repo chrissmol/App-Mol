@@ -1,8 +1,16 @@
-const CACHE_VERSION = 'mol-app-shell-v3';
+const CACHE_VERSION = 'mol-app-shell-v4';
 const SHELL_URLS = [
   '/',
   '/index.html',
   '/pages/login.html',
+  '/pages/treino.html',
+  '/pages/dieta.html',
+  '/pages/perfil.html',
+  '/pages/historico.html',
+  '/pages/progresso.html',
+  '/pages/evolucao.html',
+  '/pages/configuracoes.html',
+  '/pages/dados-pessoais.html',
   '/css/style.css',
   '/css/tailwind.css',
   '/theme-bootstrap.js',
@@ -38,18 +46,16 @@ async function cacheFirst(request) {
   return response;
 }
 
-async function networkFirstNavigation(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_VERSION);
-      cache.put(request, response.clone());
-    }
+// Abre na hora com a página em cache e atualiza a cópia em segundo plano (vale na próxima abertura).
+async function staleWhileRevalidateNavigation(request, event) {
+  const cached = await caches.match(request);
+  const refresh = fetch(request).then(async response => {
+    if (response.ok) (await caches.open(CACHE_VERSION)).put(request, response.clone());
     return response;
-  } catch {
-    return caches.match(request)
-      .then(response => response || caches.match('/index.html'));
-  }
+  });
+  if (!cached) return refresh.catch(() => caches.match('/index.html'));
+  event.waitUntil(refresh.catch(() => undefined));
+  return cached;
 }
 
 self.addEventListener('fetch', event => {
@@ -58,7 +64,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirstNavigation(request));
+    event.respondWith(staleWhileRevalidateNavigation(request, event));
     return;
   }
   if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/css/') || url.pathname.startsWith('/vendor/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.svg')) {

@@ -34,3 +34,26 @@ describe('fila de treinos offline', () => {
     expect(pendingSessions('b')).toHaveLength(1);
   });
 });
+
+describe('caches de dados persistentes', () => {
+  // Fake de Storage: itens são propriedades próprias (Object.keys funciona como no navegador).
+  const fakeStorage = () => Object.defineProperties({}, {
+    getItem: { value(k) { return Object.hasOwn(this, k) ? this[k] : null; } },
+    setItem: { value(k, v) { this[k] = String(v); } },
+    removeItem: { value(k) { delete this[k]; } }
+  });
+
+  it('guarda caches no localStorage e apaga só eles no logout', async () => {
+    const local = fakeStorage(); const session = fakeStorage();
+    globalThis.window = { localStorage: local, sessionStorage: session };
+    const storage = await import('../js/utils/storage.js');
+    storage.setSessionItem('mol-profile-cache-u1', '1');
+    storage.setSessionItem('mol-login-success', 'true');
+    local.setItem('mol-pending-sessions', '[]');
+    expect(local.getItem('mol-profile-cache-u1')).toBe('1');
+    expect(session.getItem('mol-login-success')).toBe('true');
+    storage.clearUserCaches();
+    expect(local.getItem('mol-profile-cache-u1')).toBeNull();
+    expect(local.getItem('mol-pending-sessions')).toBe('[]');
+  });
+});

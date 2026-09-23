@@ -6,7 +6,7 @@ import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, ter
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
-import { removeLocalItemsWithPrefix } from '../utils/storage.js';
+import { clearUserCaches, removeLocalItemsWithPrefix } from '../utils/storage.js';
 import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
@@ -498,6 +498,7 @@ watchProtectedPage(async user => {
     const button = $('sign-out');
     setButtonLoading(button, true);
     try {
+      clearUserCaches();
       await signOut(auth);
       location.href = './login.html';
     } catch (error) {
