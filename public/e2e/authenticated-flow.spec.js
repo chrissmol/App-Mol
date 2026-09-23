@@ -33,7 +33,7 @@ test('login, navegação privada, dieta e tema permanecem estáveis', async ({ p
   await expect(page.getByRole('heading', { name: /Dieta|Diet/ })).toBeVisible();
   await expect(page.locator('#diet-content')).toBeVisible();
 
-  await page.goto('/pages/configuracoes.html');
+  await page.goto('/pages/configuracoes.html#aparencia');
   await page.getByRole('button', { name: /Claro|Light/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.goBack();
