@@ -33,7 +33,9 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 - Perfil com peso, altura, objetivo, unidades, progresso corporal e backup.
 - Tema claro, escuro e opção de seguir o sistema do aparelho.
 - Experiência mobile/PWA com bloqueio de zoom, safe-area e navegação inferior.
+- Login com Google ou e-mail e senha, com recuperação de senha.
 - Testes unitários, testes E2E mobile, validação HTML, build e checks de segurança.
+- Revisão automática de código por IA em todo pull request.
 
 ## Stack
 
@@ -42,8 +44,8 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 | Front-end | HTML, CSS e JavaScript modular |
 | UI | Tailwind CSS + design system próprio |
 | Build | Vite |
-| PWA | vite-plugin-pwa + Workbox |
-| Autenticação | Firebase Authentication |
+| PWA | Service worker próprio (cache do app shell) + manifest |
+| Autenticação | Firebase Authentication (Google e e-mail/senha) |
 | Banco | Cloud Firestore |
 | Hospedagem | Firebase Hosting |
 | Testes | Vitest, Playwright, html-validate |
@@ -87,4 +89,4 @@ firebase deploy --only hosting
 
 ## Status
 
-Produto em desenvolvimento ativo. O foco atual é estabilidade mobile, confiabilidade do login, qualidade visual, dados privados por usuário e fluxo profissional para treino e dieta.
+Produto em desenvolvimento ativo. O foco atual é estabilidade mobile, qualidade visual, dados privados por usuário e fluxo profissional para treino e dieta.
