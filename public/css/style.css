@@ -1183,7 +1183,7 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
 .app-surface main > .pt-3:first-child,
 .app-surface main > .pt-6:first-child,
 .app-surface main > .pt-8:first-child {
-  padding-top: 0 !important;
+  padding-top: 0;
 }
 .app-surface .sticky.top-0 {
   top: env(safe-area-inset-top, 0px);
@@ -1341,10 +1341,10 @@ html[data-theme="light"] body.app-surface .text-gray-600 { color: #52645a; }
   padding: .5rem 0;
   border: 0;
   background: transparent;
-  color: var(--mol-muted-strong) !important;
+  color: var(--mol-muted-strong);
 }
 
-#back:active { color: #2fbf78 !important; }
+#back:active { color: #2fbf78; }
 
 
 /* Navegação principal: dock flutuante no toque, sidebar em telas com mouse. */
@@ -1581,7 +1581,7 @@ body.has-app-nav {
 }
 
 /* Regra global de cabeçalho: retorno interno e marca nunca aparecem juntos. */
-body:has(#back) .mol-brand { display: none !important; }
+body:has(#back) .mol-brand { display: none; }
 
 select {
   color-scheme: dark;
@@ -1750,7 +1750,7 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
   width: min(21.25rem, calc(100vw - 1.1rem));
   max-width: 21.25rem;
   margin-inline: auto;
-  padding: 1rem !important;
+  padding: 1rem;
 }
 
 .rest-mini-button {
@@ -1991,7 +1991,7 @@ html[data-theme="light"] body .rest-ring::before {
 }
 
 .workout-compact .workout-exercise-card:not(.is-current) { display: none; }
-.workout-compact .workout-exercise-card.is-current { border-color: rgba(47,191,120,.35) !important; box-shadow: 0 12px 32px rgba(30,115,73,.12); }
+.workout-compact .workout-exercise-card.is-current { border-color: rgba(47,191,120,.35); box-shadow: 0 12px 32px rgba(30,115,73,.12); }
 .workout-compact #btn-add-exercicio { display: none; }
 
 /* Ficha de treino clara: cartões brancos, linhas discretas e campos legíveis. */
@@ -2865,7 +2865,7 @@ html[data-reduce-motion="true"] *::after {
 
 html[data-theme="light"] body #back,
 html[data-theme="light"] body .mol-brand {
-  color: #35463e !important;
+  color: #35463e;
   opacity: 1;
 }
 
