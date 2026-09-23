@@ -82,7 +82,7 @@ const guidanceRules = [
   },
   {
     key: 'flexora',
-    terms: ['flexora', 'stiff', 'romeno', 'good morning', 'nórdica', 'nordica', 'flexão de pernas', 'flexão de joelhos', 'ponte para posterior'],
+    terms: ['flexora', 'mesa flexora', 'stiff', 'romeno', 'good morning', 'nórdica', 'nordica', 'flexão de pernas', 'flexão de joelhos', 'ponte para posterior'],
     execucao: 'Inicie pelo quadril: mantenha a coluna neutra, leve o quadril para trás e sinta alongar o posterior. Suba contraindo glúteos, sem hiperestender a lombar.',
     erros: 'Arredondar a lombar, dobrar demais o joelho no stiff, transformar o movimento em agachamento e usar balanço.',
   },
@@ -142,7 +142,7 @@ const guidanceRules = [
   },
   {
     key: 'mergulho',
-    terms: ['mergulho', 'dips', 'paralelas'],
+    terms: ['mergulho', 'dips', 'dips machine', 'paralelas'],
     execucao: 'Desça com o tronco levemente inclinado à frente até um ângulo confortável no ombro e empurre de volta sem travar o cotovelo com força no topo.',
     erros: 'Descer além do conforto do ombro, deixar os ombros subirem até o pescoço e usar balanço das pernas.',
   },
@@ -160,31 +160,31 @@ const guidanceRules = [
   },
   {
     key: 'abdomen',
-    terms: ['abdominal', 'prancha', 'russian twist', 'woodchopper', 'hollow body', 'ab wheel', 'v-up', 'core anti-rotação', 'elevação de joelhos'],
+    terms: ['abdominal', 'prancha', 'prancha lateral', 'russian twist', 'woodchopper', 'hollow body', 'ab wheel', 'v-up', 'core anti-rotação', 'elevação de joelhos', 'elevação de pernas'],
     execucao: 'Ative o abdômen antes de mover, curve ou estabilize a coluna com controle e evite puxar o pescoço com as mãos.',
     erros: 'Puxar o pescoço, usar impulso das pernas ou braços e prender a respiração o treino inteiro.',
   },
   {
     key: 'antebraco',
-    terms: ['punho', 'pinça com anilhas', 'fazendeiro', "farmer"],
+    terms: ['punho', 'pinça com anilhas', 'fazendeiro', 'farmer', 'suspensão na barra'],
     execucao: 'Apoie o antebraço estável e mova só o punho ou os dedos, com amplitude completa e controle na volta.',
     erros: 'Balançar o antebraço inteiro, usar carga alta demais e encurtar a amplitude do punho.',
   },
   {
     key: 'abducao',
-    terms: ['abdutora', 'adutora', 'abdução de quadril', 'adução de quadril', 'clamshell', 'frog pump'],
+    terms: ['abdutora', 'adutora', 'abdução de quadril', 'adução de quadril', 'clamshell', 'frog pump', 'caminhada lateral'],
     execucao: 'Mantenha o tronco estável e mova só o quadril, contraindo no ponto de maior abertura ou fechamento antes de voltar devagar.',
     erros: 'Balançar o tronco, usar impulso e deixar a carga jogar a perna de volta sem controle.',
   },
   {
     key: 'afundo',
-    terms: ['afundo', 'passada', 'step-up', 'caixotão'],
+    terms: ['afundo', 'passada', 'step-up', 'caixotão', 'lateral step-up'],
     execucao: 'Dê o passo mantendo o tronco ereto, desça até o joelho de trás quase tocar o chão e empurre pelo calcanhar da frente pra voltar.',
     erros: 'Joelho da frente ultrapassar muito a ponta do pé, perder o equilíbrio lateral e apoiar peso no joelho de trás.',
   },
   {
     key: 'coice',
-    terms: ['glúteo', 'coice', 'extensão de quadril', 'glute drive', 'pull-through'],
+    terms: ['glúteo', 'coice', 'extensão de quadril', 'glute drive', 'pull-through', 'glúteo na polia'],
     execucao: 'Mantenha a coluna neutra e o tronco estável, estenda o quadril contraindo o glúteo sem compensar com a lombar.',
     erros: 'Arquear a lombar pra ganhar amplitude, balançar o tronco e usar carga que impede o controle no retorno.',
   },
@@ -195,9 +195,30 @@ const fallbackGuidance = {
   erros: 'Aumentar a carga antes de dominar a técnica, usar impulso, encurtar a fase de retorno e ignorar desconforto articular.',
 };
 
+// Casa um termo só quando ele aparece como palavra/frase inteira, não como
+// substring solta — sem isso, o termo 'lateral' (categoria de ombro) batia
+// em qualquer exercício "Unilateral", e por aí vai. Também retorna o
+// tamanho do termo casado: quando mais de uma categoria bate no mesmo
+// nome, a mais específica (termo mais longo) vence, em vez de depender da
+// ordem do array.
+function wholeWordMatch(name, term) {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'u').test(name);
+}
+
 function matchingGuidanceRule(exercise = {}) {
   const name = String(exercise.nome || '').toLocaleLowerCase('pt-BR');
-  return guidanceRules.find(item => item.terms.some(term => name.includes(term)));
+  let best = null;
+  let bestLength = -1;
+  for (const rule of guidanceRules) {
+    for (const term of rule.terms) {
+      if (term.length > bestLength && wholeWordMatch(name, term)) {
+        best = rule;
+        bestLength = term.length;
+      }
+    }
+  }
+  return best;
 }
 
 export function exerciseGuidance(exercise = {}) {
