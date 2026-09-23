@@ -86,13 +86,14 @@ function openFrameModal() {
   if (!currentAccount) return;
   document.getElementById('frame-picker')?.remove();
   const current = normalizeFrame(currentProfile.avatarFrame, currentAccount);
-  const optionsHTML = FRAME_OPTIONS.map(option => {
-    const unlocked = unlockedFrame(option, currentAccount);
-    const detail = unlocked
-      ? (current === option.id ? 'Em uso' : 'Disponível')
-      : (option.adminOnly ? 'Exclusivo da equipe Mol' : `Desbloqueie com ${option.required} treinos`);
-    return `<button type="button" data-frame="${option.id}" class="avatar-frame-choice avatar-frame-choice--${option.id} ${current === option.id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === option.id}"><span class="frame-choice__dot"></span><span><strong>${option.label}</strong><small>${detail}</small></span></button>`;
-  }).join('');
+  const admin = isAdmin(currentAccount);
+  const optionsHTML = FRAME_OPTIONS
+    .filter(option => !option.adminOnly || admin)
+    .map(option => {
+      const unlocked = unlockedFrame(option, currentAccount);
+      const detail = unlocked ? (current === option.id ? 'Em uso' : 'Disponível') : `Desbloqueie com ${option.required} treinos`;
+      return `<button type="button" data-frame="${option.id}" class="avatar-frame-choice avatar-frame-choice--${option.id} ${current === option.id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === option.id}"><span class="frame-choice__dot"></span><span><strong>${option.label}</strong><small>${detail}</small></span></button>`;
+    }).join('');
   const modal = document.createElement('div');
   modal.id = 'frame-picker';
   modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
