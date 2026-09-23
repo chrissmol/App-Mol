@@ -1,5 +1,5 @@
 import { onAuthStateChanged } from 'firebase/auth';
-import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase-config.js';
 
 const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
@@ -10,6 +10,11 @@ let errorQueue = [];
 const MAX_ERROR_QUEUE = 20;
 const ERROR_DEDUP_WINDOW_MS = 60 * 1000;
 const recentErrors = new Map();
+// Retenção de 90 dias: tempo de sobra pra investigar um bug relatado
+// sem guardar e-mail/stack de usuário indefinidamente. A limpeza em si
+// depende de uma política de TTL ativada no console do Firestore para
+// o campo expiresAt (não configurável por regra nem por código).
+const CLIENT_ERROR_TTL_DAYS = 90;
 
 function isAdmin(user) { return String(user?.email || '').toLowerCase() === ADMIN_EMAIL; }
 function safeText(value, max = 2000) { return String(value || '').slice(0, max); }
@@ -25,7 +30,8 @@ async function flushError(error) {
   if (Date.now() - previous < ERROR_DEDUP_WINDOW_MS) return;
   recentErrors.set(dedupKey, Date.now());
   if (recentErrors.size > 100) recentErrors.delete(recentErrors.keys().next().value);
-  const payload = { userId: currentUser.uid, email: safeText(currentUser.email, 254), message, stack: safeText(error.stack, 4000), page: location.pathname, url: safeText(`${location.origin}${location.pathname}`, 500), userAgent: navigator.userAgent.slice(0, 500), createdAt: serverTimestamp() };
+  const expiresAt = Timestamp.fromMillis(Date.now() + CLIENT_ERROR_TTL_DAYS * 24 * 60 * 60 * 1000);
+  const payload = { userId: currentUser.uid, email: safeText(currentUser.email, 254), message, stack: safeText(error.stack, 4000), page: location.pathname, url: safeText(`${location.origin}${location.pathname}`, 500), userAgent: navigator.userAgent.slice(0, 500), createdAt: serverTimestamp(), expiresAt };
   try { await addDoc(collection(db, 'clientErrors'), payload); } catch { errorQueue.push(payload); if (errorQueue.length > MAX_ERROR_QUEUE) errorQueue.shift(); }
 }
 async function retryQueuedErrors() {

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, Timestamp, updateDoc, where } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 const projectId = 'demo-mol';
@@ -103,5 +103,30 @@ describe('regras do Firestore', () => {
     await assertSucceeds(getDoc(reference));
     await assertFails(getDocs(query(collection(owner, 'dietas'), where('userId', '==', 'user-a'))));
     await assertFails(getDoc(doc(user('user-b'), 'dietas', 'user-a')));
+  });
+
+  it('limita expiresAt de clientErrors a até um ano no futuro e mantém isolamento entre contas', async () => {
+    const owner = user('user-a');
+    const admin = environment.authenticatedContext('admin-uid', { email: 'chrisouzamol@gmail.com' }).firestore();
+    const days = value => Timestamp.fromMillis(Date.now() + value * 24 * 60 * 60 * 1000);
+    await assertSucceeds(setDoc(doc(owner, 'clientErrors', 'erro-a'), { userId: 'user-a', message: 'falha', createdAt: days(0), expiresAt: days(90) }));
+    await assertFails(setDoc(doc(owner, 'clientErrors', 'erro-longo'), { userId: 'user-a', message: 'falha', createdAt: days(0), expiresAt: days(400) }));
+    await assertFails(setDoc(doc(owner, 'clientErrors', 'erro-alheio'), { userId: 'user-b', message: 'falha', createdAt: days(0), expiresAt: days(90) }));
+    await assertFails(getDoc(doc(owner, 'clientErrors', 'erro-a')));
+    await assertSucceeds(getDoc(doc(admin, 'clientErrors', 'erro-a')));
+    await assertFails(deleteDoc(doc(owner, 'clientErrors', 'erro-a')));
+    await assertSucceeds(deleteDoc(doc(admin, 'clientErrors', 'erro-a')));
+  });
+
+  it('permite ao dono apagar o próprio presence e bloqueia acesso alheio', async () => {
+    const owner = user('user-a');
+    const other = user('user-b');
+    const admin = environment.authenticatedContext('admin-uid', { email: 'chrisouzamol@gmail.com' }).firestore();
+    const reference = doc(owner, 'presence', 'user-a');
+    await assertSucceeds(setDoc(reference, { userId: 'user-a', online: true }));
+    await assertFails(getDoc(doc(other, 'presence', 'user-a')));
+    await assertSucceeds(getDoc(doc(admin, 'presence', 'user-a')));
+    await assertFails(deleteDoc(doc(other, 'presence', 'user-a')));
+    await assertSucceeds(deleteDoc(reference));
   });
 });

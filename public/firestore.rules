@@ -170,14 +170,17 @@ service cloud.firestore {
     }
 
     function validClientError() {
-      return request.resource.data.keys().hasOnly(['userId', 'email', 'message', 'stack', 'page', 'url', 'userAgent', 'createdAt'])
+      return request.resource.data.keys().hasOnly(['userId', 'email', 'message', 'stack', 'page', 'url', 'userAgent', 'createdAt', 'expiresAt'])
         && request.resource.data.userId == request.auth.uid
         && (!('email' in request.resource.data) || request.resource.data.email is string && request.resource.data.email.size() <= 254)
         && (!('message' in request.resource.data) || request.resource.data.message is string && request.resource.data.message.size() <= 1000)
         && (!('stack' in request.resource.data) || request.resource.data.stack is string && request.resource.data.stack.size() <= 4000)
         && (!('page' in request.resource.data) || request.resource.data.page is string && request.resource.data.page.size() <= 240)
         && (!('url' in request.resource.data) || request.resource.data.url is string && request.resource.data.url.size() <= 500)
-        && (!('userAgent' in request.resource.data) || request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 500);
+        && (!('userAgent' in request.resource.data) || request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 500)
+        // Teto de 1 ano evita que um cliente adulterado marque expiresAt
+        // longe demais no futuro e escape da limpeza automática por TTL.
+        && (!('expiresAt' in request.resource.data) || request.resource.data.expiresAt is timestamp && request.resource.data.expiresAt < request.time + duration.value(366, 'd'));
     }
 
     match /users/{userId} {
