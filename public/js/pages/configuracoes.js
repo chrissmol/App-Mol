@@ -388,6 +388,9 @@ async function deleteUserData(user) {
   const finalBatch = writeBatch(db);
   if (diet.exists()) finalBatch.delete(dietReference);
   finalBatch.delete(doc(db, 'users', user.uid));
+  // As regras liberam delete do próprio presence/{uid}, mas ele nunca era
+  // apagado aqui — sobrava indefinidamente com nome/e-mail da conta excluída.
+  finalBatch.delete(doc(db, 'presence', user.uid));
   await finalBatch.commit();
 }
 
