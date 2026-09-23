@@ -29,5 +29,6 @@ jobs:
           cache: npm
           cache-dependency-path: public/package-lock.json
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run check:full
       - run: npx firebase-tools deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }}
