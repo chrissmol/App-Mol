@@ -192,6 +192,170 @@ const POSES = {
         `${groundShadow(80, 40)}${base}${armHighlight}${limb('M58,80 Q46,66 44,50', 10)}${limb('M102,80 Q114,66 116,50', 10)}${joint(44, 48, 6, BAR)}${joint(116, 48, 6, BAR)}`
       ];
     }
+  },
+  crucifixo: {
+    view: 'front',
+    label: 'Peito em destaque',
+    build: () => {
+      const base = standingFrontBase();
+      const chest = hrect(68, 46, 24, 30, 12);
+      return [
+        `${groundShadow(80, 40)}${base}${chest}${limb('M64,50 Q42,48 22,46', 11)}${limb('M96,50 Q118,48 138,46', 11)}${joint(22, 46, 7, BAR)}${joint(138, 46, 7, BAR)}`,
+        `${groundShadow(80, 40)}${base}${chest}${limb('M64,52 Q70,60 80,66', 11)}${limb('M96,52 Q90,60 80,66', 11)}${joint(80, 68, 6, BAR)}`
+      ];
+    }
+  },
+  flexao: {
+    view: 'side',
+    label: 'Peito em destaque',
+    build: () => {
+      const floor = `<rect x="18" y="112" width="124" height="6" rx="3" fill="color-mix(in srgb, var(--mol-border) 55%, transparent)"/>`;
+      const feet = `<ellipse cx="26" cy="110" rx="8" ry="4" fill="${BODY}"/>`;
+      const bodyUp = `${limb('M26,108 Q64,96 100,82', 14)}${joint(100, 82, 8)}`;
+      const bodyDown = `${limb('M26,108 Q64,102 96,96', 14)}${joint(96, 96, 8)}`;
+      const headUp = joint(114, 74, 9);
+      const headDown = joint(108, 90, 9);
+      const chestUp = hrect(76, 76, 28, 16, 8);
+      const chestDown = hrect(72, 90, 28, 16, 8);
+      return [
+        `${groundShadow(84, 60)}${floor}${feet}${bodyDown}${chestDown}${headDown}${hlimb('M96,96 Q80,104 98,112', 10)}`,
+        `${groundShadow(84, 60)}${floor}${feet}${bodyUp}${chestUp}${headUp}${hlimb('M100,82 Q100,96 100,112', 10)}`
+      ];
+    }
+  },
+  pullover: {
+    view: 'side',
+    label: 'Peito e dorsal em destaque',
+    build: () => {
+      const body = lyingBase(true);
+      const legs = limb('M46,80 Q30,92 20,120', 15);
+      return [
+        `${body}${legs}${limb('M100,72 Q100,50 88,34', 12)}${plate(84, 30)}`,
+        `${body}${legs}${limb('M100,72 Q99,56 98,45', 12)}${plate(98, 42.5)}`
+      ];
+    }
+  },
+  mergulho: {
+    view: 'side',
+    label: 'Tríceps e peito em destaque',
+    build: () => {
+      const bars = `<rect x="30" y="60" width="6" height="50" rx="3" fill="color-mix(in srgb, var(--mol-border) 55%, transparent)"/><rect x="96" y="60" width="6" height="50" rx="3" fill="color-mix(in srgb, var(--mol-border) 55%, transparent)"/>`;
+      const head = joint(64, 40, 10);
+      const legs = limb('M70,88 Q74,104 70,120', 12);
+      const torsoUp = hrect(56, 50, 24, 38, 12);
+      const armsUp = `${limb('M58,54 Q42,58 32,64', 10)}${limb('M80,54 Q96,58 100,64', 10)}`;
+      const torsoDown = hrect(60, 62, 26, 36, 13);
+      const armsDown = `${limb('M62,66 Q42,62 32,64', 10)}${limb('M84,66 Q98,62 100,64', 10)}`;
+      return [
+        `${groundShadow(66, 40)}${bars}${head}${legs}${torsoUp}${armsUp}`,
+        `${groundShadow(66, 40)}${bars}${joint(64, 56, 10)}${limb('M70,104 Q74,112 70,120', 12)}${torsoDown}${armsDown}`
+      ];
+    }
+  },
+  terra: {
+    view: 'side',
+    label: 'Posterior e lombar em destaque',
+    build: () => {
+      const legs = `${limb('M66,84 Q64,104 62,122', 15)}${limb('M78,84 Q80,104 82,122', 15)}`;
+      const armDown = limb('M76,58 Q66,72 60,88', 9);
+      const hinged = `${joint(84, 40, 9)}${hlimb('M84,44 Q78,56 74,72', 20)}`;
+      const standTorso = `${joint(72, 30, 9)}${hlimb('M72,34 Q72,52 72,72', 20)}`;
+      const armStand = limb('M72,50 Q66,66 62,86', 9);
+      return [
+        `${groundShadow(72, 40)}${legs}${hinged}${armDown}${plate(60, 90)}`,
+        `${groundShadow(72, 40)}${legs}${standTorso}${armStand}${plate(62, 88)}`
+      ];
+    }
+  },
+  panturrilha: {
+    view: 'side',
+    label: 'Panturrilha em destaque',
+    build: () => {
+      const step = `<rect x="50" y="116" width="34" height="8" rx="3" fill="color-mix(in srgb, var(--mol-border) 55%, transparent)"/>`;
+      const head = joint(66, 30, 10);
+      const torso = `${joint(66, 42, 7)}<rect x="54" y="42" width="24" height="40" rx="12" fill="${BODY}"/>`;
+      const arm = limb('M60,48 Q52,60 50,74', 8);
+      const legsFlat = `${hlimb('M62,82 Q60,98 60,116', 12)}${hlimb('M74,82 Q76,98 76,116', 12)}`;
+      const legsUp = `${hlimb('M62,82 Q60,100 61,113', 12)}${hlimb('M74,82 Q76,100 75,113', 12)}`;
+      return [
+        `${groundShadow(66, 40)}${step}${head}${torso}${arm}${legsFlat}<ellipse cx="60" cy="118" rx="8" ry="3" fill="${BODY}"/><ellipse cx="76" cy="118" rx="8" ry="3" fill="${BODY}"/>`,
+        `${groundShadow(66, 40)}${step}${joint(66, 26, 10)}${joint(66, 38, 7)}<rect x="54" y="38" width="24" height="40" rx="12" fill="${BODY}"/>${limb('M60,44 Q52,56 50,70', 8)}${legsUp}<ellipse cx="61" cy="112" rx="7" ry="3" fill="${BODY}" transform="rotate(-24 61 112)"/><ellipse cx="75" cy="112" rx="7" ry="3" fill="${BODY}" transform="rotate(24 75 112)"/>`
+      ];
+    }
+  },
+  abdomen: {
+    view: 'side',
+    label: 'Abdômen em destaque',
+    build: () => {
+      const legs = `${limb('M84,104 Q98,100 104,86', 13)}${limb('M84,104 Q84,120 78,124', 13)}`;
+      const flat = `${joint(38, 96, 9)}${hlimb('M40,98 Q60,100 84,104', 16)}${limb('M46,92 Q38,86 30,84', 7)}`;
+      const curled = `${joint(48, 78, 9)}${hlimb('M50,82 Q66,94 84,104', 16)}${limb('M52,76 Q42,72 33,76', 7)}`;
+      return [
+        `${groundShadow(64, 56)}${legs}${flat}`,
+        `${groundShadow(64, 56)}${legs}${curled}`
+      ];
+    }
+  },
+  antebraco: {
+    view: 'side',
+    label: 'Antebraço em destaque',
+    build: () => {
+      const seat = `<rect x="46" y="98" width="14" height="22" rx="5" fill="color-mix(in srgb, var(--mol-border) 40%, transparent)"/>`;
+      const head = `${joint(56, 44, 9)}${joint(58, 56, 7)}<rect x="48" y="56" width="20" height="34" rx="10" fill="${BODY}"/>`;
+      const thigh = `<rect x="60" y="88" width="34" height="13" rx="6.5" fill="${BODY}"/>`;
+      const upperArm = limb('M62,66 Q76,74 84,84', 10);
+      return [
+        `${groundShadow(70, 56)}${seat}${head}${thigh}${upperArm}${hlimb('M84,84 Q90,92 88,100', 10)}${plate(88, 102)}`,
+        `${groundShadow(70, 56)}${seat}${head}${thigh}${upperArm}${hlimb('M84,84 Q94,80 100,74', 10)}${plate(100, 72)}`
+      ];
+    }
+  },
+  abducao: {
+    view: 'front',
+    label: 'Quadril em destaque',
+    build: () => {
+      const seat = `<rect x="50" y="96" width="60" height="14" rx="6" fill="color-mix(in srgb, var(--mol-border) 40%, transparent)"/>`;
+      const head = `${joint(80, 30, 10)}${joint(80, 42, 6)}<rect x="66" y="42" width="28" height="40" rx="14" fill="${BODY}"/>`;
+      const arms = `${limb('M68,52 Q56,60 50,70', 9)}${limb('M92,52 Q104,60 110,70', 9)}`;
+      const legsIn = `${hlimb('M72,88 Q68,102 66,116', 15)}${hlimb('M88,88 Q92,102 94,116', 15)}`;
+      const legsOut = `${hlimb('M72,88 Q56,100 48,114', 15)}${hlimb('M88,88 Q104,100 112,114', 15)}`;
+      return [
+        `${groundShadow(80, 46)}${seat}${head}${arms}${legsIn}`,
+        `${groundShadow(80, 46)}${seat}${head}${arms}${legsOut}`
+      ];
+    }
+  },
+  afundo: {
+    view: 'side',
+    label: 'Quadríceps e glúteo em destaque',
+    build: () => {
+      const head = joint(70, 26, 10);
+      const torso = `${joint(70, 38, 7)}<rect x="58" y="38" width="24" height="38" rx="12" fill="${BODY}"/>`;
+      const arms = `${limb('M62,44 Q52,54 48,66', 8)}${limb('M78,44 Q88,54 92,66', 8)}`;
+      const backLegStand = limb('M74,74 Q78,96 76,118', 13);
+      const frontLegStand = hlimb('M66,74 Q62,96 64,118', 13);
+      const backLegLunge = limb('M74,74 Q86,90 96,112', 13);
+      const frontLegLunge = hlimb('M66,74 Q52,92 48,116', 13);
+      return [
+        `${groundShadow(70, 46)}${head}${torso}${arms}${backLegStand}${frontLegStand}`,
+        `${groundShadow(70, 46)}${head}${torso}${arms}${backLegLunge}${frontLegLunge}`
+      ];
+    }
+  },
+  coice: {
+    view: 'side',
+    label: 'Glúteo em destaque',
+    build: () => {
+      const support = `<rect x="18" y="40" width="6" height="60" rx="3" fill="color-mix(in srgb, var(--mol-border) 55%, transparent)"/>`;
+      const head = joint(46, 50, 9);
+      const torso = `${joint(46, 60, 7)}<rect x="36" y="60" width="22" height="32" rx="11" fill="${BODY}" transform="rotate(12 46 76)"/>`;
+      const arm = limb('M36,66 Q26,68 20,72', 8);
+      const standLeg = limb('M64,88 Q66,104 64,120', 13);
+      return [
+        `${groundShadow(66, 56)}${support}${head}${torso}${arm}${standLeg}${hlimb('M64,88 Q66,104 64,120', 13)}`,
+        `${groundShadow(66, 56)}${support}${head}${torso}${arm}${standLeg}${hlimb('M64,88 Q84,86 100,78', 13)}`
+      ];
+    }
   }
 };
 

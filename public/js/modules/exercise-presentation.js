@@ -64,7 +64,7 @@ export function secondaryMuscleZones(exercise = {}) {
 const guidanceRules = [
   {
     key: 'supino',
-    terms: ['supino', 'chest press'],
+    terms: ['supino', 'chest press', 'press de peito', 'squeeze press'],
     execucao: 'Apoie escápulas no banco, mantenha os pés firmes e desça a carga até uma posição confortável no peito. Empurre sem perder a retração dos ombros.',
     erros: 'Cotovelo excessivamente aberto, quadril saindo do banco, barra quicando no peito e ombros projetados à frente.',
   },
@@ -82,7 +82,7 @@ const guidanceRules = [
   },
   {
     key: 'flexora',
-    terms: ['flexora', 'stiff', 'romeno', 'good morning'],
+    terms: ['flexora', 'stiff', 'romeno', 'good morning', 'nórdica', 'nordica', 'flexão de pernas', 'flexão de joelhos', 'ponte para posterior'],
     execucao: 'Inicie pelo quadril: mantenha a coluna neutra, leve o quadril para trás e sinta alongar o posterior. Suba contraindo glúteos, sem hiperestender a lombar.',
     erros: 'Arredondar a lombar, dobrar demais o joelho no stiff, transformar o movimento em agachamento e usar balanço.',
   },
@@ -100,13 +100,13 @@ const guidanceRules = [
   },
   {
     key: 'remada',
-    terms: ['remada'],
+    terms: ['remada', 'crucifixo inverso', 'reverse fly', 'face pull', 'y-raise'],
     execucao: 'Trave o tronco, inicie o movimento pelas escápulas e leve os cotovelos para trás. Pause perto do fim da puxada e retorne devagar.',
     erros: 'Balançar o tronco, encolher os ombros, puxar para o pescoço e perder a posição lombar.',
   },
   {
     key: 'lateral',
-    terms: ['lateral', 'ombro', 'desenvolvimento'],
+    terms: ['lateral', 'ombro', 'desenvolvimento', 'elevação frontal', 'encolhimento'],
     execucao: 'Mantenha costelas controladas e suba a carga no plano da escápula. Use amplitude confortável e cadência constante.',
     erros: 'Roubar com lombar, encolher trapézio, usar impulso e descer sem controle.',
   },
@@ -121,6 +121,72 @@ const guidanceRules = [
     terms: ['tríceps', 'francês', 'testa'],
     execucao: 'Estabilize ombros e cotovelos; mova somente o antebraço. Estenda até contrair o tríceps sem perder o controle.',
     erros: 'Abrir cotovelos, usar ombro para empurrar, compensar com lombar e travar articulações com força.',
+  },
+  {
+    key: 'crucifixo',
+    terms: ['crucifixo', 'crossover'],
+    execucao: 'Mantenha um leve dobra no cotovelo durante todo o movimento e abra os braços controlando até sentir alongar o peito. Feche trazendo as mãos uma em direção à outra.',
+    erros: 'Dobrar e esticar o cotovelo como se fosse um supino, descer além do conforto do ombro e usar impulso pra fechar os braços.',
+  },
+  {
+    key: 'flexao',
+    terms: ['flexão de braço', 'flexão diamante', 'flexão declinada', 'flexão inclinada', 'flexão arqueira', 'archer push-up', 'flexão com palma', 'flexão com correntes', 'flexão com pegada aberta', 'flexão com os pés elevados', 'flexão na máquina assistida', 'push-up', 'push up'],
+    execucao: 'Mantenha corpo alinhado da cabeça aos pés (prancha), desça com cotovelos a cerca de 45° do tronco até quase tocar o chão e empurre de volta.',
+    erros: 'Quadril caindo ou subindo demais, cotovelos totalmente abertos a 90°, amplitude curta e cabeça projetada à frente.',
+  },
+  {
+    key: 'pullover',
+    terms: ['pullover'],
+    execucao: 'Deitado, mantenha a lombar levemente apoiada e leve o peso num arco por trás da cabeça, sentindo alongar o peito e o dorsal. Retorne pelo mesmo arco.',
+    erros: 'Dobrar demais o cotovelo (vira tríceps francês), arquear a lombar e usar impulso do tronco.',
+  },
+  {
+    key: 'mergulho',
+    terms: ['mergulho', 'dips', 'paralelas'],
+    execucao: 'Desça com o tronco levemente inclinado à frente até um ângulo confortável no ombro e empurre de volta sem travar o cotovelo com força no topo.',
+    erros: 'Descer além do conforto do ombro, deixar os ombros subirem até o pescoço e usar balanço das pernas.',
+  },
+  {
+    key: 'terra',
+    terms: ['levantamento terra', 'rack pull', 'deadlift', 'hiperextensão'],
+    execucao: 'Inicie com a barra próxima ao corpo, quadril para trás e coluna neutra. Suba estendendo quadril e joelho juntos, terminando em pé sem hiperestender.',
+    erros: 'Arredondar a lombar, a barra se afastar do corpo, puxar só com os braços e hiperestender no topo.',
+  },
+  {
+    key: 'panturrilha',
+    terms: ['panturrilha', 'tibial', 'ponta dos pés', 'ponta do pé'],
+    execucao: 'Suba na ponta dos pés com amplitude completa, pause no topo e desça controlando até alongar bem a panturrilha.',
+    erros: 'Fazer repetições curtas e rápidas, usar impulso do quadril e nunca descer abaixo do apoio.',
+  },
+  {
+    key: 'abdomen',
+    terms: ['abdominal', 'prancha', 'russian twist', 'woodchopper', 'hollow body', 'ab wheel', 'v-up', 'core anti-rotação', 'elevação de joelhos'],
+    execucao: 'Ative o abdômen antes de mover, curve ou estabilize a coluna com controle e evite puxar o pescoço com as mãos.',
+    erros: 'Puxar o pescoço, usar impulso das pernas ou braços e prender a respiração o treino inteiro.',
+  },
+  {
+    key: 'antebraco',
+    terms: ['punho', 'pinça com anilhas', 'fazendeiro', "farmer"],
+    execucao: 'Apoie o antebraço estável e mova só o punho ou os dedos, com amplitude completa e controle na volta.',
+    erros: 'Balançar o antebraço inteiro, usar carga alta demais e encurtar a amplitude do punho.',
+  },
+  {
+    key: 'abducao',
+    terms: ['abdutora', 'adutora', 'abdução de quadril', 'adução de quadril', 'clamshell', 'frog pump'],
+    execucao: 'Mantenha o tronco estável e mova só o quadril, contraindo no ponto de maior abertura ou fechamento antes de voltar devagar.',
+    erros: 'Balançar o tronco, usar impulso e deixar a carga jogar a perna de volta sem controle.',
+  },
+  {
+    key: 'afundo',
+    terms: ['afundo', 'passada', 'step-up', 'caixotão'],
+    execucao: 'Dê o passo mantendo o tronco ereto, desça até o joelho de trás quase tocar o chão e empurre pelo calcanhar da frente pra voltar.',
+    erros: 'Joelho da frente ultrapassar muito a ponta do pé, perder o equilíbrio lateral e apoiar peso no joelho de trás.',
+  },
+  {
+    key: 'coice',
+    terms: ['glúteo', 'coice', 'extensão de quadril', 'glute drive', 'pull-through'],
+    execucao: 'Mantenha a coluna neutra e o tronco estável, estenda o quadril contraindo o glúteo sem compensar com a lombar.',
+    erros: 'Arquear a lombar pra ganhar amplitude, balançar o tronco e usar carga que impede o controle no retorno.',
   },
 ];
 
