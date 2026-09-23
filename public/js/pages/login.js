@@ -1,4 +1,4 @@
-import { ensureUserProfile, getGoogleRedirectUser, loginWithGoogleRedirect, watchAuthState } from '../modules/auth.js';
+import { ensureUserProfile, getGoogleRedirectUser, loginWithEmail, loginWithGoogleRedirect, registerWithEmail, resetPassword, watchAuthState } from '../modules/auth.js';
 import { authErrorMessage, LEGAL_DOCUMENTS, withTimeout } from '../modules/login-utils.js';
 import { setButtonLoading } from '../utils/ui.js';
 import { initializeAccessibility } from '../utils/accessibility.js';
@@ -104,4 +104,57 @@ function openLegalDocument(kind, opener) {
 
 document.querySelectorAll('[data-legal]').forEach(button => {
   button.onclick = () => openLegalDocument(button.dataset.legal, button);
+});
+
+const emailForm = document.getElementById('emailAuthForm');
+const emailInput = document.getElementById('authEmail');
+const passwordInput = document.getElementById('authPassword');
+const submitBtn = document.getElementById('emailAuthSubmit');
+const toggleModeBtn = document.getElementById('toggleAuthMode');
+const forgotBtn = document.getElementById('forgotPassword');
+let isRegisterMode = false;
+
+function updateEmailFormMode() {
+  submitBtn.textContent = isRegisterMode ? 'Criar conta' : 'Entrar';
+  toggleModeBtn.textContent = isRegisterMode ? 'Já tenho conta' : 'Criar conta';
+}
+
+toggleModeBtn.addEventListener('click', () => {
+  isRegisterMode = !isRegisterMode;
+  updateEmailFormMode();
+});
+
+emailForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (loginInProgress) return;
+  loginInProgress = true;
+  errorEl.classList.add('hidden');
+  const originalHtml = submitBtn.innerHTML;
+  setButtonLoading(submitBtn, true, originalHtml);
+
+  try {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const user = isRegisterMode ? await registerWithEmail(email, password) : await loginWithEmail(email, password);
+    await withTimeout(ensureUserProfile(user), 8000).catch(profileError =>
+      console.warn('Perfil inicial será preparado novamente no próximo acesso:', profileError.message));
+    navigateHome();
+  } catch (error) {
+    console.error('[Mol] Erro no login com e-mail:', error);
+    showError(authErrorMessage(error));
+    loginInProgress = false;
+    setButtonLoading(submitBtn, false, originalHtml);
+  }
+});
+
+forgotBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  if (!email) return showError('Digite seu e-mail para receber o link de redefinição.');
+  errorEl.classList.add('hidden');
+  try {
+    await resetPassword(email);
+    showError('Enviamos um link de redefinição para o seu e-mail.');
+  } catch (error) {
+    showError(authErrorMessage(error));
+  }
 });

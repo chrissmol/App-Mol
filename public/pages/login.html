@@ -67,9 +67,22 @@
       <!-- Divisor -->
       <div class="flex items-center gap-3 py-1">
         <span class="flex-1 h-px bg-white/10"></span>
-        <span class="text-[11px] text-gray-400 font-medium">SEGURO E GRATUITO</span>
+        <span class="text-[11px] text-gray-400 font-medium">OU COM E-MAIL</span>
         <span class="flex-1 h-px bg-white/10"></span>
       </div>
+
+      <!-- Login/cadastro com e-mail e senha -->
+      <form id="emailAuthForm" class="space-y-3" novalidate>
+        <label for="authEmail" class="sr-only">E-mail</label>
+        <input id="authEmail" name="email" type="email" autocomplete="email" required placeholder="E-mail" class="w-full min-h-12 rounded-2xl mol-field px-4 text-sm text-white placeholder:text-gray-500">
+        <label for="authPassword" class="sr-only">Senha</label>
+        <input id="authPassword" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Senha" class="w-full min-h-12 rounded-2xl mol-field px-4 text-sm text-white placeholder:text-gray-500">
+        <button type="submit" id="emailAuthSubmit" class="w-full min-h-12 rounded-2xl bg-neon text-sm font-bold text-black transition-fluid active:scale-[0.98]">Entrar</button>
+        <div class="flex items-center justify-between text-xs">
+          <button type="button" id="toggleAuthMode" class="text-gray-400 underline underline-offset-2">Criar conta</button>
+          <button type="button" id="forgotPassword" class="text-gray-400 underline underline-offset-2">Esqueci a senha</button>
+        </div>
+      </form>
 
       <!-- Termos atualizados para Mol -->
       <p class="text-[11px] text-gray-400 text-center leading-relaxed px-4">
