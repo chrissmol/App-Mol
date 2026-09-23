@@ -70,9 +70,7 @@ function limparRascunho() { if (usuarioAtual) removeLocalItems(draftKey(usuarioA
 function exerciciosParaPersistir(rotina) { return treinoIniciado ? cleanRoutineExercises(rotina.exercicios) : rotina.exercicios; }
 
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
-import { exerciseMediaFrames } from '../data/exercise-media.js';
-// Funciona tanto no Live Server quanto no build do Vite, sem tentar executar o SVG como JavaScript.
-const exerciseFigure = new URL('../../assets/exercise-figure.svg', import.meta.url).href;
+import { exercisePoseFrames, exercisePoseLabel } from '../modules/exercise-poses.js';
 let favoritosExercicios = [];
 let recentesExercicios = [];
 let exerciciosPersonalizados = [];
@@ -1067,21 +1065,16 @@ window.abrirDetalheExercicio = (nome) => {
   const pontos = cargas.map((carga, index) => `${index * (100 / Math.max(cargas.length - 1, 1))},${40 - (carga / maxCarga) * 34}`).join(' ');
   const melhor = historico.reduce((max, item) => Math.max(max, item.kg * (1 + item.reps / 30)), 0);
   const substitutos = rankExerciseSubstitutes(exercicio, bibliotecaDeExercicios, grupoDetalhado).slice(0, 3);
-  const frames = exerciseMediaFrames(exercicio);
-  const mediaHTML = frames
-    ? `<img id="exercise-detail-media" src="${frames[0]}" alt="Demonstração de ${escapeHTML(nome)}" class="h-40 w-full rounded-2xl object-cover mol-soft">`
-    : `<img src="${exerciseFigure}" alt="" class="h-20 w-16 rounded-2xl mol-soft p-2">`;
+  const frames = exercisePoseFrames(exercicio);
+  const poseLabel = exercisePoseLabel(exercicio);
   document.getElementById('exercise-detail')?.remove();
   const modal = document.createElement('div'); modal.id = 'exercise-detail'; modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
   modal.setAttribute('aria-labelledby', 'exercise-detail-title');
-  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div>${frames ? `<div class="mt-5">${mediaHTML}</div><p class="mt-3 text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p>` : `<div class="mt-5 flex gap-4">${mediaHTML}<div><p class="text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p></div></div>`}${historico.length ? `<section class="mt-5 rounded-2xl mol-soft p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
+  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div id="exercise-detail-media" class="mt-5 h-40 w-full rounded-2xl mol-soft p-2" aria-label="${escapeHTML(poseLabel)}">${frames[0]}</div><p class="mt-3 text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p>${historico.length ? `<section class="mt-5 rounded-2xl mol-soft p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
   document.body.appendChild(modal);
-  let mediaInterval = null;
-  if (frames) {
-    const mediaImg = /** @type {HTMLImageElement} */ (modal.querySelector('#exercise-detail-media'));
-    let frameIndex = 0;
-    mediaInterval = window.setInterval(() => { frameIndex = 1 - frameIndex; mediaImg.src = frames[frameIndex]; }, 900);
-  }
+  const mediaContainer = modal.querySelector('#exercise-detail-media');
+  let frameIndex = 0;
+  const mediaInterval = window.setInterval(() => { frameIndex = 1 - frameIndex; mediaContainer.innerHTML = frames[frameIndex]; }, 900);
   const closeDialog = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   const close = () => { if (mediaInterval) window.clearInterval(mediaInterval); closeDialog(); };
   modal.onclick = event => { if (event.target === modal) close(); };
@@ -1110,7 +1103,7 @@ function renderizarBiblioteca(filtro = '') {
   bibliotecaList.innerHTML = exerciciosFiltrados.map((ex, index) => `
     <article class="exercise-library-card rounded-2xl border border-white/5 mol-panel p-3 transition-colors active:bg-white/5">
       <div class="flex items-start gap-3">
-        <img src="${exerciseFigure}" alt="" class="h-14 w-12 shrink-0 rounded-xl mol-soft p-1.5">
+        <div class="h-14 w-12 shrink-0 rounded-xl mol-soft p-1" aria-hidden="true">${exercisePoseFrames(ex)[0]}</div>
         <div class="min-w-0 flex-1 text-left">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
