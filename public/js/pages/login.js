@@ -4,11 +4,9 @@ import { setButtonLoading } from '../utils/ui.js';
 import { initializeAccessibility } from '../utils/accessibility.js';
 import { setSessionItem } from '../utils/storage.js';
 import { setupMobileAppMode } from '../utils/mobile-app.js';
-import '../utils/icons.js';
 
 setupMobileAppMode();
 initializeAccessibility();
-window.lucide?.createIcons();
 
 const googleBtn = document.getElementById('googleLoginBtn');
 const errorEl = document.getElementById('loginError');
