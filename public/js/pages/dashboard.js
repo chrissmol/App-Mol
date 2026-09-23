@@ -1,4 +1,5 @@
-import { db } from '../config/firebase-config.js';
+import { getDb } from '../config/firebase-config.js';
+const db = await getDb();
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { sessionMetrics } from '../modules/workout-analytics.js';

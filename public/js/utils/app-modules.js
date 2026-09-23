@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase-config.js';
+import { auth, getDb } from '../config/firebase-config.js';
+const db = await getDb();
 import { escapeHTML, showToast } from './ui.js';
 import { getLocalItem, setLocalItem } from './storage.js';
 import { withTimeout } from './timeout.js';

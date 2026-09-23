@@ -1,6 +1,7 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { addDoc, collection, doc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
-import { auth, db } from '../config/firebase-config.js';
+import { auth, getDb } from '../config/firebase-config.js';
+const db = await getDb();
 
 const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
 const presenceRef = uid => doc(db, 'presence', uid);

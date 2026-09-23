@@ -1,6 +1,5 @@
 import { watchAuthState } from '../modules/auth.js';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase-config.js';
+import { auth, getDb } from '../config/firebase-config.js';
 import { withTimeout } from './timeout.js';
 
 const STORAGE_KEY = 'mol-accessibility';
@@ -72,7 +71,8 @@ export function applyAccessibilityPreferences(value, { cache = true } = {}) {
 
 export async function syncAccessibilityForUser(user) {
   if (!user) return applyAccessibilityPreferences(getAccessibilityPreferences());
-  const reference = doc(db, 'users', user.uid);
+  const { doc, getDoc, setDoc } = await import('firebase/firestore');
+  const reference = doc(await getDb(), 'users', user.uid);
   const snapshot = await withTimeout(getDoc(reference), 'As preferências de acessibilidade');
   const remote = snapshot.data()?.[PROFILE_FIELD];
   if (remote) return applyAccessibilityPreferences(remote);
@@ -83,7 +83,10 @@ export async function syncAccessibilityForUser(user) {
 
 export async function saveAccessibilityPreferences(value, user = auth.currentUser) {
   const preferences = applyAccessibilityPreferences(value);
-  if (user) await setDoc(doc(db, 'users', user.uid), { [PROFILE_FIELD]: preferences }, { merge: true });
+  if (user) {
+    const { doc, setDoc } = await import('firebase/firestore');
+    await setDoc(doc(await getDb(), 'users', user.uid), { [PROFILE_FIELD]: preferences }, { merge: true });
+  }
   return preferences;
 }
 

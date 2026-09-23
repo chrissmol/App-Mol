@@ -1,5 +1,6 @@
 import { setupAppShell } from '../utils/app-shell.js';
-import { auth, db, googleProvider } from '../config/firebase-config.js';
+import { auth, getDb, googleProvider } from '../config/firebase-config.js';
+const db = await getDb();
 import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
 import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';

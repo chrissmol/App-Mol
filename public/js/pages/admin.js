@@ -1,6 +1,7 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, deleteDoc, doc, limit, onSnapshot, query } from 'firebase/firestore';
-import { auth, db } from '../config/firebase-config.js';
+import { auth, getDb } from '../config/firebase-config.js';
+const db = await getDb();
 import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML } from '../utils/ui.js';
 

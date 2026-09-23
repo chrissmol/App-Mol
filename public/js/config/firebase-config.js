@@ -14,7 +14,6 @@ import {
   inMemoryPersistence,
   initializeAuth,
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 // SUAS CHAVES REAIS DO PROJETO "APP MOL"
@@ -76,5 +75,15 @@ export const authReady = Promise.race([
 // podiam ficar eternamente em carregamento. Mantemos o Firestore online como
 // fonte principal e deixamos caches manuais por tela como fallback controlado.
 export const offlinePersistenceEnabled = false;
-export const db = getFirestore(app);
+// Firestore so e importado quando alguma tela realmente le/grava dados --
+// isso mantem o SDK do Firestore (~130KB) fora do carregamento inicial do
+// login, que nunca usa Firestore diretamente.
+let dbInstance = null;
+export async function getDb() {
+  if (!dbInstance) {
+    const { getFirestore } = await import('firebase/firestore');
+    dbInstance = getFirestore(app);
+  }
+  return dbInstance;
+}
 export const googleProvider = new GoogleAuthProvider();

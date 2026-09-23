@@ -19,13 +19,7 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth';
-import {
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { auth, authReady, db, googleProvider } from "../config/firebase-config.js";
+import { auth, authReady, getDb, googleProvider } from "../config/firebase-config.js";
 import { subscribeAfterAuthReady } from '../utils/auth-state.js';
 
 const AUTH_THROTTLE_KEY = 'mol-auth-throttle-v1';
@@ -156,7 +150,8 @@ export async function getGoogleRedirectUser() {
 export async function ensureUserProfile(user) {
   if (!user) return null;
 
-  const userRef = doc(db, "users", user.uid);
+  const { doc, getDoc, setDoc, serverTimestamp } = await import('firebase/firestore');
+  const userRef = doc(await getDb(), "users", user.uid);
   const userSnap = await getDoc(userRef);
 
   // Só cria o perfil se ainda não existir (evita sobrescrever dados)
