@@ -41,6 +41,14 @@ export const signInWithRedirect = async () => {
 };
 export const signInWithPopup = async () => ({ user: authInstance.currentUser });
 export const getRedirectResult = async () => ({ user: authInstance.currentUser });
+export const signInWithEmailAndPassword = async () => {
+  localStorage.setItem('__mol_e2e_user', 'true');
+  authInstance.currentUser = readUser();
+  notifyAuthListeners();
+  return { user: authInstance.currentUser };
+};
+export const createUserWithEmailAndPassword = signInWithEmailAndPassword;
+export const sendPasswordResetEmail = async () => {};
 export const signOut = async () => {
   localStorage.removeItem('__mol_e2e_user');
   authInstance.currentUser = null;
