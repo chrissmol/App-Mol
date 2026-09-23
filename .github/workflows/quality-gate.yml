@@ -16,7 +16,11 @@ defaults:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Lighthouse + npm audit + semgrep + e2e completo (desktop/android/
+    # iphone/tablet) passa de 20min em runners compartilhados quando nada
+    # falha cedo (ex.: Lighthouse já não reprova o login em ~2min como
+    # antes). 20min cancelava o job no meio dos testes, com tudo passando.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
