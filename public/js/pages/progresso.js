@@ -1,4 +1,5 @@
-import { db } from '../config/firebase-config.js';
+import { getDb } from '../config/firebase-config.js';
+const db = await getDb();
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { withTimeout } from '../utils/timeout.js';

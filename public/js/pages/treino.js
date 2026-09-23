@@ -1,6 +1,7 @@
 ﻿// js/pages/treino.js
 document.title = 'Mol';
-import { db } from '../config/firebase-config.js';
+import { getDb } from '../config/firebase-config.js';
+const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
