@@ -15,7 +15,10 @@ import { createRequire } from 'node:module';
 // padrão pré-existente de toda funcao pendurada em `window.*` no
 // treino.js (nunca declarada em global.d.ts), erra uma vez na
 // atribuicao e uma vez em cada uso.
-const CEILING = 447;
+// 448: +1 pela reestruturacao de Configuracoes (lista de categorias)
+// e o novo seletor de moldura em perfil.js — mesmo padrao de $()
+// retornando Element/HTMLElement generico, nao HTMLButtonElement.
+const CEILING = 448;
 
 // Chama o entrypoint do tsc via node diretamente (em vez de "npx tsc"),
 // que evita a resolução de .cmd do npx no Windows.

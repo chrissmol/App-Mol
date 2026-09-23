@@ -1,7 +1,7 @@
 import { setupAppShell } from '../utils/app-shell.js';
 import { auth, db, googleProvider } from '../config/firebase-config.js';
 import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
-import { clearIndexedDbPersistence, collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
+import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
@@ -10,11 +10,48 @@ import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { MODULE_DEFINITIONS, MODULE_PRESETS, normalizeAppModules, presetFromModules, saveAppModules, syncAppModulesForUser } from '../utils/app-modules.js';
-import { withTimeout } from '../utils/timeout.js';
 
 setupAppShell();
 
 const $ = id => document.getElementById(id);
+
+const CONFIG_VIEWS = ['aparencia', 'acessibilidade', 'modulos', 'dispositivo', 'conta'];
+// "#experience" é um link antigo (usado quando um módulo desativado manda
+// o usuário reativá-lo); mantém funcionando apontando pra tela que agora
+// contém aquela seção.
+const CONFIG_HASH_ALIASES = { experience: 'modulos' };
+
+function openConfigView(name, { pushHash = true } = {}) {
+  if (!CONFIG_VIEWS.includes(name)) return false;
+  $('config-home')?.classList.add('hidden');
+  CONFIG_VIEWS.forEach(view => $(`config-view-${view}`)?.classList.toggle('hidden', view !== name));
+  if (pushHash) history.replaceState(null, '', `#${name}`);
+  window.scrollTo(0, 0);
+  return true;
+}
+
+function closeConfigView() {
+  CONFIG_VIEWS.forEach(view => $(`config-view-${view}`)?.classList.add('hidden'));
+  $('config-home')?.classList.remove('hidden');
+  history.replaceState(null, '', location.pathname);
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll('[data-config-open]').forEach(button => {
+  button.addEventListener('click', () => openConfigView(button.dataset.configOpen));
+});
+document.querySelectorAll('[data-config-back]').forEach(button => {
+  button.addEventListener('click', closeConfigView);
+});
+
+function openConfigViewFromHash() {
+  const requestedHash = location.hash.replace('#', '');
+  if (!requestedHash) { closeConfigView(); return; }
+  openConfigView(CONFIG_HASH_ALIASES[requestedHash] || requestedHash, { pushHash: false });
+}
+openConfigViewFromHash();
+window.addEventListener('hashchange', openConfigViewFromHash);
+
 const isStandalone = () => window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
 const isIosDevice = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -208,35 +245,6 @@ preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, labe
   const button = document.createElement('button'); button.type = 'button'; button.dataset.value = value; button.className = 'theme-segment'; button.textContent = label;
   button.onclick = () => { appearance[key] = value; persistAppearance(); }; $(id)?.appendChild(button);
 }));
-
-const frameChoices = [['plastic', 'Base', true], ['wood', 'Madeira', false], ['bronze', 'Bronze', false], ['silver', 'Prata', false], ['gold', 'Ouro', false], ['diamond', 'Diamante', false], ['boss', 'Chefão', String(auth.currentUser?.email || '').toLowerCase() === 'chrisouzamol@gmail.com']];
-let selectedFrame = null;
-let frameProgress = 0;
-async function renderUnlockedFrameChoices(user) {
-  const root = $('frame-choices');
-  if (!root || !user) return;
-  const [profileSnapshot, sessionCount] = await Promise.all([
-    withTimeout(getDoc(doc(db, 'users', user.uid)), 'O perfil'),
-    withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', user.uid))), 'A contagem de treinos')
-  ]);
-  frameProgress = Number(sessionCount.data().count || 0);
-  const admin = String(user.email || '').toLowerCase() === 'chrisouzamol@gmail.com';
-  const requirements = [0, 5, 15, 30, 60, 100, 0];
-  const options = frameChoices.map(([id, label], index) => [id, label, requirements[index]]);
-  const current = selectedFrame || profileSnapshot.data()?.avatarFrame || (admin ? 'boss' : 'plastic');
-  root.innerHTML = options.map(([id, label, required]) => {
-    const unlocked = id === 'boss' ? admin : frameProgress >= required;
-    const detail = unlocked
-      ? (current === id ? 'Em uso' : 'Disponivel')
-      : (id === 'boss' ? 'Exclusivo da equipe Mol' : `Desbloqueie com ${required} treinos`);
-    return `<button type="button" data-frame="${id}" class="avatar-frame-choice avatar-frame-choice--${id} ${current === id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === id}"><span class="frame-choice__dot"></span><span><strong>${label}</strong><small>${detail}</small></span></button>`;
-  }).join('');
-  root.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => {
-    selectedFrame = button.dataset.frame;
-    await setDoc(doc(db, 'users', user.uid), { avatarFrame: selectedFrame }, { merge: true });
-    renderUnlockedFrameChoices(user);
-  });
-}
 
 $('contrast').onchange = () => { appearance.contrast = $('contrast').checked; persistAppearance(); };
 $('large-text').onchange = () => { appearance.largeText = $('large-text').checked; persistAppearance(); };
@@ -453,12 +461,11 @@ function authErrorMessage(error, fallback) {
 }
 
 watchProtectedPage(async user => {
-  // As três sincronizações abaixo são independentes (temas, molduras de
-  // avatar, módulos ativos) — rodam em paralelo em vez de em série, que
-  // antes podia somar até ~27s de espera numa rede lenta.
-  const [accessibilityResult, , modulesResult] = await Promise.allSettled([
+  // As duas sincronizações abaixo são independentes (temas, módulos
+  // ativos) — rodam em paralelo em vez de em série, que antes podia
+  // somar até ~27s de espera numa rede lenta.
+  const [accessibilityResult, modulesResult] = await Promise.allSettled([
     syncAccessibilityForUser(user).then(value => { appearance = value; }),
-    renderUnlockedFrameChoices(user).catch(error => console.warn('Molduras não carregadas:', error.message)),
     syncAppModulesForUser(user).then(value => { appModules = value; })
   ]);
   if (accessibilityResult.status === 'rejected') console.warn('Preferências da conta não carregadas:', accessibilityResult.reason?.message);

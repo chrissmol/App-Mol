@@ -1,8 +1,9 @@
 import { db } from '../config/firebase-config.js';
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { collection, doc, getCountFromServer, getDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, query, setDoc, where } from 'firebase/firestore';
 import { setupAppShell } from '../utils/app-shell.js';
+import { activateDialog } from '../utils/ui.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
 
@@ -23,6 +24,7 @@ const FRAME_OPTIONS = [
 ];
 let currentAccount = null;
 let completedWorkouts = 0;
+let currentProfile = {};
 
 
 function safeJSON(value, fallback = null) {
@@ -57,6 +59,7 @@ function applyAvatarFrame(frameId) {
 }
 
 function renderIdentity(account, profile = {}) {
+  currentProfile = profile;
   const name = String(account.displayName || profile.name || profile.nome || 'Usuário').trim().slice(0, 80) || 'Usuário';
   $('user-name').textContent = name;
   $('user-email').textContent = String(account.email || profile.email || '').slice(0, 254);
@@ -78,6 +81,39 @@ function renderIdentity(account, profile = {}) {
   $('admin-link')?.classList.toggle('hidden', !canMonitor);
   $('admin-link')?.classList.toggle('flex', canMonitor);
 }
+
+function openFrameModal() {
+  if (!currentAccount) return;
+  document.getElementById('frame-picker')?.remove();
+  const current = normalizeFrame(currentProfile.avatarFrame, currentAccount);
+  const optionsHTML = FRAME_OPTIONS.map(option => {
+    const unlocked = unlockedFrame(option, currentAccount);
+    const detail = unlocked
+      ? (current === option.id ? 'Em uso' : 'Disponível')
+      : (option.adminOnly ? 'Exclusivo da equipe Mol' : `Desbloqueie com ${option.required} treinos`);
+    return `<button type="button" data-frame="${option.id}" class="avatar-frame-choice avatar-frame-choice--${option.id} ${current === option.id ? 'is-active' : ''}" ${unlocked ? '' : 'disabled'} aria-pressed="${current === option.id}"><span class="frame-choice__dot"></span><span><strong>${option.label}</strong><small>${detail}</small></span></button>`;
+  }).join('');
+  const modal = document.createElement('div');
+  modal.id = 'frame-picker';
+  modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
+  modal.setAttribute('aria-labelledby', 'frame-picker-title');
+  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><h2 id="frame-picker-title" class="mt-5 text-lg font-extrabold">Moldura do avatar</h2><p class="mt-1 text-sm text-gray-400">Desbloqueadas conforme você completa treinos.</p><div class="mt-5 grid gap-2" role="group" aria-label="Molduras do perfil">${optionsHTML}</div><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl mol-soft font-bold text-gray-300">Fechar</button></section>`;
+  document.body.appendChild(modal);
+  const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
+  modal.onclick = event => { if (event.target === modal) close(); };
+  modal.querySelector('[data-close]').onclick = close;
+  modal.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => {
+    const frameId = button.dataset.frame;
+    currentProfile = { ...currentProfile, avatarFrame: frameId };
+    applyAvatarFrame(frameId);
+    close();
+    try { await setDoc(doc(db, 'users', currentAccount.uid), { avatarFrame: frameId }, { merge: true }); }
+    catch (error) { console.warn('Moldura não salva:', error.message); }
+  });
+  renderIcons();
+}
+
+$('change-frame')?.addEventListener('click', openFrameModal);
 
 function applyProfileModules(profile = {}) {
   const modules = normalizeAppModules(profile.appModules);
