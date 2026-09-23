@@ -242,7 +242,7 @@ const preferenceSegments = [
   ['dashboard-layout-segments', 'dashboardLayout', [['automatic', 'Automática'], ['custom', 'Personalizada']]]
 ];
 preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, label]) => {
-  const button = document.createElement('button'); button.type = 'button'; button.dataset.value = value; button.className = 'theme-segment'; button.textContent = label;
+  const button = document.createElement('button'); button.type = 'button'; button.dataset.value = value; button.className = 'theme-segment flex min-h-14 items-center justify-center rounded-2xl px-3 text-xs font-bold'; button.textContent = label;
   button.onclick = () => { appearance[key] = value; persistAppearance(); }; $(id)?.appendChild(button);
 }));
 

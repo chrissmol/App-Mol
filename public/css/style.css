@@ -931,41 +931,6 @@ html[data-theme="light"] body .bg-neon\/20 { background-color: rgba(30,115,73,.1
   gap: .5rem;
 }
 
-.avatar-frame-choice {
-  display: flex;
-  min-height: 3.25rem;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: .25rem;
-  border: 1px solid var(--mol-border);
-  border-radius: 1rem;
-  background: var(--mol-surface-soft);
-  color: var(--mol-muted);
-  font-size: .66rem;
-  font-weight: 850;
-  text-align: center;
-}
-
-.avatar-frame-choice::before {
-  content: "";
-  width: 1.35rem;
-  height: 1.35rem;
-  border: 3px solid var(--frame-color, var(--mol-muted));
-  border-radius: 999px;
-  box-shadow: 0 0 12px var(--frame-glow, transparent);
-}
-
-.avatar-frame-choice.is-active {
-  border-color: var(--frame-color, var(--mol-brand-text));
-  color: var(--mol-text);
-  background: color-mix(in srgb, var(--frame-color, var(--mol-brand-text)) 12%, var(--mol-surface));
-}
-
-.avatar-frame-choice:disabled {
-  opacity: .42;
-}
-
 .avatar-frame-choice--plastic { --frame-color: #aeb8b2; }
 .avatar-frame-choice--wood { --frame-color: #8b5a2b; --frame-glow: rgba(139,90,43,.18); }
 .avatar-frame-choice--bronze { --frame-color: #cd7f32; --frame-glow: rgba(205,127,50,.2); }

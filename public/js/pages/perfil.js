@@ -97,7 +97,7 @@ function openFrameModal() {
   modal.id = 'frame-picker';
   modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
   modal.setAttribute('aria-labelledby', 'frame-picker-title');
-  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><h2 id="frame-picker-title" class="mt-5 text-lg font-extrabold">Moldura do avatar</h2><p class="mt-1 text-sm text-gray-400">Desbloqueadas conforme você completa treinos.</p><div class="mt-5 grid gap-2" role="group" aria-label="Molduras do perfil">${optionsHTML}</div><button type="button" data-close class="mt-6 min-h-12 w-full rounded-2xl mol-soft font-bold text-gray-300">Fechar</button></section>`;
+  modal.innerHTML = `<section class="mx-auto flex w-full max-w-md max-h-[85vh] flex-col rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 shrink-0 rounded-full bg-white/20"></div><h2 id="frame-picker-title" class="mt-5 shrink-0 text-lg font-extrabold">Moldura do avatar</h2><p class="mt-1 shrink-0 text-sm text-gray-400">Desbloqueadas conforme você completa treinos.</p><div class="mt-5 grid gap-2 overflow-y-auto" role="group" aria-label="Molduras do perfil">${optionsHTML}</div><button type="button" data-close class="mt-6 min-h-12 w-full shrink-0 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button></section>`;
   document.body.appendChild(modal);
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   modal.onclick = event => { if (event.target === modal) close(); };
