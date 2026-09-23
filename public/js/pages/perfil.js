@@ -10,7 +10,8 @@ import { getSessionItem, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
 
-const $ = id => document.getElementById(id);
+// any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
+const $ = id => /** @type {any} */ (document.getElementById(id));
 const renderIcons = () => window.lucide?.createIcons();
 const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
 const profileCacheKey = uid => `mol-profile-cache-${uid}`;

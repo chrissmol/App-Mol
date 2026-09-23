@@ -10,7 +10,8 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
-const $ = id => document.getElementById(id);
+// any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
+const $ = id => /** @type {any} */ (document.getElementById(id));
 let user = null;
 let meals = [];
 let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };

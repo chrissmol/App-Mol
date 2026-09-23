@@ -6,7 +6,8 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML } from '../utils/ui.js';
 
 const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
-const $ = id => document.getElementById(id);
+// any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
+const $ = id => /** @type {any} */ (document.getElementById(id));
 setupAppShell();
 document.querySelector('.mol-brand')?.remove();
 const back = document.createElement('a');
