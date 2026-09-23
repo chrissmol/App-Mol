@@ -16,6 +16,7 @@ import { detailedExerciseGroup as grupoDetalhado, exerciseEquipment as equipamen
 import { buildExercisePerformanceHistory, MAX_CUSTOM_EXERCISES, normalizeExerciseLibraryPreferences } from '../modules/exercise-library.js';
 import { getLocalItem, removeLocalItems, removeSessionItems, setLocalItem } from '../utils/storage.js';
 import { notify as notifyDevice } from '../utils/reminders.js';
+import { flushPendingSessions, queueSession } from '../utils/pending-sessions.js';
 setupAppShell();
 const renderIcons = (root = document) => window.lucide?.createIcons({ root });
 
@@ -296,6 +297,7 @@ watchProtectedPage(user => {
     void carregarPreferenciasDaConta();
     void carregarUltimasPerformances();
     carregarRotinasDoBanco();
+    void enviarTreinosPendentes();
     renderizarBiblioteca();
     document.body.setAttribute('aria-busy', 'false');
     renderIcons();
@@ -520,6 +522,7 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
       const exercicioEmDescanso = descansoContexto?.title;
       const avisarDispositivo = document.hidden && 'Notification' in window && Notification.permission === 'granted';
       pararDescanso();
+      navigator.vibrate?.([200, 100, 200]);
       showToast('Descanso concluido. Vamos para a proxima!', 'success');
       if (avisarDispositivo) {
         notifyDevice('Descanso concluído', exercicioEmDescanso ? `Hora de voltar para ${exercicioEmDescanso}.` : 'Hora de continuar o treino.').catch(() => {});
@@ -1534,6 +1537,24 @@ window.concluirSerie = async (indexEx, indexSerie) => {
 // ---------------------------------------------
 // REQUISITO 2 & 3: SALVAMENTO COM RESET DE CHECKS E HISTÓRICO LIMPO PARA A PRÓXIMA SEMANA
 // ---------------------------------------------
+async function gravarSessao({ session, exerciciosLimpos, concluidoEm }) {
+  const batch = writeBatch(db);
+  batch.set(doc(collection(db, 'sessoes')), {
+    ...session,
+    iniciadaEm: session.iniciadaEm ? new Date(session.iniciadaEm) : serverTimestamp(),
+    concluidoEm: concluidoEm ? new Date(concluidoEm) : serverTimestamp()
+  });
+  batch.update(doc(db, 'treinos', session.rotinaId), { exercicios: exerciciosLimpos, ultimoTreinoEm: serverTimestamp() });
+  await batch.commit();
+}
+
+async function enviarTreinosPendentes() {
+  if (!usuarioAtual || !navigator.onLine) return;
+  const enviados = await flushPendingSessions(usuarioAtual.uid, gravarSessao);
+  if (enviados) { showToast(enviados + ' treino(s) pendente(s) enviado(s).', 'success'); carregarRotinasDoBanco(); }
+}
+window.addEventListener('online', enviarTreinosPendentes);
+
 window.finalizarEConcluirTreino = async () => {
   if (finalizandoTreino) return;
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
@@ -1557,9 +1578,7 @@ window.finalizarEConcluirTreino = async () => {
 
   try {
     // A sessão é um registro imutável: rotinas podem mudar, o histórico não.
-    const batch = writeBatch(db);
-    const sessaoRef = doc(collection(db, 'sessoes'));
-    batch.set(sessaoRef, {
+    const session = {
       userId: usuarioAtual.uid,
       rotinaId: rotinaAbertaId,
       nomeRotina: rotina.nome,
@@ -1567,14 +1586,14 @@ window.finalizarEConcluirTreino = async () => {
       volumeTotal: resumoVolume,
       duracaoSegundos: duracaoConcluida,
       checkinPreTreino,
-      iniciadaEm: sessaoIniciadaEm || serverTimestamp(),
-      concluidoEm: serverTimestamp()
-    });
-    batch.update(doc(db, "treinos", rotinaAbertaId), {
-      exercicios: exerciciosLimpos,
-      ultimoTreinoEm: serverTimestamp()
-    });
-    await batch.commit();
+      iniciadaEm: sessaoIniciadaEm ? sessaoIniciadaEm.toISOString() : null
+    };
+    if (navigator.onLine) await gravarSessao({ session, exerciciosLimpos, concluidoEm: null });
+    else {
+      // Sem internet o commit ficaria pendurado: guarda no aparelho e envia quando a conexão voltar.
+      if (!queueSession({ session, exerciciosLimpos, concluidoEm: new Date().toISOString() })) throw new Error('Fila offline indisponível.');
+      showToast('Sem conexão: treino salvo no aparelho e enviado quando a internet voltar.', 'success');
+    }
 
     removeSessionItems(
       `mol-progress-cache-${usuarioAtual.uid}`,

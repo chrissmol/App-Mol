@@ -146,3 +146,24 @@ export function trainingBalance(volume = {}) {
   if (share >= .5) return { state: 'concentrated', title: `Maior concentração em ${topGroup}`, message: `${Math.round(share * 100)}% das séries do período foram para esse grupo. Compare com o objetivo do seu programa.` };
   return { state: 'distributed', title: 'Distribuição consistente', message: `${entries.length} grupos receberam estímulo no período, sem um único grupo concentrar metade das séries.` };
 }
+
+export function exerciseNames(sessions) {
+  const names = new Set();
+  (Array.isArray(sessions) ? sessions : []).forEach(session => completedSets(session).forEach(set => set.exercicio && names.add(set.exercicio)));
+  return [...names].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+// Um ponto por treino: maior carga, melhor 1RM estimado e volume do exercício, em ordem cronológica.
+export function exerciseProgress(sessions, name) {
+  return (Array.isArray(sessions) ? sessions : []).map(session => {
+    const date = workoutDate(session);
+    const sets = completedSets(session).filter(set => set.exercicio === name && Number(set.kg) >= 0 && Number(set.reps) > 0);
+    if (!date || !sets.length) return null;
+    return {
+      date,
+      kg: Math.max(...sets.map(set => Number(set.kg))),
+      oneRM: Math.max(...sets.map(set => estimate1RM(set.kg, set.reps))),
+      volume: sets.reduce((sum, set) => sum + Number(set.kg) * Number(set.reps), 0)
+    };
+  }).filter(Boolean).sort((a, b) => a.date - b.date);
+}

@@ -6,6 +6,7 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimes
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
 import { dateFrom, monthCalendar, workoutStats } from '../modules/evolution-analytics.js';
+import { exerciseNames, exerciseProgress } from '../modules/workout-analytics.js';
 import { profileAchievements } from '../modules/profile-analytics.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
 
@@ -200,6 +201,28 @@ function renderMeasurements() {
   }).join('')}` : '';
 }
 
+function renderExercise() {
+  const select = $('exercise-select');
+  const names = exerciseNames(sessions);
+  const chosen = names.includes(select.value) ? select.value : names[0];
+  select.innerHTML = names.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`).join('') || '<option>Sem exercícios registrados</option>';
+  select.disabled = !names.length;
+  const points = chosen ? exerciseProgress(sessions, chosen) : [];
+  if (chosen) select.value = chosen;
+  const last = points.at(-1);
+  const unit = value => value ? `${value.toLocaleString('pt-BR')} kg` : '—';
+  $('exercise-kg').textContent = unit(Math.max(0, ...points.map(point => point.kg)));
+  $('exercise-1rm').textContent = unit(Math.max(0, ...points.map(point => point.oneRM)));
+  $('exercise-count').textContent = points.length;
+  const shown = points.slice(-12);
+  const values = shown.map(point => point.oneRM || point.kg);
+  const min = Math.min(...values); const max = Math.max(...values);
+  $('exercise-trend').innerHTML = shown.length > 1
+    ? shown.map((point, index) => `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${max === min ? 55 : 22 + ((values[index] - min) / (max - min)) * 78}%" title="${point.date.toLocaleDateString('pt-BR')}: ${unit(point.kg)}, 1RM ${unit(point.oneRM)}"></span>`).join('')
+    : '<p class="self-center text-xs text-gray-500">O gráfico aparece após 2 treinos deste exercício.</p>';
+  $('exercise-summary').textContent = points.length > 1 ? `Último treino: ${unit(last.kg)}, ${(last.oneRM - points[0].oneRM).toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} kg de 1RM desde o primeiro.` : '';
+}
+
 function renderAll() {
   now = new Date();
   const stats = workoutStats(sessions, currentGoal, now);
@@ -208,6 +231,7 @@ function renderAll() {
   renderCalendar();
   renderBadges(stats);
   renderWeight();
+  renderExercise();
   renderBodyComparison();
   renderMeasurements();
 
@@ -281,6 +305,7 @@ watchProtectedPage(user => {
   load();
 });
 
+$('exercise-select').onchange = renderExercise;
 $('goal-down').onclick = () => saveGoal(-1);
 $('goal-up').onclick = () => saveGoal(1);
 $('previous-month').onclick = () => { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1); selectedCalendarDay = null; renderCalendar(); };
