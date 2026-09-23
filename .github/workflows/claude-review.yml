@@ -16,15 +16,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      # continue-on-error: a conta ainda nao tem billing configurado na API
-      # da Anthropic (ANTHROPIC_API_KEY sem creditos), entao esse job falha
-      # de forma esperada por enquanto. Trocar para autenticacao via
-      # CLAUDE_CODE_OAUTH_TOKEN (uso incluso no plano Pro/Max, sem billing
-      # separado) remove esse continue-on-error.
       - uses: anthropics/claude-code-action@v1
-        continue-on-error: true
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             Review the diff of this pull request for correctness bugs, security
             issues, and unnecessary complexity. Read the changed files and their
