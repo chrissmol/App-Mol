@@ -10,7 +10,8 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
-const $ = id => document.getElementById(id);
+// any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
+const $ = id => /** @type {any} */ (document.getElementById(id));
 const PAGE_SIZE = 15;
 const CACHE_TTL = 5 * 60 * 1000;
 let currentUser = null;

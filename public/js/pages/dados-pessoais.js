@@ -10,7 +10,8 @@ import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/sto
 
 setupAppShell();
 
-const $ = id => document.getElementById(id);
+// any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
+const $ = id => /** @type {any} */ (document.getElementById(id));
 let currentUser;
 let currentProfile = {};
 const profileCacheKey = uid => `mol-profile-cache-${uid}`;

@@ -18,7 +18,9 @@ import { createRequire } from 'node:module';
 // 448: +1 pela reestruturacao de Configuracoes (lista de categorias)
 // e o novo seletor de moldura em perfil.js — mesmo padrao de $()
 // retornando Element/HTMLElement generico, nao HTMLButtonElement.
-const CEILING = 448;
+// 308: `$` das telas passou a retornar any (antes HTMLElement generico, ~155 erros
+// de .value/.checked/.dataset). Baixado de 448 para travar o ganho.
+const CEILING = 308;
 
 // Chama o entrypoint do tsc via node diretamente (em vez de "npx tsc"),
 // que evita a resolução de .cmd do npx no Windows.
