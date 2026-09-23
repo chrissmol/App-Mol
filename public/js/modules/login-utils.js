@@ -8,7 +8,14 @@ export function authErrorMessage(error) {
     'auth/too-many-requests': 'Muitas tentativas foram feitas. Aguarde alguns minutos e tente novamente.',
     'auth/client-rate-limited': `Muitas tentativas seguidas. Aguarde ${Math.max(1, Math.ceil(Number(error?.retryAfterSeconds || 60) / 60))} min e tente novamente.`,
     'auth/account-exists-with-different-credential': 'Já existe uma conta com este e-mail usando outra forma de acesso.',
-    'auth/operation-not-allowed': 'O login com Google não está disponível no momento.'
+    'auth/operation-not-allowed': 'O login com Google não está disponível no momento.',
+    'auth/invalid-email': 'Digite um e-mail válido.',
+    'auth/missing-password': 'Digite sua senha.',
+    'auth/weak-password': 'Use uma senha com pelo menos 6 caracteres.',
+    'auth/email-already-in-use': 'Já existe uma conta com este e-mail. Tente entrar.',
+    'auth/invalid-credential': 'E-mail ou senha incorretos.',
+    'auth/wrong-password': 'E-mail ou senha incorretos.',
+    'auth/user-not-found': 'E-mail ou senha incorretos.'
   };
   return messages[error?.code] || 'Não foi possível entrar agora. Tente novamente.';
 }

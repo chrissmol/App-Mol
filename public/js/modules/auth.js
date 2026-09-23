@@ -9,11 +9,15 @@
  */
 
 import {
+  createUserWithEmailAndPassword,
   getRedirectResult,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   signOut,
   onAuthStateChanged,
+  updateProfile,
 } from 'firebase/auth';
 import {
   doc,
@@ -88,6 +92,40 @@ export async function loginWithGoogle() {
     recordAuthAttemptFailure(error);
     throw error;
   }
+}
+
+/** Entra com e-mail/senha em uma conta já existente. */
+export async function loginWithEmail(email, password) {
+  assertAuthAttemptAllowed();
+  try {
+    await authReady;
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    clearAuthThrottle();
+    return result.user;
+  } catch (error) {
+    recordAuthAttemptFailure(error);
+    throw error;
+  }
+}
+
+/** Cria uma conta nova com e-mail/senha. */
+export async function registerWithEmail(email, password, name) {
+  assertAuthAttemptAllowed();
+  try {
+    await authReady;
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    if (name) await updateProfile(result.user, { displayName: name });
+    clearAuthThrottle();
+    return result.user;
+  } catch (error) {
+    recordAuthAttemptFailure(error);
+    throw error;
+  }
+}
+
+/** Envia e-mail de redefinição de senha. */
+export function resetPassword(email) {
+  return authReady.then(() => sendPasswordResetEmail(auth, email));
 }
 
 /** Usa navegação completa quando o navegador bloqueia popups. */

@@ -40,6 +40,9 @@ jobs:
           cleanup_preview() {
             kill "$preview_pid" 2>/dev/null || true
             pkill -TERM -P "$preview_pid" 2>/dev/null || true
+            # `npm run preview` gera um processo filho (vite) que sobrevive ao
+            # kill acima e prende a porta 4173 para o step de e2e seguinte.
+            pkill -f "vite preview" 2>/dev/null || true
           }
           trap cleanup_preview EXIT INT TERM
 
