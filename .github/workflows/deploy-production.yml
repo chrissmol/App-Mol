@@ -32,5 +32,9 @@ jobs:
           cache-dependency-path: public/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run check:full
+      - run: npm run check
+      - run: npm run security:check
+      # e2e so em desktop + android: os 4 perfis levavam ~15min no runner.
+      # Suite completa (4 perfis): npm run test:e2e.
+      - run: npx playwright test --project=desktop --project=android
       - run: npx firebase-tools deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }}
