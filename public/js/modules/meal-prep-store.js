@@ -8,7 +8,7 @@ export async function loadPrepPeople(user) {
   const people = [{ id: user.uid, name: user.displayName || 'Você' }];
   if (ownShare?.partnerId) {
     try {
-      const otherShare = (await withTimeout(getDoc(doc(db, 'mealShares', ownShare.partnerId)), 'O vínculo do casal')).data();
+      const otherShare = (await withTimeout(getDoc(doc(db, 'mealShares', ownShare.partnerId)), 'O vínculo compartilhado')).data();
       if (otherShare?.partnerId === user.uid) people.push({ id: ownShare.partnerId, name: otherShare.name || 'Parceiro(a)' });
     } catch (error) {
       if (error.code !== 'permission-denied') throw error;
