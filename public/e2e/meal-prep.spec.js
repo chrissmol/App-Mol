@@ -46,3 +46,34 @@ test('mantém a tela sem overflow em temas e preferências de acessibilidade', a
     await expect(page.getByRole('heading', { name: 'Marmitas', exact: true })).toBeVisible();
   }
 });
+
+test('salva alimento personalizado e reutiliza após recarregar, sem aceitar nutrientes ausentes', async ({ page }) => {
+  await page.locator('#custom-food').fill('Molho de teste cozido');
+  await page.getByRole('button', { name: 'Adicionar personalizado' }).click();
+  await expect(page.locator('#nutrition-warning-0')).toContainText('Faltam nutrientes');
+  await page.getByRole('button', { name: 'Calcular preparo' }).click();
+  await expect(page.locator('#prep-status')).toContainText('Preencha os nutrientes');
+  await page.getByRole('button', { name: 'Salvar nos meus alimentos' }).click();
+  await expect(page.locator('#saved-foods')).toBeHidden();
+  for (const [field, value] of [['kcal100', '80'], ['proteina100', '2'], ['carbo100', '6'], ['gordura100', '5']]) {
+    await page.locator(`#${field}-0`).fill(value);
+    await page.locator(`#${field}-0`).press('Tab');
+  }
+  await expect(page.locator('#nutrition-warning-0')).toBeEmpty();
+  await page.getByRole('button', { name: 'Salvar nos meus alimentos' }).click();
+  await expect(page.locator('#food-status')).toContainText('salvo');
+  await page.reload();
+  await expect(page.locator('#prep-status')).toContainText('Dietas carregadas');
+  await page.getByRole('button', { name: 'Adicionar alimento salvo' }).click();
+  await expect(page.locator('#kcal100-0')).toHaveValue('80');
+  await expect(page.locator('#proteina100-0')).toHaveValue('2');
+  await page.locator('#prep-ingredients summary').click();
+  await page.locator('#kcal100-0').fill('90');
+  await page.locator('#kcal100-0').press('Tab');
+  await page.getByRole('button', { name: 'Atualizar alimento salvo' }).click();
+  await expect(page.locator('#food-status')).toContainText('salvo');
+  await page.reload();
+  await expect(page.locator('#prep-status')).toContainText('Dietas carregadas');
+  await page.getByRole('button', { name: 'Adicionar alimento salvo' }).click();
+  await expect(page.locator('#kcal100-0')).toHaveValue('90');
+});

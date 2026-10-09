@@ -33,3 +33,9 @@ O workflow manual `deploy-production.yml` usa as credenciais já existentes no e
 A dependência transitiva `@grpc/grpc-js` foi fixada em 1.14.6 para remover os alertas de produção. Atualizações compatíveis do lockfile também corrigem undici e outras dependências. A auditoria completa continua no quality gate e pode reprovar por dependências de desenvolvimento: braces 3.0.3 ainda não tem release corrigida, e a migração do Tailwind exige trabalho separado. Esses avisos não são ocultados nem apresentados como auditoria completa aprovada.
 
 A revisão Claude depende da instalação/autorização de sua GitHub App; sua indisponibilidade não substitui as verificações determinísticas nem uma revisão manual do código.
+
+## Alimentos personalizados
+
+Ingredientes personalizados começam com nutrientes em branco. Calorias, proteína, carboidratos e gordura por 100 g devem ser preenchidos, inclusive zero quando ausentes. Dados faltantes exibem aviso por ingrediente e impedem cálculo e salvamento do alimento.
+
+“Salvar nos meus alimentos” grava em `users/{uid}/customFoods/{id}`, disponível em outros dispositivos do mesmo perfil. “Meus alimentos” reutiliza os nutrientes e rendimento; a quantidade por pote é escolhida em cada preparo. “Atualizar alimento salvo” atualiza o mesmo cadastro sem modificar snapshots de cardápios anteriores. Apenas o titular pode ler ou gravar essa coleção; o vínculo compartilhado não concede acesso.

@@ -4,8 +4,8 @@ import { escapeHTML, showToast, enhanceSelects } from '../utils/ui.js';
 import { renderIcons } from '../utils/icons.js';
 import { getLocalItem, setLocalItem } from '../utils/storage.js';
 import { FOOD_CATALOG, normalizeDietMeals } from '../modules/nutrition.js';
-import { suggestedMealIds, weeklyMealSlots, calculatePreparation, divideActualYield } from '../modules/meal-prep.js';
-import { loadPrepPeople, createPrepInvite, acceptPrepInvite, confirmPrepInvite, disconnectPrepPartner, loadPreparations, savePreparation } from '../modules/meal-prep-store.js';
+import { suggestedMealIds, weeklyMealSlots, calculatePreparation, divideActualYield, hasMissingNutrition, validatePrepIngredients } from '../modules/meal-prep.js';
+import { loadPrepPeople, createPrepInvite, acceptPrepInvite, confirmPrepInvite, disconnectPrepPartner, loadPreparations, savePreparation, loadCustomFoods, saveCustomFood } from '../modules/meal-prep-store.js';
 
 setupAppShell();
 const $ = id => /** @type {any} */ (document.getElementById(id));
@@ -19,6 +19,7 @@ let ingredients = [];
 let preparation = null;
 let history = [];
 let saving = false;
+let customFoods = [];
 const inviteKey = () => `mol-prep-invite-${user.uid}`;
 
 function status(message) { $('prep-status').textContent = message; }
@@ -68,8 +69,18 @@ function ingredientFromCatalog(name) {
   const vegetable = /brócolis|tomate|alface|cenoura|abobrinha|beterraba|couve|espinafre|pepino/i.test(name);
   return { ...food, mode: vegetable ? 'fixed' : 'adjustable', grams: 100, yieldFactor: 1, yieldConfirmed: false };
 }
+function renderSavedFoods() {
+  $('saved-foods').hidden = !customFoods.length;
+  $('saved-food').innerHTML = customFoods.map(food => `<option value="${esc(food.id)}">${esc(food.nome)}</option>`).join('');
+  enhanceSelects();
+}
+function updateNutritionWarning(index) {
+  const item = ingredients[index];
+  $(`nutrition-warning-${index}`).textContent = hasMissingNutrition(item) ? 'Faltam nutrientes. Preencha os quatro valores por 100 g; informe 0 quando não houver esse nutriente.' : '';
+}
 function renderIngredients() {
-  $('prep-ingredients').innerHTML = ingredients.map((item, index) => `<fieldset class="prep-ingredient"><legend>${esc(item.nome)}</legend><label for="mode-${index}">Quantidade</label><select class="mol-input" id="mode-${index}" data-index="${index}" data-field="mode"><option value="adjustable" ${item.mode === 'adjustable' ? 'selected' : ''}>Ajustar à dieta</option><option value="fixed" ${item.mode === 'fixed' ? 'selected' : ''}>Fixa por pote</option></select><div id="fixed-${index}" ${item.mode === 'fixed' ? '' : 'hidden'}><label for="grams-${index}">Gramas por pote (fixa)</label><input class="mol-input" id="grams-${index}" type="number" min="0" max="2000" step="1" value="${esc(String(item.grams))}" data-index="${index}" data-field="grams" ${item.mode === 'fixed' ? '' : 'disabled'}></div><details ${item.proteina100 + item.carbo100 + item.gordura100 === 0 ? 'open' : ''}><summary>Rendimento e nutrientes</summary><div><label for="yield-${index}">Rendimento pronto ÷ cru</label><input class="mol-input" id="yield-${index}" type="number" min="0.01" max="10" step="0.01" value="${esc(String(item.yieldFactor))}" data-index="${index}" data-field="yieldFactor"></div><p>Informe seu rendimento para calcular o peso cru. Rendimento 1 significa o mesmo peso antes e depois. Ajuste para estimar a compra; por exemplo, 3 significa 300 g prontos para cada 100 g crus.</p><div class="prep-fields">${[['kcal100', 'Calorias (kcal)'], ['proteina100', 'Proteína (g)'], ['carbo100', 'Carboidrato (g)'], ['gordura100', 'Gordura (g)']].map(([field, label]) => `<div><label for="${field}-${index}">${label}</label><input class="mol-input" id="${field}-${index}" type="number" min="0" max="${field === 'kcal100' ? 1000 : 100}" step="0.1" value="${esc(String(item[field]))}" data-index="${index}" data-field="${field}"></div>`).join('')}</div></details><button class="mol-btn mol-btn-secondary" type="button" data-remove="${index}" aria-label="Remover ${esc(item.nome)}">Remover</button></fieldset>`).join('');
+  $('prep-ingredients').innerHTML = ingredients.map((item, index) => `<fieldset class="prep-ingredient"><legend>${esc(item.nome)}</legend><label for="mode-${index}">Quantidade</label><select class="mol-input" id="mode-${index}" data-index="${index}" data-field="mode"><option value="adjustable" ${item.mode === 'adjustable' ? 'selected' : ''}>Ajustar à dieta</option><option value="fixed" ${item.mode === 'fixed' ? 'selected' : ''}>Fixa por pote</option></select><div id="fixed-${index}" ${item.mode === 'fixed' ? '' : 'hidden'}><label for="grams-${index}">Gramas por pote (fixa)</label><input class="mol-input" id="grams-${index}" type="number" min="0" max="2000" step="1" value="${esc(String(item.grams))}" data-index="${index}" data-field="grams" ${item.mode === 'fixed' ? '' : 'disabled'}></div><p id="nutrition-warning-${index}" role="status"></p><details ${hasMissingNutrition(item) || item.proteina100 + item.carbo100 + item.gordura100 === 0 ? 'open' : ''}><summary>Rendimento e nutrientes</summary><div><label for="yield-${index}">Rendimento pronto ÷ cru</label><input class="mol-input" id="yield-${index}" type="number" min="0.01" max="10" step="0.01" value="${esc(String(item.yieldFactor))}" data-index="${index}" data-field="yieldFactor"></div><p>Informe seu rendimento para calcular o peso cru. Rendimento 1 significa o mesmo peso antes e depois. Ajuste para estimar a compra; por exemplo, 3 significa 300 g prontos para cada 100 g crus.</p><div class="prep-fields">${[['kcal100', 'Calorias (kcal)'], ['proteina100', 'Proteína (g)'], ['carbo100', 'Carboidrato (g)'], ['gordura100', 'Gordura (g)']].map(([field, label]) => `<div><label for="${field}-${index}">${label}</label><input class="mol-input" id="${field}-${index}" type="number" min="0" max="${field === 'kcal100' ? 1000 : 100}" step="0.1" value="${esc(String(item[field] ?? ''))}" data-index="${index}" data-field="${field}"></div>`).join('')}</div></details>${item.custom ? `<button class="mol-btn mol-btn-secondary" type="button" data-save-food="${index}">${item.customFoodId ? 'Atualizar alimento salvo' : 'Salvar nos meus alimentos'}</button>` : ''}<button class="mol-btn mol-btn-secondary" type="button" data-remove="${index}" aria-label="Remover ${esc(item.nome)}">Remover</button></fieldset>`).join('');
+  ingredients.forEach((_, index) => updateNutritionWarning(index));
   enhanceSelects();
 }
 function resultsMarkup(value) {
@@ -85,6 +96,13 @@ function renderHistory() {
 async function load() {
   people = (await loadPrepPeople(user)).map(person => ({ ...person, meals: normalizeDietMeals(person.meals) }));
   history = await loadPreparations(user);
+  try {
+    customFoods = await loadCustomFoods(user);
+    renderSavedFoods();
+    $('food-status').textContent = '';
+  } catch {
+    $('food-status').textContent = 'Não foi possível carregar seus alimentos salvos. Tente atualizar as dietas.';
+  }
   renderPeople();
   $('planner').hidden = false;
   $('prep-history').hidden = true;
@@ -99,11 +117,20 @@ $('add-ingredient').onclick = () => {
   ingredients.push(ingredientFromCatalog($('catalog-food').value));
   renderIngredients(); invalidate();
 };
+$('add-saved-food').onclick = () => {
+  if (ingredients.length >= 20) return status('Use no máximo 20 ingredientes.');
+  const food = customFoods.find(item => item.id === $('saved-food').value);
+  if (!food) return;
+  if (ingredients.some(item => item.nome === food.nome)) return status('Esse ingrediente já está no preparo.');
+  const { id, ...values } = food;
+  ingredients.push({ ...values, custom: true, customFoodId: id, mode: 'fixed', grams: 30 });
+  renderIngredients(); invalidate();
+};
 $('add-custom').onclick = () => {
   const name = $('custom-food').value.trim();
   if (!name) return status('Informe o nome do ingrediente personalizado.');
   if (ingredients.length >= 20) return status('Use no máximo 20 ingredientes.');
-  ingredients.push({ nome: name, kcal100: 0, proteina100: 0, carbo100: 0, gordura100: 0, mode: 'fixed', grams: 30, yieldFactor: 1, yieldConfirmed: false });
+  ingredients.push({ nome: name, custom: true, kcal100: null, proteina100: null, carbo100: null, gordura100: null, mode: 'fixed', grams: 30, yieldFactor: 1, yieldConfirmed: false });
   $('custom-food').value = '';
   renderIngredients(); invalidate();
   status('Ingrediente adicionado. Preencha os nutrientes por 100 g e a quantidade por pote.');
@@ -113,14 +140,28 @@ $('prep-ingredients').addEventListener('change', event => {
   if (!target.dataset.field) return;
   const item = ingredients[Number(target.dataset.index)];
   if (target.dataset.field === 'yieldFactor') item.yieldConfirmed = true;
-  item[target.dataset.field] = target.dataset.field === 'mode' ? target.value : Number(target.value);
+  item[target.dataset.field] = target.dataset.field === 'mode' ? target.value : (target.value === '' ? null : Number(target.value));
   if (target.dataset.field === 'mode') {
     $(`grams-${target.dataset.index}`).disabled = target.value !== 'fixed';
     $(`fixed-${target.dataset.index}`).hidden = target.value !== 'fixed';
   }
+  updateNutritionWarning(Number(target.dataset.index));
   invalidate();
 });
 $('prep-ingredients').addEventListener('click', event => {
+  const saveButton = /** @type {HTMLElement} */ (event.target).closest('[data-save-food]');
+  if (saveButton) {
+    const index = Number(/** @type {HTMLElement} */ (saveButton).dataset.saveFood);
+    return action(saveButton, async () => {
+      const item = ingredients[index];
+      validatePrepIngredients([item]);
+      const saved = await saveCustomFood(user, item);
+      item.customFoodId = saved.id;
+      customFoods = [...customFoods.filter(food => food.id !== saved.id), saved].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      renderSavedFoods(); renderIngredients();
+      $('food-status').textContent = `${saved.nome} salvo nos seus alimentos.`;
+    });
+  }
   const button = /** @type {HTMLElement} */ (event.target).closest('[data-remove]');
   if (!button) return;
   ingredients.splice(Number(/** @type {HTMLElement} */ (button).dataset.remove), 1);
