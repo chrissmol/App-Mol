@@ -20,6 +20,7 @@ let preparation = null;
 let history = [];
 let saving = false;
 let customFoods = [];
+let historyActive = false;
 const inviteKey = () => `mol-prep-invite-${user.uid}`;
 
 function status(message) { $('prep-status').textContent = message; }
@@ -34,10 +35,15 @@ function invalidate() {
   $('prep-result').hidden = true;
 }
 function viewHistory(active) {
+  historyActive = active;
   $('planner').hidden = active;
   $('prep-history').hidden = !active;
   $('new-prep').setAttribute('aria-pressed', String(!active));
   $('show-history').setAttribute('aria-pressed', String(active));
+  for (const [id, selected] of [['new-prep', !active], ['show-history', active]]) {
+    $(id).classList.toggle('mol-btn-primary', selected);
+    $(id).classList.toggle('mol-btn-secondary', !selected);
+  }
   if (active) renderHistory();
 }
 function renderSlots(person, index, ids, count) {
@@ -104,12 +110,20 @@ async function load() {
     $('food-status').textContent = 'Não foi possível carregar seus alimentos salvos. Tente atualizar as dietas.';
   }
   renderPeople();
-  $('planner').hidden = false;
-  $('prep-history').hidden = true;
+  viewHistory(historyActive);
   document.body.setAttribute('aria-busy', 'false');
   status(people.some(person => person.meals.length) ? 'Dietas carregadas. Escolha os potes e os ingredientes.' : 'Cadastre sua dieta na aba Dieta para calcular as marmitas.');
 }
-$('retry-prep').onclick = () => action($('retry-prep'), async () => { await load(); invalidate(); });
+$('retry-prep').onclick = () => action($('retry-prep'), async () => {
+  $('retry-prep').setAttribute('aria-busy', 'true');
+  $('retry-label').textContent = 'Atualizando…';
+  status('Atualizando dietas e cardápios…');
+  try { await load(); invalidate(); }
+  finally {
+    $('retry-prep').setAttribute('aria-busy', 'false');
+    $('retry-label').textContent = 'Atualizar dietas';
+  }
+});
 $('catalog-food').innerHTML = FOOD_CATALOG.map(food => `<option value="${esc(food.nome)}">${esc(food.nome)}</option>`).join('');
 $('add-ingredient').onclick = () => {
   if (ingredients.length >= 20) return status('Use no máximo 20 ingredientes.');
