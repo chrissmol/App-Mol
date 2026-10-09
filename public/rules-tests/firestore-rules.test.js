@@ -174,3 +174,20 @@ describe('compartilhamento das marmitas', () => {
     await assertFails(setDoc(doc(a, 'mealPreparations', 'second'), payload));
   });
 });
+
+describe('alimentos personalizados', () => {
+  it('isola alimentos por perfil e valida nutrientes', async () => {
+    const a = user('a'); const b = user('b');
+    const ref = doc(a, 'users', 'a', 'customFoods', 'molho');
+    const food = { nome: 'Molho cozido', kcal100: 80, proteina100: 2, carbo100: 6, gordura100: 5, yieldFactor: 1, yieldConfirmed: false };
+    await assertSucceeds(setDoc(ref, food));
+    await assertSucceeds(getDocs(collection(a, 'users', 'a', 'customFoods')));
+    await assertFails(getDoc(doc(b, 'users', 'a', 'customFoods', 'molho')));
+    await assertFails(setDoc(doc(b, 'users', 'a', 'customFoods', 'molho'), food));
+    await assertFails(setDoc(ref, { ...food, proteina100: null }));
+    await assertFails(setDoc(ref, { ...food, gordura100: 101 }));
+    await assertFails(setDoc(ref, { ...food, extra: true }));
+    await assertFails(getDocs(collection(environment.unauthenticatedContext().firestore(), 'users', 'a', 'customFoods')));
+    await assertSucceeds(setDoc(ref, { ...food, proteina100: 0 }));
+  });
+});

@@ -71,3 +71,17 @@ export async function savePreparation(user, { title, preparation, ingredients, p
   await setDoc(doc(await getDb(), 'mealPreparations', id), value);
   return { ...value, id };
 }
+
+export async function loadCustomFoods(user) {
+  const snapshot = await withTimeout(getDocs(collection(await getDb(), 'users', user.uid, 'customFoods')), 'Seus alimentos');
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+export async function saveCustomFood(user, item) {
+  const id = item.customFoodId || crypto.randomUUID();
+  const value = { nome: item.nome.trim().slice(0, 80), kcal100: item.kcal100,
+    proteina100: item.proteina100, carbo100: item.carbo100, gordura100: item.gordura100,
+    yieldFactor: item.yieldFactor, yieldConfirmed: item.yieldConfirmed === true };
+  await setDoc(doc(await getDb(), 'users', user.uid, 'customFoods', id), value);
+  return { id, ...value };
+}

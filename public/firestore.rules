@@ -14,6 +14,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/mealShares/$(second)).data.partnerId == first;
     }
 
+    match /users/{userId}/customFoods/{foodId} {
+      allow read, delete: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['nome', 'kcal100', 'proteina100', 'carbo100', 'gordura100', 'yieldFactor', 'yieldConfirmed'])
+        && request.resource.data.keys().hasOnly(['nome', 'kcal100', 'proteina100', 'carbo100', 'gordura100', 'yieldFactor', 'yieldConfirmed'])
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 80
+        && request.resource.data.kcal100 is number && request.resource.data.kcal100 >= 0 && request.resource.data.kcal100 <= 1000
+        && request.resource.data.proteina100 is number && request.resource.data.proteina100 >= 0 && request.resource.data.proteina100 <= 100
+        && request.resource.data.carbo100 is number && request.resource.data.carbo100 >= 0 && request.resource.data.carbo100 <= 100
+        && request.resource.data.gordura100 is number && request.resource.data.gordura100 >= 0 && request.resource.data.gordura100 <= 100
+        && request.resource.data.yieldFactor is number && request.resource.data.yieldFactor > 0 && request.resource.data.yieldFactor <= 10
+        && request.resource.data.yieldConfirmed is bool;
+    }
+
     match /mealShares/{userId} {
       allow get: if signedIn() && (request.auth.uid == userId || resource.data.partnerId == request.auth.uid);
       allow create, update: if signedIn() && request.auth.uid == userId

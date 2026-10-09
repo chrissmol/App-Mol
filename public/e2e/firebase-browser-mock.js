@@ -137,6 +137,9 @@ export const getDoc = async reference => {
 };
 export const getDocs = async reference => {
   const path = referencePath(reference);
+  if (path.includes('customFoods')) {
+    return querySnapshot(JSON.parse(localStorage.getItem('__mol_e2e_custom_foods') || '[]'));
+  }
   if (path.includes('mealPreparations')) {
     const data = JSON.parse(localStorage.getItem('__mol_e2e_preparations') || '[]');
     const filter = reference.args.find(item => item.kind === 'where');
@@ -154,6 +157,11 @@ export const getCountFromServer = async reference => {
 };
 export const setDoc = async (reference, value) => {
   const path = referencePath(reference);
+  if (path.includes('customFoods')) {
+    const data = JSON.parse(localStorage.getItem('__mol_e2e_custom_foods') || '[]').filter(([id]) => id !== path.at(-1));
+    data.push([path.at(-1), value]);
+    localStorage.setItem('__mol_e2e_custom_foods', JSON.stringify(data));
+  }
   if (path.includes('mealPreparations')) {
     const data = JSON.parse(localStorage.getItem('__mol_e2e_preparations') || '[]');
     data.push([path.at(-1), value]);

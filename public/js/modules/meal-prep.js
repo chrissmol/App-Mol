@@ -18,9 +18,16 @@ export function weeklyMealSlots(meals, mealIds, startDay = 0) {
   );
 }
 
+export function hasMissingNutrition(item) {
+  return ['kcal100', 'proteina100', 'carbo100', 'gordura100'].some(field =>
+    item[field] === null || item[field] === undefined || item[field] === ''
+  );
+}
+
 export function validatePrepIngredients(ingredients) {
   if (!Array.isArray(ingredients) || !ingredients.length || ingredients.length > 20) throw new Error('Escolha entre 1 e 20 ingredientes.');
   ingredients.forEach(item => {
+    if (hasMissingNutrition(item)) throw new Error(`Preencha os nutrientes por 100 g de ${item.nome}. Informe 0 quando o nutriente não estiver presente.`);
     if (!String(item.nome || '').trim()) throw new Error('Informe o nome do ingrediente.');
     if (!['adjustable', 'fixed'].includes(item.mode)) throw new Error('Escolha como ajustar o ingrediente.');
     for (const field of ['proteina100', 'carbo100', 'gordura100']) {

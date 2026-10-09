@@ -63,3 +63,9 @@ describe('planejamento de marmitas', () => {
     expect(() => fitPortion(target, [{ ...rice, proteina100: -1 }])).toThrow();
   });
 });
+
+it('bloqueia nutrientes desconhecidos, mas aceita zero declarado', () => {
+  expect(() => fitPortion(target, [{ ...rice, proteina100: null }])).toThrow('Preencha os nutrientes');
+  expect(() => fitPortion(target, [{ ...rice, carbo100: '' }])).toThrow('Preencha os nutrientes');
+  expect(() => fitPortion(target, [{ ...rice, proteina100: 0 }])).not.toThrow();
+});
