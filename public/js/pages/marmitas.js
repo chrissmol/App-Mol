@@ -61,7 +61,7 @@ function renderPeople() {
   }).join('');
   people.forEach((person, index) => renderSlots(person, index, suggestedMealIds(person.meals), 14));
   renderTargets();
-  $('partner-status').textContent = people.length > 1 ? `Conectado com ${people[1].name}.` : 'Sem parceiro(a) conectado. Você já pode preparar suas marmitas.';
+  $('partner-status').textContent = people.length > 1 ? `Conectado com ${people[1].name}.` : 'Nenhuma pessoa conectada. Você já pode preparar suas marmitas.';
 }
 function ingredientFromCatalog(name) {
   const food = FOOD_CATALOG.find(item => item.nome === name);
@@ -190,7 +190,7 @@ $('invite-partner').onclick = () => action($('invite-partner'), async () => {
   const code = await createPrepInvite(user);
   setLocalItem(inviteKey(), code);
   $('invite-code').value = code;
-  $('invite-status').textContent = 'Compartilhe este código com seu parceiro(a). Depois de ele aceitar, confirme o vínculo aqui.';
+  $('invite-status').textContent = 'Compartilhe este código com a pessoa que vai cozinhar com você. Depois que ela aceitar, confirme o vínculo aqui.';
 });
 $('join-partner').onclick = () => action($('join-partner'), async () => {
   await acceptPrepInvite(user, $('invite-code').value.trim());
