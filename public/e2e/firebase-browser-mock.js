@@ -125,12 +125,23 @@ function referencePath(reference) {
 }
 export const getDoc = async reference => {
   const path = referencePath(reference);
-  if (path.includes('dietas')) return documentSnapshot(mockDiet);
+  if (path.includes('dietas')) {
+    if (localStorage.getItem('__mol_e2e_prep_diet')) return documentSnapshot({ ...mockDiet, refeicoes: ['Almoço', 'Jantar'].map((nome, index) => ({ id: `prep-${index}`, nome, hora: index ? '20:00' : '12:00', diasSemana: [0, 1, 2, 3, 4, 5, 6], alimentos: [
+      { nome: 'Arroz branco cozido', gramas: 250, kcal100: 128, proteina100: 2.5, carbo100: 28.1, gordura100: 0.2 },
+      { nome: 'Peito de frango grelhado', gramas: 150, kcal100: 159, proteina100: 32, carbo100: 0, gordura100: 2.5 }
+    ] })) });
+    return documentSnapshot(mockDiet);
+  }
   if (path.includes('users')) return documentSnapshot(mockProfile);
   return documentSnapshot(null);
 };
 export const getDocs = async reference => {
   const path = referencePath(reference);
+  if (path.includes('mealPreparations')) {
+    const data = JSON.parse(localStorage.getItem('__mol_e2e_preparations') || '[]');
+    const filter = reference.args.find(item => item.kind === 'where');
+    return querySnapshot(data.filter(([, value]) => value[filter.args[0]] === filter.args[2]));
+  }
   if (path.includes('treinos')) return querySnapshot([['routine-upper', mockRoutine]]);
   if (path.includes('dietas')) return querySnapshot([['diet-e2e', mockDiet]]);
   if (path.includes('sessoes')) return querySnapshot([]);
@@ -141,7 +152,14 @@ export const getCountFromServer = async reference => {
   const snapshot = await getDocs(reference);
   return { data: () => ({ count: snapshot.docs.length }) };
 };
-export const setDoc = async () => {};
+export const setDoc = async (reference, value) => {
+  const path = referencePath(reference);
+  if (path.includes('mealPreparations')) {
+    const data = JSON.parse(localStorage.getItem('__mol_e2e_preparations') || '[]');
+    data.push([path.at(-1), value]);
+    localStorage.setItem('__mol_e2e_preparations', JSON.stringify(data));
+  }
+};
 export const updateDoc = async () => {};
 export const deleteDoc = async () => {};
 export const addDoc = async () => ({ id: 'e2e-document' });

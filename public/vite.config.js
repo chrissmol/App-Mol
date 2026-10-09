@@ -34,6 +34,7 @@ export default defineConfig({
         login: resolve(import.meta.dirname, 'pages/login.html'),
         treino: resolve(import.meta.dirname, 'pages/treino.html'),
         dieta: resolve(import.meta.dirname, 'pages/dieta.html'),
+        marmitas: resolve(import.meta.dirname, 'pages/marmitas.html'),
         perfil: resolve(import.meta.dirname, 'pages/perfil.html'),
         historico: resolve(import.meta.dirname, 'pages/historico.html'),
         progresso: resolve(import.meta.dirname, 'pages/progresso.html'),

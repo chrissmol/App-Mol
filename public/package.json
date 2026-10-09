@@ -49,5 +49,8 @@
   "dependencies": {
     "firebase": "12.18.0",
     "lucide": "1.33.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.6"
   }
 }

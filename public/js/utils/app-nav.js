@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { page: 'index.html', icon: 'layout-dashboard', labelKey: 'home', fallback: 'Início' },
   { page: 'treino.html', icon: 'dumbbell', labelKey: 'workout', fallback: 'Treino' },
   { page: 'dieta.html', icon: 'apple', labelKey: 'diet', fallback: 'Dieta' },
+  { page: 'marmitas.html', icon: 'utensils', labelKey: 'mealPrep', fallback: 'Marmitas' },
   { page: 'perfil.html', icon: 'user', labelKey: 'profile', fallback: 'Perfil' },
 ];
 
