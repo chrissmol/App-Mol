@@ -77,3 +77,18 @@ test('salva alimento personalizado e reutiliza após recarregar, sem aceitar nut
   await page.getByRole('button', { name: 'Adicionar alimento salvo' }).click();
   await expect(page.locator('#kcal100-0')).toHaveValue('90');
 });
+
+test('destaca a aba atual e mantém Cardápios ao atualizar dietas', async ({ page }) => {
+  await page.locator('#show-history').click();
+  await expect(page.locator('#show-history')).toHaveClass(/mol-btn-primary/);
+  await expect(page.locator('#new-prep')).toHaveClass(/mol-btn-secondary/);
+  await page.locator('#retry-prep').click();
+  await expect(page.locator('#retry-prep')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('#retry-prep')).toBeEnabled();
+  await expect(page.locator('#prep-history')).toBeVisible();
+  await expect(page.locator('#planner')).toBeHidden();
+  await expect(page.locator('#show-history')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#new-prep').click();
+  await expect(page.locator('#new-prep')).toHaveClass(/mol-btn-primary/);
+  await expect(page.locator('#show-history')).toHaveClass(/mol-btn-secondary/);
+});
