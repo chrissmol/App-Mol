@@ -5,6 +5,7 @@ const htmlFiles = [
   '../index.html',
   '../pages/treino.html',
   '../pages/dieta.html',
+  '../pages/marmitas.html',
   '../pages/perfil.html',
   '../pages/historico.html',
   '../pages/progresso.html',

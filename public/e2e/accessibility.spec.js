@@ -5,6 +5,7 @@ const pages = [
   '/index.html',
   '/pages/treino.html',
   '/pages/dieta.html',
+  '/pages/marmitas.html',
   '/pages/perfil.html',
   '/pages/historico.html',
   '/pages/progresso.html',
@@ -21,6 +22,7 @@ function isPrivatePage(path) {
 }
 
 async function prepare(page, path, theme = 'dark') {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(({ needsAuth, selectedTheme }) => {
     if (needsAuth) localStorage.setItem('__mol_e2e_user', 'true');
     localStorage.setItem('mol-accessibility', JSON.stringify({

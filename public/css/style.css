@@ -6,6 +6,25 @@
    as páginas via <link rel="stylesheet" href="../css/style.css">
    ================================================================== */
 
+/* Meal preparation uses the shared theme and component tokens. */
+.prep-tabs, .prep-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin: 1rem 0; }
+.prep-card { margin: 1.25rem 0; padding: 1.25rem; border-radius: 1.5rem; }
+.prep-card h2 { font-size: 1.2rem; font-weight: 800; }
+.prep-card p { color: var(--mol-muted); margin: .75rem 0; line-height: 1.6; }
+.prep-card label, .prep-card summary { display: block; margin: .75rem 0 .35rem; font-weight: 600; }
+.prep-card summary { display: list-item; cursor: pointer; min-height: 44px; }
+.prep-card .mol-input { width: 100%; min-height: 44px; padding: .7rem; background: var(--mol-surface-2); color: var(--mol-text); border: 1px solid var(--mol-border); border-radius: .75rem; }
+.prep-ingredient { padding: 1rem 0; border-top: 1px solid var(--mol-border); }
+.prep-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.prep-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+.prep-slots label { display: flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .85rem; }
+.prep-slots input { width: 20px; height: 20px; accent-color: var(--mol-brand-green); }
+.prep-list { display: grid; gap: .5rem; margin: .75rem 0; }
+.prep-list li { padding: .65rem; background: var(--mol-surface-soft); border-radius: .75rem; }
+.prep-card [hidden], .meal-prep-page [hidden] { display: none; }
+.prep-card legend { font-weight: 700; padding: .5rem 0; }
+.prep-card fieldset { min-width: 0; }
+
 /* Registradas como <angle> para o navegador poder interpolar suavemente
    quando o JS do descanso atualiza esses valores a cada segundo — sem
    isso, conic-gradient() troca de ângulo em um salto seco, sem transição. */

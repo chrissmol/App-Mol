@@ -6,6 +6,58 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function prepPartners(first, second) {
+      return first is string && second is string && first != second
+        && exists(/databases/$(database)/documents/mealShares/$(first))
+        && exists(/databases/$(database)/documents/mealShares/$(second))
+        && get(/databases/$(database)/documents/mealShares/$(first)).data.partnerId == second
+        && get(/databases/$(database)/documents/mealShares/$(second)).data.partnerId == first;
+    }
+
+    match /mealShares/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || resource.data.partnerId == request.auth.uid);
+      allow create, update: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['partnerId', 'name'])
+        && request.resource.data.partnerId is string && request.resource.data.partnerId.size() <= 128
+        && request.resource.data.partnerId != userId
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100;
+      allow delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /mealInvites/{code} {
+      // Codes are random 128-bit capabilities; listing invitations is forbidden.
+      allow get: if signedIn();
+      allow create: if signedIn() && code.matches('^[a-f0-9]{32}$')
+        && request.resource.data.keys().hasOnly(['ownerId', 'ownerName', 'guestId', 'createdAt'])
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerName is string && request.resource.data.ownerName.size() <= 100
+        && request.resource.data.guestId == null && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && resource.data.ownerId != request.auth.uid
+        && resource.data.createdAt > request.time - duration.value(2, 'd')
+        && resource.data.guestId == null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['guestId'])
+        && request.resource.data.guestId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /mealPreparations/{preparationId} {
+      // Already shared history remains available to its two original participants.
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || resource.data.partnerId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'partnerId', 'title', 'preparedOn', 'ingredients', 'preparation', 'notes', 'rating', 'createdAt'])
+        && (request.resource.data.partnerId == null || prepPartners(request.auth.uid, request.resource.data.partnerId))
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 100
+        && request.resource.data.preparedOn is string && request.resource.data.preparedOn.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && (!('notes' in request.resource.data) || (request.resource.data.notes is string && request.resource.data.notes.size() <= 500))
+        && (!('rating' in request.resource.data) || request.resource.data.rating in ['', 'favorite', 'ok', 'avoid'])
+        && request.resource.data.ingredients is list && request.resource.data.ingredients.size() > 0 && request.resource.data.ingredients.size() <= 20
+        && request.resource.data.preparation is map
+        && request.resource.data.preparation.pots is list && request.resource.data.preparation.pots.size() > 0 && request.resource.data.preparation.pots.size() <= 56
+        && request.resource.data.preparation.batch is list && request.resource.data.preparation.batch.size() <= 20
+        && request.resource.data.createdAt == request.time;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
     function isAdmin() {
       return signedIn() && request.auth.token.email == 'chrisouzamol@gmail.com';
     }
@@ -208,7 +260,8 @@ service cloud.firestore {
     }
 
     match /dietas/{dietaId} {
-      allow read: if signedIn() && dietaId == request.auth.uid;
+      allow get: if signedIn() && (dietaId == request.auth.uid || prepPartners(request.auth.uid, dietaId));
+      allow list: if signedIn() && dietaId == request.auth.uid;
       allow delete: if ownsExisting() && dietaId == request.auth.uid;
       allow create: if ownsNew() && dietaId == request.auth.uid && validDiet();
       allow update: if ownsExisting() && ownsNew() && dietaId == request.auth.uid && validDiet();
