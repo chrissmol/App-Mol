@@ -3614,8 +3614,7 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-attachment .assistant-icon-btn { width: 2.25rem; height: 2.25rem; }
 .assistant-disclaimer { text-align: center; font-size: .72rem; color: var(--mol-muted); }
 /* Tela própria: composer fixo acima do dock. */
-.assistant-page .assistant-chat { min-height: calc(100svh - 14rem); }
-.assistant-page .assistant-messages { flex: 1; }
+/* Sem altura mínima: com ela, o composer "grudado" subia por cima das sugestões em telas baixas (axe target-size no CI). */
 .assistant-page .assistant-composer { position: sticky; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .25rem); z-index: 5; }
 /* Ao rolar até a mensagem nova, ela para acima da caixa de texto e do dock. */
 .assistant-page .assistant-msg { scroll-margin-bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + 7rem); }
