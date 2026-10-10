@@ -70,6 +70,7 @@ function renderPeople() {
   people.forEach((person, index) => renderSlots(person, index, suggestedMealIds(person.meals), 14));
   renderTargets();
   $('partner-status').textContent = people.length > 1 ? `Conectado com ${people[1].name}.` : 'Nenhuma pessoa conectada. Você já pode preparar suas marmitas.';
+  $('disconnect-partner').hidden = people.length < 2;
 }
 function ingredientFromCatalog(name) {
   const food = FOOD_CATALOG.find(item => item.nome === name);
