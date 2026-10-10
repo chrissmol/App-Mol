@@ -30,6 +30,7 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 - Registro de séries, carga, repetições, RIR, descanso e histórico.
 - Métricas de volume, séries, sessões concluídas, consistência e evolução.
 - Dieta por refeições, horários, alimentos e totais nutricionais.
+- Assistente de IA (Gemini, camada gratuita) que responde sobre treino e dieta e ajusta os dados da pessoa (dieta, rotinas, peso) a partir de conversa, foto, PDF ou planilha, sempre com confirmação e desfazer. Atalhos na Dieta e no Treino.
 - Perfil com peso, altura, objetivo, unidades, progresso corporal e backup.
 - Tema claro, escuro e opção de seguir o sistema do aparelho.
 - Experiência mobile/PWA com bloqueio de zoom, safe-area e navegação inferior.
@@ -47,6 +48,7 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 | PWA | Service worker próprio (cache do app shell) + manifest |
 | Autenticação | Firebase Authentication (Google e e-mail/senha) |
 | Banco | Cloud Firestore |
+| IA | Firebase AI Logic (Gemini Developer API, sem custo) com App Check |
 | Hospedagem | Firebase Hosting |
 | Testes | Vitest, Playwright, html-validate |
 | Segurança | Firestore Rules, npm audit, scan local |
@@ -59,6 +61,10 @@ cd App-Mol/public
 npm install
 npm run dev
 ```
+
+Sem login real, com Firebase e IA simulados (os mesmos dos testes E2E): `MOL_E2E=1 npm run dev`.
+
+Para testar o assistente com o Gemini real no `localhost`, o App Check exige um token de depuração: gere um UUID, salve como `VITE_APPCHECK_DEBUG_TOKEN=<uuid>` em `public/.env.local` (ignorado pelo git) e cadastre o mesmo valor no console do Firebase em App Check > Apps > Gerenciar tokens de depuração.
 
 ## Validação
 
