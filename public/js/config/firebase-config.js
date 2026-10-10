@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 // Inicializa o app Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // App Check usa uma Site Key pública. O enforcement permanece desligado no Firebase
 // até concluirmos a fase de monitoramento e validarmos todos os fluxos do app.
@@ -40,7 +40,13 @@ export let appCheck = null;
 function initAppCheckDeferred() {
   try {
     const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') return null;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Desenvolvimento: só usa App Check com o token de depuração do .env.local
+      // (cadastrado no console). Sem ele, segue sem App Check como antes.
+      const debugToken = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
+      if (!debugToken) return null;
+      /** @type {any} */ (self).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
+    }
     return initializeAppCheck(app, {
       provider: new ReCaptchaEnterpriseProvider('6LeHhMAtAAAAAKY5kHpN5K79KWr_oXElJ2lYgndW'),
       isTokenAutoRefreshEnabled: true
