@@ -1,10 +1,21 @@
 name: Mol quality gate
 
+# Sem push na main: o PR já testou o mesmo código, e o deploy roda os testes
+# de novo antes de publicar.
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '.claude/**'
+      - '.agents/**'
+      - 'docs/**'
+
+# Um push novo no mesmo PR cancela a execução anterior (economiza minutos do
+# plano gratuito do GitHub Actions, que acabou em 2026-10-10).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
