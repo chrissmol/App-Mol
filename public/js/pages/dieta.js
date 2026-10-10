@@ -9,6 +9,7 @@ import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { plural } from '../utils/plural.js';
+import { createAssistantButton } from '../utils/assistant-chat.js';
 
 setupAppShell();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
@@ -430,3 +431,16 @@ $('import-diet-plan').onclick = openDietPlanImport;
 $('diet-mode-view').onclick = () => setDietMode('view');
 $('diet-mode-edit').onclick = () => setDietMode('edit');
 watchProtectedPage(account => { user = account; void load(); });
+
+// Atalho para o assistente sem sair da Dieta; a tela recarrega quando uma mudança é confirmada.
+const assistantEntry = document.createElement('div');
+assistantEntry.className = 'mt-4';
+assistantEntry.dataset.requiresModule = 'assistente';
+assistantEntry.append(createAssistantButton('Ajustar dieta com o assistente', {
+  title: 'Assistente da dieta',
+  intro: 'Posso trocar alimentos, ajustar porções e horários, responder sobre nutrientes ou **importar sua dieta** de uma foto, PDF ou planilha (use o clipe). Nada muda sem você confirmar.',
+  context: 'A pessoa está na tela de Dieta. Priorize ajudar a ajustar a dieta dela (leia com ver_minha_dieta antes de propor) e responder sobre alimentos e refeições. Ela pode anexar foto, PDF ou planilha da dieta.',
+  suggestions: ['Troca o arroz do meu almoço por batata-doce', 'Quantas calorias tem a minha dieta?', 'Quanto de proteína eu como por dia?'],
+  onDataChanged: tipo => { if (tipo === 'dieta' && user) void load(); }
+}));
+document.querySelector('.app-page-header')?.after(assistantEntry);

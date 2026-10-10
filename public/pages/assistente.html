@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+  <meta name="theme-color" content="#070a08">
+  <meta name="google" content="notranslate">
+  <title>Mol</title>
+  <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <script src="/theme-bootstrap.js"></script>
+  <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface assistant-page min-h-screen has-app-nav text-white">
+  <main>
+    <header class="app-page-header">
+      <p class="app-page-header__eyebrow">Inteligência do Mol</p>
+      <h1 class="app-page-header__title">Assistente</h1>
+      <p class="app-page-header__copy">Tire dúvidas de treino e dieta, ou peça para ajustar os seus dados. Nada muda sem você confirmar.</p>
+    </header>
+    <section id="assistant-chat" class="mt-5" aria-label="Chat com o assistente"></section>
+  </main>
+  <nav class="mol-app-nav" data-mol-app-nav="true" aria-label="Navegação principal"></nav>
+  <script type="module" src="../js/pages/assistente.js"></script>
+</body>
+</html>

@@ -30,6 +30,8 @@ export function sheetsToText(sheets) {
 /**
  * Lê um File e devolve a parte para o modelo.
  * `readExcel(file)` é injetado para carregar a biblioteca de Excel só quando preciso.
+ * @param {File} file
+ * @param {{ readExcel?: (file: File) => Promise<any[]> }} [options]
  */
 export async function fileToPart(file, { readExcel } = {}) {
   if (!file) throw new Error('Nenhum arquivo selecionado.');

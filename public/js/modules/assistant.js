@@ -244,3 +244,25 @@ export async function runAssistantTurn({ send, executors, message, attachments =
   }
   return { text: String(response.text || '').trim() };
 }
+
+const grams = value => `${Math.round(Number(value) || 0)}\u00a0g`; // espaço inseparável: "40 g" não quebra de linha
+const mealLine = meal => `${meal.nome} · ${meal.hora}: ${(meal.alimentos || []).map(food => `${food.nome} ${grams(food.gramas)}`).join(', ') || 'sem alimentos'}`;
+const exerciseLine = exercise => `${exercise.nome}: ${(exercise.series || []).length} × ${exercise.repsMin ?? 8}–${exercise.repsMax ?? 12}`;
+const totalsLine = meals => { const total = nutritionTotals(meals); return `${Math.round(total.kcal)} kcal · P ${Math.round(total.protein)} g · C ${Math.round(total.carbs)} g · G ${Math.round(total.fat)} g`; };
+
+/**
+ * Texto do cartão de confirmação: título, linhas de antes/depois e totais.
+ * `current` = { meals } para dieta ou { routines } para rotina.
+ */
+export function summarizeProposal(proposal, current = {}) {
+  if (proposal.tipo === 'dieta') {
+    const before = current.meals || [];
+    return { titulo: 'Alterar dieta', resumo: proposal.resumo, antes: before.map(mealLine), depois: proposal.meals.map(mealLine), totais: { antes: before.length ? totalsLine(before) : '', depois: totalsLine(proposal.meals) } };
+  }
+  if (proposal.tipo === 'rotina') {
+    const existing = (current.routines || []).find(routine => routine.id === proposal.routineId);
+    return { titulo: existing ? `Alterar rotina: ${existing.nome}` : `Nova rotina: ${proposal.routine.nome}`, resumo: proposal.resumo, antes: existing ? (existing.exercicios || []).map(exerciseLine) : [], depois: proposal.routine.exercicios.map(exerciseLine) };
+  }
+  if (proposal.tipo === 'peso') return { titulo: 'Registrar peso', resumo: proposal.resumo, antes: [], depois: [`${String(proposal.pesoKg).replace('.', ',')} kg hoje`] };
+  return { titulo: 'Alteração', resumo: proposal.resumo, antes: [], depois: [] };
+}

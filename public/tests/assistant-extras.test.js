@@ -62,3 +62,22 @@ describe('assistente: anexos', () => {
     expect(send.mock.calls[0][0]).toEqual([{ text: 'Analise o arquivo anexado.' }, attachment]);
   });
 });
+
+describe('assistente: resumo do cartão de confirmação', async () => {
+  const { buildDietProposal, buildRoutineProposal, summarizeProposal } = await import('../js/modules/assistant.js');
+  it('mostra dieta antes e depois com totais', () => {
+    const before = buildDietProposal({ refeicoes: [{ nome: 'Almoço', hora: '12:00', alimentos: [{ nome: 'Arroz branco cozido', gramas: 150 }] }] }).meals;
+    const after = buildDietProposal({ refeicoes: [{ nome: 'Almoço', hora: '12:00', alimentos: [{ nome: 'Batata-doce cozida', gramas: 200 }] }] }).meals;
+    const summary = summarizeProposal({ tipo: 'dieta', resumo: 'Troca o arroz', meals: after }, { meals: before });
+    expect(summary.antes).toEqual(['Almoço · 12:00: Arroz branco cozido 150\u00a0g']);
+    expect(summary.depois).toEqual(['Almoço · 12:00: Batata-doce cozida 200\u00a0g']);
+    expect(summary.totais.depois).toBe('154 kcal · P 1 g · C 37 g · G 0 g');
+  });
+  it('mostra rotina nova, rotina alterada e peso', () => {
+    const { routine } = buildRoutineProposal({ nome: 'Pernas', exercicios: [{ nome: 'Agachamento', series: 4, repsMin: 8, repsMax: 10 }] }, []);
+    expect(summarizeProposal({ tipo: 'rotina', routineId: null, routine }).titulo).toBe('Nova rotina: Pernas');
+    const changed = summarizeProposal({ tipo: 'rotina', routineId: 'r1', routine }, { routines: [{ id: 'r1', nome: 'Upper', exercicios: [{ nome: 'Supino', series: [{}, {}], repsMin: 6, repsMax: 8 }] }] });
+    expect(changed).toMatchObject({ titulo: 'Alterar rotina: Upper', antes: ['Supino: 2 × 6–8'], depois: ['Agachamento: 4 × 8–10'] });
+    expect(summarizeProposal({ tipo: 'peso', pesoKg: 82.4 }).depois).toEqual(['82,4 kg hoje']);
+  });
+});

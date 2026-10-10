@@ -7,9 +7,9 @@ import { withTimeout } from './timeout.js';
 
 export const APP_MODULE_FIELD = 'appModules';
 export const MODULE_PRESETS = {
-  complete: { treino: true, dieta: true, progresso: true, evolucao: true, conquistas: true },
-  training: { treino: true, dieta: false, progresso: false, evolucao: false, conquistas: false },
-  trainingDiet: { treino: true, dieta: true, progresso: false, evolucao: false, conquistas: false },
+  complete: { treino: true, dieta: true, progresso: true, evolucao: true, conquistas: true, assistente: true },
+  training: { treino: true, dieta: false, progresso: false, evolucao: false, conquistas: false, assistente: true },
+  trainingDiet: { treino: true, dieta: true, progresso: false, evolucao: false, conquistas: false, assistente: true },
   custom: null,
 };
 
@@ -19,6 +19,7 @@ export const MODULE_DEFINITIONS = [
   { id: 'progresso', label: 'Progresso', description: 'Métricas, volume, tendências e evolução por exercício.', icon: 'chart-no-axes-combined' },
   { id: 'evolucao', label: 'Evolução corporal', description: 'Peso, medidas, consistência e evolução corporal.', icon: 'scale' },
   { id: 'conquistas', label: 'Conquistas', description: 'Badges, marcos, gamificação e molduras do perfil.', icon: 'trophy' },
+  { id: 'assistente', label: 'Assistente de IA', description: 'Tira dúvidas e ajusta dieta e treino, sempre com a sua confirmação.', icon: 'sparkles' },
 ];
 
 export const DEFAULT_APP_MODULES = { ...MODULE_PRESETS.complete };
@@ -76,6 +77,7 @@ export function pageModule(page = location.pathname.split('/').pop() || 'index.h
   if (['dieta.html', 'marmitas.html'].includes(normalized)) return 'dieta';
   if (['progresso.html', 'historico.html'].includes(normalized)) return 'progresso';
   if (['evolucao.html'].includes(normalized)) return 'evolucao';
+  if (normalized === 'assistente.html') return 'assistente';
   return null;
 }
 
