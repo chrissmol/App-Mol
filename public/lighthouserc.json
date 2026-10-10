@@ -4,7 +4,7 @@
       "url": [
         "http://127.0.0.1:4173/pages/login.html"
       ],
-      "numberOfRuns": 1,
+      "numberOfRuns": 3,
       "settings": {
         "onlyCategories": [
           "performance",
@@ -20,7 +20,8 @@
         "categories:performance": [
           "error",
           {
-            "minScore": 0.7
+            "minScore": 0.7,
+            "aggregationMethod": "median"
           }
         ],
         "categories:accessibility": [

@@ -9,7 +9,7 @@
 - [ ] E2E passes on desktop, Android, iPhone and tablet.
 - [ ] Console health reports no app errors or warnings.
 - [ ] Network checks report no failed requests or unexpected Firebase errors.
-- [ ] `npm audit --audit-level=moderate` and the local security scan pass.
+- [ ] `npm run audit` (blocks on production dependencies; build-only findings are warnings) and the local security scan pass.
 
 ## Manual smoke test
 
