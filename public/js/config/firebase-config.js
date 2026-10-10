@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 // Inicializa o app Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 // App Check usa uma Site Key pública. O enforcement permanece desligado no Firebase
 // até concluirmos a fase de monitoramento e validarmos todos os fluxos do app.
