@@ -8,6 +8,7 @@ import { FASTING_PROTOCOLS, FOOD_CATALOG, foodNutrients, mealFoods, mealIsOutsid
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
+import { plural } from '../utils/plural.js';
 
 setupAppShell();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
@@ -22,8 +23,9 @@ const requestedParams = new URLSearchParams(window.location.search);
 const requestedMealId = requestedParams.get('meal');
 let pendingRequestedMealId = requestedMealId;
 let focusedMealId = requestedMealId;
-const requestedDay = Number(requestedParams.get('day'));
-if (Number.isInteger(requestedDay) && requestedDay >= 0 && requestedDay <= 6) selectedDay = requestedDay;
+// Sem ?day= abre no dia de hoje (Number(null) era 0 e abria sempre no domingo).
+const requestedDay = requestedParams.get('day');
+if (/^[0-6]$/.test(requestedDay || '')) selectedDay = Number(requestedDay);
 const newId = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const rounded = value => Math.round(Number(value) || 0);
@@ -116,7 +118,7 @@ async function persistFasting(nextFasting) {
 }
 
 function renderFastingCard() {
-  const activeDays = fasting.diasSemana.length === 7 ? 'Todos os dias' : `${fasting.diasSemana.length} dia(s) por semana`;
+  const activeDays = fasting.diasSemana.length === 7 ? 'Todos os dias' : `${plural(fasting.diasSemana.length, 'dia', 'dias')} por semana`;
   $('fasting-card').innerHTML = `<div class="flex items-center justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wider text-neon">Jejum intermitente</p><h2 class="mt-1 text-xl font-extrabold">${fasting.ativo ? escapeHTML(fasting.protocolo) : 'Desativado'}</h2><p class="mt-2 text-sm text-gray-500">${fasting.ativo ? `${escapeHTML(activeDays)} · ${escapeHTML(fasting.inicioJanela)}-${escapeHTML(fasting.fimJanela)}` : 'Configure sua janela de jejum quando quiser.'}</p></div><button type="button" id="fasting-settings" class="mol-btn mol-btn-secondary min-h-10 rounded-xl px-3 text-xs">${fasting.ativo ? 'Editar' : 'Configurar'}</button></div>`;
   $('fasting-settings').onclick = openFastingForm;
 }
@@ -129,7 +131,7 @@ function renderDaySelector() {
     selector.className = 'mt-6';
     $('diet-content')?.prepend(selector);
   }
-  selector.innerHTML = `<div class="flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Dia do plano</p><h2 class="mt-1 text-lg font-extrabold">${escapeHTML(DAY_LABELS[selectedDay])}</h2></div><button type="button" data-today class="min-h-9 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300">Hoje</button></div><div class="mt-3 grid grid-cols-7 gap-1">${DAY_LABELS.map((label, day) => `<button type="button" data-day="${day}" class="min-h-10 rounded-xl px-1 text-xs font-bold ${day === selectedDay ? 'bg-neon text-black' : 'mol-soft text-gray-400'}">${label}</button>`).join('')}</div>`;
+  selector.innerHTML = `<div class="flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Dia do plano</p><h2 class="mt-1 text-lg font-extrabold">${escapeHTML(DAY_LABELS[selectedDay])}</h2></div><button type="button" data-today class="min-h-9 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300">Hoje</button></div><div class="mt-3 grid grid-cols-7 gap-1">${DAY_LABELS.map((label, day) => `<button type="button" data-day="${day}" aria-pressed="${day === selectedDay}" class="min-h-10 rounded-xl px-1 text-xs font-bold ${day === selectedDay ? 'bg-neon text-black' : 'mol-soft text-gray-400'}">${label}</button>`).join('')}</div>`;
   selector.querySelector('[data-today]').onclick = () => { selectedDay = new Date().getDay(); render(); };
   selector.querySelectorAll('[data-day]').forEach(button => {
     button.onclick = () => { selectedDay = Number(button.dataset.day); render(); };

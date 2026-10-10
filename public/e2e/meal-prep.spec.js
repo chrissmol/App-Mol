@@ -92,3 +92,10 @@ test('destaca a aba atual e mantém Cardápios ao atualizar dietas', async ({ pa
   await expect(page.locator('#new-prep')).toHaveClass(/mol-btn-primary/);
   await expect(page.locator('#show-history')).toHaveClass(/mol-btn-secondary/);
 });
+
+test('sem pessoa conectada, o preparo compartilhado nao oferece desconectar', async ({ page }) => {
+  await page.getByText('Preparo compartilhado').click();
+  await expect(page.locator('#partner-status')).toContainText('Nenhuma pessoa conectada');
+  await expect(page.getByRole('button', { name: 'Criar convite' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Desconectar' })).toBeHidden();
+});

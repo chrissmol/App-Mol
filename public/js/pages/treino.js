@@ -73,6 +73,7 @@ function exerciciosParaPersistir(rotina) { return treinoIniciado ? cleanRoutineE
 
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
 import { exercisePoseFrames, exercisePoseLabel } from '../modules/exercise-poses.js';
+import { plural } from '../utils/plural.js';
 let favoritosExercicios = [];
 let recentesExercicios = [];
 let exerciciosPersonalizados = [];
@@ -790,7 +791,7 @@ function renderRotinas() {
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
-          <p class="text-xs text-gray-500">${rotina.exercicios ? rotina.exercicios.length : 0} exercícios${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
+          <p class="text-xs text-gray-500">${plural(rotina.exercicios ? rotina.exercicios.length : 0, 'exercício', 'exercícios')}${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
         </div>
         <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="text-gray-500 hover:text-red-400 transition-colors p-1" aria-label="Excluir ${escapeHTML(rotina.nome)}">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1563,7 +1564,7 @@ window.finalizarEConcluirTreino = async () => {
   const totais = workoutTotals(rotina.exercicios);
   if (totais.completed === 0) return showToast('Conclua ao menos uma série antes de finalizar.');
   if (totais.completed < totais.total) {
-    const confirmar = await confirmAction({ title: 'Finalizar treino?', message: `${totais.total - totais.completed} série(s) ficarão como não realizadas.`, confirmText: 'Finalizar assim' });
+    const confirmar = await confirmAction({ title: 'Finalizar treino?', message: `${plural(totais.total - totais.completed, 'série ficará', 'séries ficarão')} como não realizada${totais.total - totais.completed === 1 ? '' : 's'}.`, confirmText: 'Finalizar assim' });
     if (!confirmar) return;
   }
   finalizandoTreino = true;

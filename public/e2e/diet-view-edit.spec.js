@@ -60,3 +60,10 @@ test('edicao da dieta concentra os controles de alterar refeicao', async ({ page
   await expect(dialog.getByRole('button', { name: /^Editar$/i })).toBeVisible();
   await expect(dialog.getByRole('button', { name: /^Excluir$/i })).toBeVisible();
 });
+
+test('dieta abre no dia de hoje quando a URL nao informa o dia', async ({ page }) => {
+  await openDiet(page);
+  const today = String(await page.evaluate(() => new Date().getDay()));
+  await expect(page.locator(`#diet-day-selector [data-day="${today}"]`)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#diet-day-selector [aria-pressed="true"]')).toHaveCount(1);
+});
