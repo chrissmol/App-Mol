@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../js/config/firebase-config.js', () => ({ app: {} }));
 import {
   ASSISTANT_SYSTEM_INSTRUCTION,
   ASSISTANT_TOOL_DECLARATIONS,
@@ -131,7 +133,6 @@ describe('assistente: laço de conversa', () => {
 describe('assistente: mensagens de erro do Gemini', () => {
   it('traduz cota, App Check e falha genérica', async () => {
     vi.stubGlobal('navigator', { onLine: true });
-    vi.mock('../js/config/firebase-config.js', () => ({ app: {} }));
     const { describeAssistantError } = await import('../js/config/assistant-gemini.js');
     expect(describeAssistantError(new Error('AI: Error fetching ...: [429 ] You exceeded your current quota'))).toMatch(/limite gratuito/);
     expect(describeAssistantError(new Error('[401 ] Firebase App Check token is invalid'))).toMatch(/não está liberado/);
