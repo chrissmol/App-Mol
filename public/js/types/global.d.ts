@@ -26,4 +26,9 @@ declare global {
   interface Navigator {
     standalone?: boolean;
   }
+
+  // Variáveis injetadas pelo Vite (ex.: VITE_APPCHECK_DEBUG_TOKEN do .env.local).
+  interface ImportMeta {
+    readonly env: Record<string, any> & { readonly DEV: boolean; readonly VITE_APPCHECK_DEBUG_TOKEN?: string };
+  }
 }

@@ -43,7 +43,7 @@ function initAppCheckDeferred() {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       // Desenvolvimento: só usa App Check com o token de depuração do .env.local
       // (cadastrado no console). Sem ele, segue sem App Check como antes.
-      const debugToken = /** @type {any} */ (import.meta).env?.VITE_APPCHECK_DEBUG_TOKEN;
+      const debugToken = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
       if (!debugToken) return null;
       /** @type {any} */ (self).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
