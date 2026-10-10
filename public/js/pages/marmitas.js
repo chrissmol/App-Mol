@@ -6,6 +6,7 @@ import { getLocalItem, setLocalItem } from '../utils/storage.js';
 import { FOOD_CATALOG, normalizeDietMeals } from '../modules/nutrition.js';
 import { suggestedMealIds, weeklyMealSlots, calculatePreparation, divideActualYield, hasMissingNutrition, validatePrepIngredients } from '../modules/meal-prep.js';
 import { loadPrepPeople, createPrepInvite, acceptPrepInvite, confirmPrepInvite, disconnectPrepPartner, loadPreparations, savePreparation, loadCustomFoods, saveCustomFood } from '../modules/meal-prep-store.js';
+import { plural } from '../utils/plural.js';
 
 setupAppShell();
 const $ = id => /** @type {any} */ (document.getElementById(id));
@@ -58,7 +59,7 @@ function renderTargets() {
     const selected = [...document.querySelectorAll(`input[name="slot-${index}"]:checked`)].map(input => /** @type {HTMLInputElement} */ (input).value);
     const slots = person.slots.filter(slot => selected.includes(slot.key));
     const totals = slots.reduce((sum, slot) => { ['protein', 'carbs', 'fat'].forEach(key => { sum[key] += slot.target[key]; }); return sum; }, { protein: 0, carbs: 0, fat: 0 });
-    return `<p><strong>${esc(person.name)} · ${slots.length} potes</strong><br>Referência do preparo: P ${n(totals.protein)} g · C ${n(totals.carbs)} g · G ${n(totals.fat)} g.</p>`;
+    return `<p><strong>${esc(person.name)} · ${plural(slots.length, 'pote', 'potes')}</strong><br>Referência do preparo: P ${n(totals.protein)} g · C ${n(totals.carbs)} g · G ${n(totals.fat)} g.</p>`;
   }).join('');
 }
 function renderPeople() {

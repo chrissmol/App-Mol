@@ -11,6 +11,7 @@ import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { cardAllowed, normalizeAppModules, presetFromModules } from '../utils/app-modules.js';
+import { plural } from '../utils/plural.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -99,7 +100,7 @@ function getDailyFocus() {
     eyebrow: 'Treino + dieta',
     title: 'Rotina enxuta',
     subtitle: 'O início prioriza treino e alimentação, sem cards extras de acompanhamento.',
-    context: 'Se houver treino ou refeição próximos, eles aparecem aqui como ação principal.',
+    context: '',
     href: './pages/treino.html',
     label: 'Começar',
     icon: 'apple',
@@ -110,7 +111,7 @@ function getDailyFocus() {
     eyebrow: 'Próxima ação',
     title: 'Tudo pronto por aqui',
     subtitle: 'Quando houver treino, refeição ou acompanhamento importante, ele aparece primeiro neste card.',
-    context: 'Use os cards abaixo para abrir uma área específica sem repetir o resumo.',
+    context: '',
     href: './pages/treino.html',
     label: 'Ver app',
     icon: 'sparkles',
@@ -131,7 +132,8 @@ function updateDailyBrief() {
   eyebrow.textContent = focus.eyebrow;
   title.textContent = focus.title;
   subtitle.textContent = focus.subtitle;
-  context.textContent = focus.context;
+  context.textContent = focus.context || '';
+  context.hidden = !focus.context;
   action.href = focus.href;
   action.textContent = focus.label;
   icon.innerHTML = `<i data-lucide="${focus.icon || 'sparkles'}" class="h-5 w-5"></i>`;
@@ -185,7 +187,7 @@ function setWeek(sessions, goal = 1) {
       eyebrow: 'Meta da semana',
       title: `${thisWeek.length}/${goal || 1} treinos concluídos`,
       subtitle: 'Ainda existe espaço para fechar sua meta semanal.',
-      context: 'Acompanhe a semana completa no card de progresso quando quiser ver detalhes.',
+      context: '',
       href: './pages/treino.html',
       label: 'Treinar',
       icon: 'calendar-check'
@@ -223,7 +225,7 @@ function setToday(routines, user) {
       eyebrow: 'Treino em andamento',
       title: `Retomar ${routine.nome}`,
       subtitle: `${done}/${series.length} séries concluídas · ${Math.floor(elapsed / 60)} min decorridos.`,
-      context: 'O app guarda o treino em andamento para você voltar direto para a execução.',
+      context: '',
       href: card.href,
       label: 'Retomar',
       icon: 'play'
@@ -233,7 +235,7 @@ function setToday(routines, user) {
     const routine = selectRoutine(routines); const series = (routine.exercicios || []).reduce((sum, ex) => sum + (ex.series?.length || 0), 0);
     $('today-eyebrow').textContent = scheduled ? 'Planejado para hoje' : 'Seu próximo treino';
     $('today-workout-title').textContent = scheduled ? `Hoje é dia de ${routine.nome}` : routine.nome;
-    $('today-workout-subtitle').textContent = `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${estimatedWorkoutMinutes(routine)} min`;
+    $('today-workout-subtitle').textContent = `${plural(routine.exercicios?.length || 0, 'exercício', 'exercícios')} · ${plural(series, 'série', 'séries')} · cerca de ${estimatedWorkoutMinutes(routine)} min`;
     card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}`;
     card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Iniciar treino</span>';
     setFocusCandidate('workout', {
@@ -242,8 +244,8 @@ function setToday(routines, user) {
       priority: scheduled ? 80 : 45,
       eyebrow: scheduled ? 'Treino de hoje' : 'Próximo treino',
       title: scheduled ? `Hoje é dia de ${routine.nome}` : routine.nome,
-      subtitle: `${routine.exercicios?.length || 0} exercícios · ${series} séries · cerca de ${estimatedWorkoutMinutes(routine)} min.`,
-      context: scheduled ? 'Como este treino já está planejado para hoje, ele vira a ação principal.' : 'Sem treino marcado para hoje, o app deixa sua próxima rotina pronta.',
+      subtitle: `${plural(routine.exercicios?.length || 0, 'exercício', 'exercícios')} · ${plural(series, 'série', 'séries')} · cerca de ${estimatedWorkoutMinutes(routine)} min.`,
+      context: '',
       href: card.href,
       label: 'Iniciar',
       icon: 'dumbbell'
@@ -280,7 +282,7 @@ function setNextMeal(meals) {
   $('next-meal-name').textContent = meal.nome || 'Refeição';
   const foods = mealFoods(meal);
   const nutrients = foods.reduce((sum, food) => sum + foodNutrients(food).kcal, 0);
-  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${foods.length} alimento(s) · ${Math.round(nutrients)} kcal`;
+  $('next-meal-meta').textContent = `${tomorrow ? 'Amanhã, ' : ''}${meal.hora} · ${plural(foods.length, 'alimento', 'alimentos')} · ${Math.round(nutrients)} kcal`;
   const targetDay = (today.getDay() + (tomorrow ? 1 : 0)) % 7;
   const href = `./pages/dieta.html?meal=${encodeURIComponent(meal.id)}&day=${targetDay}`;
   card.querySelector('a')?.setAttribute('href', href);
@@ -291,8 +293,8 @@ function setNextMeal(meals) {
     priority: tomorrow ? 20 : 60,
     eyebrow: tomorrow ? 'Amanhã cedo' : 'Próxima refeição',
     title: `${meal.hora} · ${meal.nome || 'Refeição'}`,
-    subtitle: `${foods.length} alimento(s) · ${Math.round(nutrients)} kcal.`,
-    context: 'Abrir direto daqui leva para a refeição certa dentro da dieta, sem precisar procurar no plano inteiro.',
+    subtitle: `${plural(foods.length, 'alimento', 'alimentos')} · ${Math.round(nutrients)} kcal.`,
+    context: '',
     href,
     label: 'Ver refeição',
     icon: 'utensils'
