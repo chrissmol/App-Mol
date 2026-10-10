@@ -42,13 +42,18 @@ test('conversa, recusa fora do escopo, proposta confirmada e desfeita', async ({
   expect(errors).toEqual([]);
 });
 
-test('sugestões e caixa de texto não se sobrepõem', async ({ page }) => {
+test('sugestões ficam dentro da barra de digitação e nunca atrás dela', async ({ page }) => {
+  // Com o aviso de privacidade aberto a página passa da altura da tela, como no teste de acessibilidade.
   await page.goto('/pages/assistente.html');
-  await page.getByRole('button', { name: 'Entendi' }).click();
-  const composer = await page.locator('.assistant-composer').boundingBox();
+  await expect(page.getByText(/passam pelo Gemini/)).toBeVisible();
+  await expect(page.locator('.assistant-composer [data-suggestion]')).toHaveCount(4);
   for (const chip of await page.locator('[data-suggestion]').all()) {
-    const box = await chip.boundingBox();
-    expect(box.y + box.height <= composer.y || box.y >= composer.y + composer.height).toBe(true);
+    const covering = await chip.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return top === element || element.contains(top);
+    });
+    expect(covering).toBe(true);
   }
 });
 

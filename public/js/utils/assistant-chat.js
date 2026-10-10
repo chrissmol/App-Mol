@@ -47,8 +47,9 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       <button type="button" class="mol-btn mol-btn-secondary" data-notice-ok>Entendi</button>
     </div>
     <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
-    <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
     <form class="assistant-composer" data-form>
+      <!-- Sugestões dentro da barra: acompanham o sticky e nunca ficam escondidas atrás dela. -->
+      <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
       <div class="assistant-attachment" data-attachment hidden><i data-lucide="paperclip" aria-hidden="true"></i><span data-attachment-name></span><button type="button" class="assistant-icon-btn" data-attachment-remove aria-label="Remover anexo"><i data-lucide="x"></i></button></div>
       <div class="assistant-composer__row">
         <button type="button" class="assistant-icon-btn" data-attach aria-label="Anexar foto, PDF ou planilha"><i data-lucide="paperclip"></i></button>
@@ -161,6 +162,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     busy = true;
     $('[data-send]').disabled = true;
     $('[data-suggestions]').hidden = true;
+    container.classList.add('assistant-chat--active');
     const sentAttachment = attachment;
     addMessage('user', `${message ? formatAssistantText(message) : ''}${sentAttachment ? `<p class="assistant-msg__file"><i data-lucide="paperclip" aria-hidden="true"></i> ${escapeHTML(sentAttachment.name)}</p>` : ''}`);
     icons(messages.lastElementChild);
