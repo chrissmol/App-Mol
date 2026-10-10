@@ -23,7 +23,7 @@ npm run lint
 npm run test:html
 npm test
 npm run check:rules
-npm audit --audit-level=moderate
+npm run audit
 semgrep --config auto .
 npm run build
 ```
