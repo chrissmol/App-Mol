@@ -8,6 +8,9 @@ const desktopPages = [
   '/pages/historico.html',
   '/pages/progresso.html',
   '/pages/configuracoes.html',
+  '/pages/configuracoes.html#dispositivo',
+  '/pages/marmitas.html',
+  '/pages/assistente.html',
   '/pages/evolucao.html',
   '/pages/dados-pessoais.html',
 ];
@@ -29,6 +32,17 @@ async function prepare(page, path) {
 
 test.describe('layout desktop', () => {
   for (const path of desktopPages) {
+    test(`${path} não espreme cards em colunas estreitas`, async ({ page }) => {
+      // Elemento sem regra de largura numa grade de 12 colunas caía em ~72 px.
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await prepare(page, path);
+      const narrow = await page.evaluate(() => [...document.querySelectorAll('main section, main article, main .glass-card, main > div, main > nav')]
+        .filter(element => element.offsetParent && (element.innerText || '').trim().length > 20)
+        .map(element => ({ id: element.id || String(element.className).slice(0, 60), width: Math.round(element.getBoundingClientRect().width) }))
+        .filter(item => item.width > 0 && item.width < 160));
+      expect(narrow).toEqual([]);
+    });
+
     test(`${path} não cria rolagem horizontal nem cards fora do viewport`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await prepare(page, path);

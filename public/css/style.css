@@ -827,7 +827,8 @@ html[data-card-style="neon"] .glass-card, html[data-card-style="neon"] .mol-card
     width: min(100%, 72rem) !important;
     max-width: 72rem !important;
     margin: 0 auto !important;
-    padding: 2rem !important;
+    /* Fim usa variável: 0 onde o body já reserva o dock (ver fim do arquivo). */
+    padding: 2rem 2rem var(--mol-main-end-pad, 2rem) !important;
   }
   .dashboard-surface main > *, .diet-page main > *, .profile-page main > *,
   .settings-page main > *, .workout-page main > * {
@@ -3450,7 +3451,8 @@ html[data-theme="light"] body .mol-brand img {
     width: min(100%, 64rem) !important;
     max-width: 64rem !important;
     margin: 0 auto !important;
-    padding: 2rem !important;
+    /* Fim usa variável: 0 onde o body já reserva o dock (ver fim do arquivo). */
+    padding: 2rem 2rem var(--mol-main-end-pad, 2rem) !important;
   }
   .dashboard-surface main > *,
   .diet-page main > *,
@@ -3604,6 +3606,8 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-composer__row { display: flex; align-items: flex-end; gap: .35rem; }
 .assistant-composer textarea { flex: 1; min-width: 0; min-height: 2.75rem; max-height: 10rem; resize: none; border: 0; background: transparent; color: var(--mol-text); padding: .7rem .35rem; line-height: 1.4; outline: none; }
 .assistant-composer textarea::placeholder { color: var(--mol-muted); }
+/* Vence o fundo/borda globais de campos (inclusive no tema claro) e o visual nativo do iOS. */
+html body .assistant-composer textarea { -webkit-appearance: none; appearance: none; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .assistant-icon-btn { display: inline-flex; flex: none; width: 2.75rem; height: 2.75rem; align-items: center; justify-content: center; border-radius: 999px; color: var(--mol-muted-strong); }
 .assistant-icon-btn:hover { background: var(--mol-surface-soft); color: var(--mol-text); }
 .assistant-icon-btn svg, .assistant-send svg { width: 1.2rem; height: 1.2rem; }
@@ -3642,4 +3646,34 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 }
 @media (prefers-reduced-motion: reduce) {
   .assistant-msg, .assistant-sheet, .assistant-typing span { animation: none; }
+}
+
+/* ==================================================================
+   Grades de 12 colunas (telas largas): quem não define largura ocupa a
+   linha inteira. Sem isso, elementos novos ou sem regra caíam em uma
+   coluna de ~72 px (cartão do Início, seções da Dieta, resumo do
+   Progresso e seções de Configurações). :where() tem especificidade zero,
+   então os "span 4/6" existentes continuam valendo.
+   ================================================================== */
+@media (min-width: 900px) {
+  :where(.dashboard-surface main, .settings-page main, .history-page main, .progress-page main, .admin-page main, .diet-page main,
+    #personal-content, #evolution-content, #diet-content, #diet-edit-content, #admin-content, #profile-content) > * {
+    grid-column: 1 / -1;
+  }
+  /* Uma regra antiga (.dashboard-surface main > section { grid-column: auto }) vence o :where() acima. */
+  .dashboard-surface main > #daily-brief-card { grid-column: 1 / -1; }
+}
+
+/* Digitando no celular: o dock sai e barras "grudadas" voltam ao fluxo, para o iOS
+   colocar o campo logo acima do teclado em vez de deixá-los flutuando no meio da tela. */
+@media (pointer: coarse) {
+  html.mol-typing .mol-app-nav { display: none; }
+  html.mol-typing .assistant-page .assistant-chat--active .assistant-composer { position: static; }
+}
+
+/* Onde o body já reserva o espaço do dock (tudo menos desktop com mouse), o main não
+   soma outro respiro no fim: era o "vão" vazio no fim do Perfil e da Dieta no tablet. */
+@media (max-width: 1023px), (hover: none), (pointer: coarse) {
+  body.has-app-nav { --mol-main-end-pad: 0px; }
+  body.has-app-nav main { padding-bottom: 0; }
 }
