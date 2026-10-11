@@ -37,9 +37,12 @@ describe('assistente: ferramentas de leitura', () => {
     expect(result.porCemGramas[0]).toMatchObject({ nome: 'Arroz branco cozido', carboG: 28.1 });
   });
 
-  it('avisa quando o alimento não está no catálogo', async () => {
-    const { executors } = createAssistantTools(data);
-    expect(await executors.buscar_alimento({ nome: 'xyz inexistente' })).toEqual({ encontrado: false, dica: 'Não está no catálogo do app.' });
+  it('fora do catálogo, procura no Open Food Facts e cita a fonte', async () => {
+    const web = { searchWikipedia: async () => ({}), lookupBarcode: async () => ({}), searchFoodsOnline: async term => (term === 'granola x' ? { encontrado: true, url: 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=granola', produtos: [{ nome: 'Granola', marca: 'Marca', kcal100: 390, proteina100: 9.5, carbo100: 66.7, gordura100: 10 }] } : { encontrado: false, produtos: [] }) };
+    const { executors, sources } = createAssistantTools({ ...data, web });
+    expect(await executors.buscar_alimento({ nome: 'xyz inexistente' })).toEqual({ encontrado: false, dica: 'Não está no catálogo do app nem no Open Food Facts.' });
+    expect(await executors.buscar_alimento({ nome: 'granola x' })).toMatchObject({ encontrado: true, porCemGramas: [{ nome: 'Granola · Marca', kcal: 390 }] });
+    expect(sources[0]).toMatchObject({ fonte: 'Open Food Facts' });
   });
 
   it('busca exercício sem diferenciar acento', async () => {
