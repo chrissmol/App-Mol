@@ -47,9 +47,14 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       <button type="button" class="mol-btn mol-btn-secondary" data-notice-ok>Entendi</button>
     </div>
     <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
-    <form class="assistant-composer" data-form>
-      <!-- Sugestões dentro da barra: acompanham o sticky e nunca ficam escondidas atrás dela. -->
+    <!-- Estado vazio no padrão dos apps de chat: saudação ao centro e sugestões logo acima da caixa. -->
+    <section class="assistant-empty" data-empty aria-label="Comece uma conversa">
+      <span class="assistant-empty__icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+      <h2 class="assistant-empty__title">Como posso ajudar?</h2>
+      ${intro ? `<div class="assistant-empty__intro">${formatAssistantText(intro)}</div>` : ''}
       <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
+    </section>
+    <form class="assistant-composer" data-form>
       <div class="assistant-attachment" data-attachment hidden><i data-lucide="paperclip" aria-hidden="true"></i><span data-attachment-name></span><button type="button" class="assistant-icon-btn" data-attachment-remove aria-label="Remover anexo"><i data-lucide="x"></i></button></div>
       <div class="assistant-composer__row">
         <button type="button" class="assistant-icon-btn" data-attach aria-label="Anexar foto, PDF ou planilha"><i data-lucide="paperclip"></i></button>
@@ -69,9 +74,6 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
   let busy = false;
   let sendPromise = null;
   let storePromise = null;
-
-  // Boas-vindas só na interface: não vai para a IA nem gasta cota.
-  if (intro) addMessage('assistant', formatAssistantText(intro));
 
   const notice = $('[data-notice]');
   if (!getLocalItem(NOTICE_KEY)) notice.hidden = false;
@@ -161,7 +163,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     if (busy || (!message && !attachment)) return;
     busy = true;
     $('[data-send]').disabled = true;
-    $('[data-suggestions]').hidden = true;
+    $('[data-empty]').hidden = true;
     container.classList.add('assistant-chat--active');
     const sentAttachment = attachment;
     addMessage('user', `${message ? formatAssistantText(message) : ''}${sentAttachment ? `<p class="assistant-msg__file"><i data-lucide="paperclip" aria-hidden="true"></i> ${escapeHTML(sentAttachment.name)}</p>` : ''}`);

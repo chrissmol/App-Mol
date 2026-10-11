@@ -42,11 +42,15 @@ test('conversa, recusa fora do escopo, proposta confirmada e desfeita', async ({
   expect(errors).toEqual([]);
 });
 
-test('sugestões ficam dentro da barra de digitação e nunca atrás dela', async ({ page }) => {
+test('estado vazio: saudação e sugestões acima da caixa, sem nada cobrindo', async ({ page }) => {
   // Com o aviso de privacidade aberto a página passa da altura da tela, como no teste de acessibilidade.
   await page.goto('/pages/assistente.html');
   await expect(page.getByText(/passam pelo Gemini/)).toBeVisible();
-  await expect(page.locator('.assistant-composer [data-suggestion]')).toHaveCount(4);
+  await expect(page.getByRole('heading', { name: 'Como posso ajudar?' })).toBeVisible();
+  await expect(page.locator('.assistant-empty [data-suggestion]')).toHaveCount(4);
+  const composer = await page.locator('.assistant-composer').boundingBox();
+  const lastChip = await page.locator('[data-suggestion]').last().boundingBox();
+  expect(lastChip.y + lastChip.height).toBeLessThanOrEqual(composer.y);
   for (const chip of await page.locator('[data-suggestion]').all()) {
     const covering = await chip.evaluate(element => {
       const box = element.getBoundingClientRect();
