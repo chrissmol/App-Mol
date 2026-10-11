@@ -3692,11 +3692,10 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 }
 
 /* Pet do assistente (docs/ASSISTENTE_PERSONA.md): avatar ao lado das respostas, sem animação constante. */
-.pet-avatar { display: block; flex-shrink: 0; border-radius: 1rem; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--mol-brand-green) 22%, transparent), transparent 70%); }
-html[data-theme="light"] .pet-avatar { background-color: #111612; }
+.pet-avatar { display: block; flex-shrink: 0; object-fit: contain; }
 .assistant-empty__pet { margin-inline: auto; }
 .assistant-chat[data-pet] .assistant-msg--assistant { position: relative; margin-left: 2.25rem; }
-.assistant-chat[data-pet] .assistant-msg--assistant::before { content: ''; position: absolute; left: -2.25rem; bottom: 0; width: 1.75rem; height: 1.75rem; border-radius: .6rem; background: var(--assistant-pet) center / contain no-repeat, #111612; }
+.assistant-chat[data-pet] .assistant-msg--assistant::before { content: ''; position: absolute; left: -2.4rem; bottom: -.15rem; width: 2rem; height: 2rem; background: var(--assistant-pet) center / contain no-repeat; }
 .pet-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
 .pet-option { display: flex; flex-direction: column; align-items: center; gap: .35rem; min-height: 9rem; padding: .9rem .5rem; border-radius: 1.5rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); text-align: center; cursor: pointer; transition: border-color .2s, background-color .2s, transform .12s; }
 .pet-option:active { transform: scale(.97); }

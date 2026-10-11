@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mol-app-shell-v6';
+const CACHE_VERSION = 'mol-app-shell-v7';
 const SHELL_URLS = [
   '/',
   '/index.html',
@@ -14,8 +14,8 @@ const SHELL_URLS = [
   '/pages/dados-pessoais.html',
   '/pages/boas-vindas.html',
   '/pages/assistente.html',
-  '/assets/pets/moldrian.svg',
-  '/assets/pets/marlo.svg',
+  '/assets/pets/moldrian/feliz-avatar.webp',
+  '/assets/pets/marlo/feliz-avatar.webp',
   '/css/style.css',
   '/css/tailwind.css',
   '/theme-bootstrap.js',

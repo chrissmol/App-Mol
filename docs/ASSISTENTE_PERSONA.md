@@ -79,18 +79,17 @@ O pet **nunca** substitui a informação principal da tela nem cobre cargas, sé
 - **Acessibilidade:** `alt` com nome e estado ("Marlô comemorando"); animação desligada com "reduzir movimento" (fica imagem parada ou fade); contraste testado nos temas escuro, claro e alto contraste.
 - **Movimento:** toque 100–150 ms, transições 200–300 ms, conquistas 400–600 ms.
 
-## 7. Arte (pendente de design)
+## 7. Arte
 
-A prancha aprovada é referência; os arquivos finais ainda não existem. Até lá, o app usa **placeholders vetoriais simples** (silhueta da cabeça: cabelo curto para Moldrian, coque para Marlô) na paleta oficial:
+Arte oficial gerada em 2026-10-11 a partir da prancha aprovada: 19 imagens por pet (principal, 6 expressões de chat, 6 estados de treino e 6 de dieta), corpo escuro translúcido com névoa menta, só na paleta verde do Mol (o brilho quente da Marlô na prancha era estudo de luz).
 
-| Uso | Cor |
+| Arquivo | Uso |
 |---|---|
-| Fundo | `#070A08` |
-| Superfície | `#111612` / `#171D19` |
-| Marca / ação | `#1E7349` |
-| Traço luminoso | `#57D493` |
-| Texto de apoio | `#8B9A91` |
+| `public/pwa/assets/pets/{pet}/{estado}.webp` | 512 px, recortado rente ao desenho. Estados: `principal`, `feliz`, `animado`, `curioso`, `apoio`, `focado`, `descanso-chat`, `pronto`, `treinando`, `alongamento`, `conquista`, `descanso`, `evolucao`, `refeicao`, `hidratacao`, `plano`, `conquista-dieta`, `descanso-dieta`, `evolucao-dieta`. |
+| `…/{estado}-avatar.webp` | 192 px, só para os estados de chat e o principal (até 96 px na tela). |
 
-O brilho quente de Marlô na prancha é estudo de luz, não cor nova: na produção, os dois usam a paleta verde do Mol.
+Os nomes são neutros (`animado`, `curioso`, `focado`, `pronto`) para os dois pets; o texto falado é que concorda com o gênero.
 
-Kit a entregar: avatares principais dos dois; versões monocromáticas menta; ícones vetoriais de 16 a 64 px (sem reduzir a arte grande mecanicamente); seis estados de treino; seis de dieta; três de conquista; seis expressões (feliz, animado/a, curioso/a, apoio, focado/a, descanso). Formatos: SVG para 16–32 px; WebP ou Lottie leve para 64 px ou mais. Testar em 16, 24, 32, 64 e 128 px.
+Onde aparece hoje: chat e gaveta (`feliz`), seletor de pet (`principal`), boas-vindas (`principal` → `curioso` → `focado` → `pronto` → `conquista`) e primeiros passos no Início (`pronto`).
+
+Pendente: glifo vetorial simplificado para 16–24 px (ainda não há uso nesse tamanho) e animações leves.

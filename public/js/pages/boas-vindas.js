@@ -35,7 +35,9 @@ function pet() { return PETS[petId(field('pet')?.value || getPet().id)]; }
 
 function renderPet(step) {
   const current = pet();
-  $('[data-pet-avatar]').innerHTML = petAvatarHTML(current, { size: 72, label: true });
+  // Cada passo tem um estado do pet: apresenta, pergunta, foca, fica pronto e comemora o plano.
+  const state = { pet: 'principal', goal: 'curioso', body: 'focado', routine: 'pronto', plan: 'conquista' }[step];
+  $('[data-pet-avatar]').innerHTML = petAvatarHTML(current, { size: 88, label: true, state });
   $('[data-speech]').textContent = step === 'pet' ? current.lines.welcome : speechByStep[step](current);
 }
 
