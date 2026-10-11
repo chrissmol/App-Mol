@@ -3751,3 +3751,11 @@ html[data-theme="light"] .pet-avatar { background-color: #111612; }
 .first-steps__item.is-done { color: var(--mol-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--mol-muted) 60%, transparent); }
 .first-steps__item.is-done > svg { color: var(--mol-brand-text); }
 .first-steps__go { margin-left: auto; }
+
+/* Diário de refeições: "Comi" em cada refeição do plano (toque grande, estado por ícone e cor). */
+.diary-log { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: 0 1rem; border-radius: 1rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); font-size: .9rem; font-weight: 800; color: var(--mol-text); transition: background-color .2s, border-color .2s, transform .12s; }
+.diary-log svg { width: 1.15rem; height: 1.15rem; color: var(--mol-muted); }
+.diary-log:active { transform: scale(.97); }
+.diary-log[aria-pressed="true"] { border-color: var(--mol-brand-green); background: var(--mol-brand-green); color: #fff; }
+.diary-log[aria-pressed="true"] svg { color: #fff; }
+@media (prefers-reduced-motion: reduce) { .diary-log { transition: none; } .diary-log:active { transform: none; } }

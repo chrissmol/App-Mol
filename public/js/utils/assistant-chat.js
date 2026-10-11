@@ -178,7 +178,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     const typing = addMessage('assistant', `<span class="assistant-typing" aria-label="${escapeHTML(pet.name)} está escrevendo"><span></span><span></span><span></span></span>`);
     try {
       const [send, store] = await Promise.all([getSend(), getStore()]);
-      const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines });
+      const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines, loadDiary: store.loadDiary });
       const attachments = sentAttachment ? [await fileToPart(sentAttachment.file, { readExcel: readExcelInBrowser })] : [];
       const result = await runAssistantTurn({ send, executors, message, attachments });
       const links = sources.length ? `<p class="assistant-sources">Fontes: ${sources.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.titulo || source.fonte)}</a>`).join(' · ')}</p>` : '';

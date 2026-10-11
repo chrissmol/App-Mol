@@ -139,6 +139,7 @@ export const getDoc = async reference => {
     return documentSnapshot(mockDiet);
   }
   if (path.includes('users') && !path.includes('customFoods')) return documentSnapshot(profileData());
+  if (path.includes('diario')) return documentSnapshot(JSON.parse(localStorage.getItem('__mol_e2e_diary') || 'null'));
   return documentSnapshot(null);
 };
 export const getDocs = async reference => {
@@ -163,6 +164,7 @@ export const getCountFromServer = async reference => {
 };
 export const setDoc = async (reference, value) => {
   const path = referencePath(reference);
+  if (path.at(-2) === 'diario') localStorage.setItem('__mol_e2e_diary', JSON.stringify(value));
   if (path.at(-2) === 'users') {
     localStorage.setItem('__mol_e2e_profile', JSON.stringify({ ...JSON.parse(localStorage.getItem('__mol_e2e_profile') || '{}'), ...value }));
   }

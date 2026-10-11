@@ -33,6 +33,20 @@ describe('regras do Firestore', () => {
     await assertFails(setDoc(doc(owner, 'users', 'user-a'), { name: 'A', metaSemanal: 99 }));
   });
 
+  it('diário: só o dono, um documento por dia e itens limitados', async () => {
+    const a = user('user-a'); const b = user('user-b');
+    const entry = { userId: 'user-a', data: '2026-10-11', itens: [{ nome: 'Arroz', gramas: 100 }], aguaMl: 500 };
+    await assertSucceeds(getDoc(doc(a, 'diario', 'user-a_2026-10-10')));
+    await assertFails(getDoc(doc(b, 'diario', 'user-a_2026-10-10')));
+    await assertSucceeds(setDoc(doc(a, 'diario', 'user-a_2026-10-11'), entry));
+    await assertFails(getDoc(doc(b, 'diario', 'user-a_2026-10-11')));
+    await assertFails(setDoc(doc(b, 'diario', 'user-a_2026-10-11'), { ...entry, userId: 'user-b' }));
+    await assertFails(setDoc(doc(a, 'diario', 'user-a_2026-10-12'), entry));
+    await assertFails(setDoc(doc(a, 'diario', 'user-a_2026-10-11'), { ...entry, aguaMl: 20000 }));
+    await assertFails(setDoc(doc(a, 'diario', 'user-a_2026-10-11'), { ...entry, itens: Array.from({ length: 81 }, () => ({})) }));
+    await assertFails(setDoc(doc(a, 'diario', 'user-a_2026-10-11'), { ...entry, extra: true }));
+  });
+
   it('aceita dados da meta calculada e do assistente só com valores válidos', async () => {
     const reference = doc(user('user-a'), 'users', 'user-a');
     await assertSucceeds(setDoc(reference, { name: 'A', sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'moderado', assistentePet: 'marlo', onboardingConcluido: true }));
