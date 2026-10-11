@@ -1,9 +1,9 @@
 import {
   Apple, Archive, ArrowLeft, ArrowUpRight, BellRing, CalendarCheck, CalendarDays,
   ChartNoAxesColumnIncreasing, ChartNoAxesCombined, Check, CheckCircle2,
-  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, CircleHelp, Clock3,
   CalendarCheck2, ClipboardList, Compass, Copy, createIcons, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2,
-  Flame, Footprints, Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole,
+  Flame, Footprints, HeartPulse, Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole,
   LogOut, Medal, Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, RefreshCw, Replace, Ruler, Scale,
   Search, Send, Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star,
   Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User,
@@ -13,8 +13,8 @@ import {
 const icons = {
   Apple, Archive, ArrowLeft, ArrowUpRight, BellRing, CalendarCheck, CalendarDays,
   ChartNoAxesColumnIncreasing, ChartNoAxesCombined, Check, CheckCircle2,
-  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, ClipboardList, Clock3,
-  Compass, Copy, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2, Flame, Footprints, Info, Languages,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, CircleHelp, ClipboardList, Clock3,
+  Compass, Copy, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2, Flame, Footprints, HeartPulse, Info, Languages,
   CalendarCheck2, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole, LogOut, Medal,
   Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, RefreshCw, Replace, Ruler, Scale, Search, Send,
   Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,

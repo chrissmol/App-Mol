@@ -13,6 +13,7 @@ const pages = [
   '/pages/configuracoes.html',
   '/pages/evolucao.html',
   '/pages/dados-pessoais.html',
+  '/pages/boas-vindas.html',
   '/pages/login.html',
 ];
 

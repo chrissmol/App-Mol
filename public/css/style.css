@@ -3673,7 +3673,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
     grid-column: 1 / -1;
   }
   /* Uma regra antiga (.dashboard-surface main > section { grid-column: auto }) vence o :where() acima. */
-  .dashboard-surface main > #daily-brief-card { grid-column: 1 / -1; }
+  .dashboard-surface main > #daily-brief-card, .dashboard-surface main > #first-steps-card { grid-column: 1 / -1; }
 }
 
 /* Digitando no celular: o dock sai e barras "grudadas" voltam ao fluxo, para o iOS
@@ -3689,3 +3689,65 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
   body.has-app-nav { --mol-main-end-pad: 0px; }
   body.has-app-nav main { padding-bottom: 0; }
 }
+
+/* Pet do assistente (docs/ASSISTENTE_PERSONA.md): avatar ao lado das respostas, sem animação constante. */
+.pet-avatar { display: block; flex-shrink: 0; border-radius: 1rem; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--mol-brand-green) 22%, transparent), transparent 70%); }
+html[data-theme="light"] .pet-avatar { background-color: #111612; }
+.assistant-empty__pet { margin-inline: auto; }
+.assistant-chat[data-pet] .assistant-msg--assistant { position: relative; margin-left: 2.25rem; }
+.assistant-chat[data-pet] .assistant-msg--assistant::before { content: ''; position: absolute; left: -2.25rem; bottom: 0; width: 1.75rem; height: 1.75rem; border-radius: .6rem; background: var(--assistant-pet) center / contain no-repeat, #111612; }
+.pet-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.pet-option { display: flex; flex-direction: column; align-items: center; gap: .35rem; min-height: 9rem; padding: .9rem .5rem; border-radius: 1.5rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); text-align: center; cursor: pointer; transition: border-color .2s, background-color .2s, transform .12s; }
+.pet-option:active { transform: scale(.97); }
+.pet-option:has(input:checked) { border-color: var(--mol-brand-green); background: color-mix(in srgb, var(--mol-brand-green) 16%, var(--mol-surface-soft)); }
+.pet-option:has(input:focus-visible) { outline: 2px solid var(--mol-brand-text); outline-offset: 2px; }
+.pet-option__name { font-weight: 800; font-size: .95rem; color: var(--mol-text); }
+.pet-option__hint { font-size: .72rem; line-height: 1.3; color: var(--mol-muted, #8b9a91); }
+@media (prefers-reduced-motion: reduce) { .pet-option { transition: none; } .pet-option:active { transform: none; } }
+
+/* Boas-vindas (pages/boas-vindas.html): um passo por tela, pet no topo, ação principal fixa embaixo. */
+.onboarding { display: flex; flex-direction: column; min-height: 100svh; max-width: 32rem; margin-inline: auto; padding: max(1rem, env(safe-area-inset-top)) 1.25rem 0; }
+.onboarding__top { display: flex; align-items: center; gap: 1rem; }
+.onboarding__progress { flex: 1; height: .375rem; border: 0; border-radius: 999px; background: var(--mol-surface-soft); overflow: hidden; -webkit-appearance: none; appearance: none; }
+.onboarding__progress::-webkit-progress-bar { background: var(--mol-surface-soft); }
+.onboarding__progress::-webkit-progress-value { border-radius: 999px; background: var(--mol-brand-green); transition: width .3s ease-out; }
+.onboarding__progress::-moz-progress-bar { border-radius: 999px; background: var(--mol-brand-green); }
+.onboarding__skip { min-height: 44px; padding-inline: .5rem; font-size: .85rem; font-weight: 700; color: var(--mol-muted); }
+.onboarding__pet { display: flex; align-items: flex-end; gap: .75rem; margin-top: 1.5rem; }
+.onboarding__speech { position: relative; flex: 1; padding: .8rem 1rem; border-radius: 1.25rem 1.25rem 1.25rem .35rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); font-size: .95rem; line-height: 1.45; color: var(--mol-text); }
+.onboarding__form { display: flex; flex: 1; flex-direction: column; margin-top: 1.5rem; }
+.onboarding__step { flex: 1; }
+.onboarding__title { margin-top: .35rem; font-size: clamp(1.6rem, 6vw, 2rem); font-weight: 900; letter-spacing: -.03em; line-height: 1.1; }
+.onboarding__title:focus { outline: none; }
+.onboarding__copy { margin-top: .5rem; font-size: .95rem; line-height: 1.5; color: var(--mol-muted); }
+.onboarding__label { display: block; font-size: .8rem; font-weight: 700; color: var(--mol-muted); }
+.onboarding__choices { display: grid; gap: .6rem; }
+.onboarding-choice { display: flex; align-items: center; gap: .9rem; min-height: 4.25rem; padding: .9rem 1rem; border-radius: 1.5rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); cursor: pointer; transition: border-color .2s, background-color .2s, transform .12s; }
+.onboarding-choice--compact { min-height: 3.5rem; border-radius: 1rem; }
+.onboarding-choice > svg { width: 1.5rem; height: 1.5rem; flex-shrink: 0; color: var(--mol-brand-text); }
+.onboarding-choice strong { display: block; font-size: .98rem; font-weight: 800; color: var(--mol-text); }
+.onboarding-choice small { display: block; margin-top: .15rem; font-size: .8rem; color: var(--mol-muted); }
+.onboarding-choice:active, .onboarding-pill:active { transform: scale(.97); }
+.onboarding-choice:has(input:checked), .onboarding-pill:has(input:checked) { border-color: var(--mol-brand-green); background: color-mix(in srgb, var(--mol-brand-green) 16%, var(--mol-surface-soft)); }
+.onboarding-choice:has(input:focus-visible), .onboarding-pill:has(input:focus-visible) { outline: 2px solid var(--mol-brand-text); outline-offset: 2px; }
+.onboarding__pills { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .5rem; }
+.onboarding-pill { display: flex; align-items: center; justify-content: center; min-height: 3rem; border-radius: 999px; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); font-weight: 700; cursor: pointer; transition: border-color .2s, background-color .2s, transform .12s; }
+.onboarding__stepper { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border-radius: 1.5rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); }
+.onboarding__stepper output { min-width: 2.5rem; text-align: center; font-size: 1.5rem; font-weight: 900; }
+.onboarding__round { width: 44px; height: 44px; border-radius: 1rem; background: var(--mol-surface); border: 1px solid var(--mol-border); font-size: 1.25rem; font-weight: 800; color: var(--mol-text); }
+.onboarding__actions { position: sticky; bottom: 0; display: flex; gap: .6rem; margin-inline: -1.25rem; margin-top: 1.5rem; padding: 1rem 1.25rem max(1rem, env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--mol-bg, #070a08) 70%, transparent); }
+.onboarding__back { min-height: 52px; padding-inline: 1.25rem; border-radius: 1rem; font-weight: 700; color: var(--mol-muted); }
+.onboarding__next { flex: 1; min-height: 52px; border-radius: 1rem; font-size: 1rem; }
+[data-plan-actions] .mol-btn { min-height: 52px; border-radius: 1rem; }
+@media (prefers-reduced-motion: reduce) { .onboarding__progress::-webkit-progress-value, .onboarding-choice, .onboarding-pill { transition: none; } .onboarding-choice:active, .onboarding-pill:active { transform: none; } }
+.onboarding__actions [hidden], .onboarding__actions:has([data-next][hidden]) { display: none; }
+
+/* Primeiros passos no Início (até o primeiro treino concluído). */
+.first-steps__bar { height: .375rem; border-radius: 999px; background: var(--mol-surface-soft); overflow: hidden; }
+.first-steps__bar span { display: block; height: 100%; border-radius: inherit; background: var(--mol-brand-green); }
+.first-steps__item { display: flex; align-items: center; gap: .75rem; min-height: 48px; padding: .25rem .5rem; border-radius: 1rem; font-size: .95rem; font-weight: 700; color: var(--mol-text); }
+.first-steps__item:hover { background: var(--mol-surface-soft); }
+.first-steps__item > svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: var(--mol-muted); }
+.first-steps__item.is-done { color: var(--mol-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--mol-muted) 60%, transparent); }
+.first-steps__item.is-done > svg { color: var(--mol-brand-text); }
+.first-steps__go { margin-left: auto; }

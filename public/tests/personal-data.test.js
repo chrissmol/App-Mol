@@ -3,7 +3,14 @@ import { normalizeBackup, parsePersonalData } from '../js/modules/personal-data.
 
 describe('dados pessoais', () => {
   it('converte campos vazios para null sem gravar zeros', () => {
-    expect(parsePersonalData({ height: '', goalWeight: '', weekly: '', goal: '' })).toEqual({ alturaCm: null, metaPesoKg: null, objetivo: '', metaSemanal: null });
+    expect(parsePersonalData({ height: '', goalWeight: '', weekly: '', goal: '' })).toEqual({ sexo: '', nascimento: '', nivelAtividade: '', alturaCm: null, metaPesoKg: null, objetivo: '', metaSemanal: null });
+  });
+
+  it('valida sexo, nascimento e nível de atividade', () => {
+    expect(parsePersonalData({ sex: 'feminino', birth: '1996-10-11', activity: 'leve', goal: 'Saúde' })).toMatchObject({ sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'leve' });
+    expect(() => parsePersonalData({ sex: 'x' })).toThrow('sexo');
+    expect(() => parsePersonalData({ birth: '11/10/1996' })).toThrow('nascimento');
+    expect(() => parsePersonalData({ activity: 'extremo' })).toThrow('atividade');
   });
 
   it('rejeita altura e meta semanal fora dos limites', () => {

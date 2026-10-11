@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+  <meta name="theme-color" content="#070a08">
+  <meta name="google" content="notranslate">
+  <title>Boas-vindas · Mol</title>
+  <script type="importmap">{"imports":{"firebase/app":"../vendor/firebase.js","firebase/auth":"../vendor/firebase.js","firebase/firestore":"../vendor/firebase.js","lucide":"../vendor/lucide.js"}}</script>
+  <script src="/theme-bootstrap.js"></script>
+  <link rel="icon" type="image/svg+xml" href="../assets/mol-mark.svg">
+  <link rel="stylesheet" href="../css/tailwind.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="app-surface onboarding-page min-h-screen text-white">
+  <main class="onboarding">
+    <div class="onboarding__top">
+      <progress class="onboarding__progress" data-progress max="5" value="1" aria-label="Progresso das boas-vindas">Passo 1 de 5</progress>
+      <button type="button" class="onboarding__skip" data-skip>Pular por agora</button>
+    </div>
+
+    <div class="onboarding__pet" aria-live="polite">
+      <span data-pet-avatar></span>
+      <p class="onboarding__speech" data-speech></p>
+    </div>
+
+    <form class="onboarding__form" data-form novalidate>
+      <section class="onboarding__step" data-step="pet" aria-labelledby="step-pet-title">
+        <p class="app-page-header__eyebrow">Boas-vindas ao Mol</p>
+        <h1 id="step-pet-title" class="onboarding__title">Quem vai te acompanhar?</h1>
+        <p class="onboarding__copy">Os dois sabem e fazem as mesmas coisas. Dá para trocar depois em Configurações.</p>
+        <div data-pet-picker class="mt-5"></div>
+      </section>
+
+      <section class="onboarding__step" data-step="goal" aria-labelledby="step-goal-title" hidden>
+        <p class="app-page-header__eyebrow">Passo 2 de 5</p>
+        <h2 id="step-goal-title" class="onboarding__title">Qual é o seu objetivo?</h2>
+        <div class="onboarding__choices mt-5" role="radiogroup" aria-labelledby="step-goal-title">
+          <label class="onboarding-choice"><input type="radio" class="sr-only" name="goal" value="Emagrecimento"><i data-lucide="flame" aria-hidden="true"></i><span><strong>Emagrecer</strong><small>Perder gordura sem perder força</small></span></label>
+          <label class="onboarding-choice"><input type="radio" class="sr-only" name="goal" value="Hipertrofia"><i data-lucide="dumbbell" aria-hidden="true"></i><span><strong>Ganhar massa</strong><small>Hipertrofia com dieta e treino alinhados</small></span></label>
+          <label class="onboarding-choice"><input type="radio" class="sr-only" name="goal" value="Força"><i data-lucide="trophy" aria-hidden="true"></i><span><strong>Ficar mais forte</strong><small>Subir carga e bater recordes</small></span></label>
+          <label class="onboarding-choice"><input type="radio" class="sr-only" name="goal" value="Saúde"><i data-lucide="heart-pulse" aria-hidden="true"></i><span><strong>Saúde e bem-estar</strong><small>Manter o peso e criar constância</small></span></label>
+        </div>
+      </section>
+
+      <section class="onboarding__step" data-step="body" aria-labelledby="step-body-title" hidden>
+        <p class="app-page-header__eyebrow">Passo 3 de 5</p>
+        <h2 id="step-body-title" class="onboarding__title">Sobre você</h2>
+        <p class="onboarding__copy">Serve só para calcular sua meta de calorias. Fica na sua conta e não é compartilhado.</p>
+        <fieldset class="mt-5"><legend class="onboarding__label">Sexo (para o cálculo)</legend>
+          <div class="onboarding__pills"><label class="onboarding-pill"><input type="radio" class="sr-only" name="sex" value="feminino"><span>Feminino</span></label><label class="onboarding-pill"><input type="radio" class="sr-only" name="sex" value="masculino"><span>Masculino</span></label></div>
+        </fieldset>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <label class="onboarding__label col-span-2">Data de nascimento<input name="birth" type="date" min="1920-01-01" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="bday"></label>
+          <label class="onboarding__label">Altura (cm)<input name="height" type="number" min="100" max="250" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl mol-field p-3 text-white" placeholder="175"></label>
+          <label class="onboarding__label">Peso atual (kg)<input name="weight" type="number" min="20" max="400" step="0.1" inputmode="decimal" class="mt-2 w-full rounded-xl mol-field p-3 text-white" placeholder="80"></label>
+        </div>
+      </section>
+
+      <section class="onboarding__step" data-step="routine" aria-labelledby="step-routine-title" hidden>
+        <p class="app-page-header__eyebrow">Passo 4 de 5</p>
+        <h2 id="step-routine-title" class="onboarding__title">Como é sua rotina?</h2>
+        <div class="onboarding__choices mt-5" role="radiogroup" aria-labelledby="step-routine-title" data-activity></div>
+        <div class="onboarding__stepper mt-5">
+          <span class="onboarding__label" id="weekly-label">Treinos por semana</span>
+          <div class="flex items-center gap-2"><button type="button" class="onboarding__round" data-weekly="-1" aria-label="Menos um treino por semana">−</button><output name="weekly" aria-labelledby="weekly-label" data-weekly-value>3</output><button type="button" class="onboarding__round" data-weekly="1" aria-label="Mais um treino por semana">+</button></div>
+        </div>
+      </section>
+
+      <section class="onboarding__step" data-step="plan" aria-labelledby="step-plan-title" hidden>
+        <p class="app-page-header__eyebrow">Passo 5 de 5</p>
+        <h2 id="step-plan-title" class="onboarding__title">Seu plano inicial</h2>
+        <div class="glass-card mt-5 rounded-3xl p-5 text-sm text-gray-400" data-plan></div>
+        <div class="mt-4 grid gap-3" data-plan-actions></div>
+      </section>
+
+      <div class="onboarding__actions">
+        <button type="button" class="onboarding__back" data-back hidden>Voltar</button>
+        <button type="submit" class="mol-btn mol-btn-primary onboarding__next" data-next>Continuar</button>
+      </div>
+    </form>
+  </main>
+  <script type="module" src="../js/pages/boas-vindas.js"></script>
+</body>
+</html>

@@ -33,6 +33,16 @@ describe('regras do Firestore', () => {
     await assertFails(setDoc(doc(owner, 'users', 'user-a'), { name: 'A', metaSemanal: 99 }));
   });
 
+  it('aceita dados da meta calculada e do assistente só com valores válidos', async () => {
+    const reference = doc(user('user-a'), 'users', 'user-a');
+    await assertSucceeds(setDoc(reference, { name: 'A', sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'moderado', assistentePet: 'marlo', onboardingConcluido: true }));
+    await assertFails(setDoc(reference, { name: 'A', sexo: 'outro-valor' }));
+    await assertFails(setDoc(reference, { name: 'A', nascimento: '11/10/1996' }));
+    await assertFails(setDoc(reference, { name: 'A', nivelAtividade: 'extremo' }));
+    await assertFails(setDoc(reference, { name: 'A', assistentePet: 'gato' }));
+    await assertFails(setDoc(reference, { name: 'A', onboardingConcluido: 'sim' }));
+  });
+
 
   it('valida campos estruturados do perfil e bloqueia preferências inválidas', async () => {
     const owner = user('user-a');

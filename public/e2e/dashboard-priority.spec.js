@@ -10,5 +10,7 @@ test('inicio destaca uma prioridade sem duplicar o card equivalente', async ({ p
   await expect(page.locator('#dashboard-card-grid')).toBeVisible();
 
   await expect(page.locator('#today-card')).toHaveClass(/hidden/);
-  await expect(page.locator('#weekly-card')).toBeVisible();
+  // Sem treino concluído, a semana vazia dá lugar aos primeiros passos.
+  await expect(page.locator('#first-steps-card')).toBeVisible();
+  await expect(page.locator('#weekly-card')).toBeHidden();
 });
