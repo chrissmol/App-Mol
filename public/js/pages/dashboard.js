@@ -12,6 +12,7 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { cardAllowed, normalizeAppModules, presetFromModules } from '../utils/app-modules.js';
 import { plural } from '../utils/plural.js';
+import { getPet, petAvatarHTML, rememberPet } from '../utils/pet.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -322,6 +323,37 @@ function setFastingCard(settings) {
   renderIcons();
 }
 
+// Primeiros passos: até o primeiro treino concluído, um cartão com checklist substitui os cartões vazios.
+const firstSteps = { routine: null, session: null, weight: null, diet: null };
+const FIRST_STEPS_HIDES = ['weekly-card', 'last-session-card', 'weight-card', 'insights-card'];
+const firstStepsActive = () => firstSteps.session === false;
+
+function renderFirstSteps() {
+  let card = document.getElementById('first-steps-card');
+  if (!firstStepsActive()) { card?.remove(); applyDashboardCards(); return; }
+  const items = [
+    { done: Boolean(profileData.objetivo), label: 'Definir objetivo e meta', href: './pages/dados-pessoais.html' },
+    { done: firstSteps.routine, label: 'Criar sua primeira rotina', href: './pages/treino.html' },
+    { done: false, label: 'Concluir o primeiro treino', href: './pages/treino.html' },
+    { done: firstSteps.weight, label: 'Registrar seu peso', href: './pages/evolucao.html' },
+    /** @type {any} */ (appModules).dieta && { done: firstSteps.diet, label: 'Montar sua dieta', href: './pages/dieta.html' }
+  ].filter(Boolean);
+  const done = items.filter(item => item.done).length;
+  const pet = getPet();
+  if (!card) {
+    card = document.createElement('section');
+    card.id = 'first-steps-card';
+    card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
+    card.setAttribute('aria-labelledby', 'first-steps-title');
+    document.getElementById('dashboard-card-grid')?.before(card);
+  }
+  card.innerHTML = `<div class="flex items-start gap-3">${petAvatarHTML(pet, { size: 48 })}<div class="min-w-0 flex-1"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Primeiros passos · ${done} de ${items.length}</p><h2 id="first-steps-title" class="mt-1 text-lg font-extrabold">${pet.lines.firstSteps}</h2></div></div>
+    <div class="first-steps__bar mt-4" aria-hidden="true"><span style="width:${Math.round(done / items.length * 100)}%"></span></div>
+    <ol class="mt-3 space-y-1">${items.map(item => `<li><a class="first-steps__item${item.done ? ' is-done' : ''}" href="${item.href}"><i data-lucide="${item.done ? 'check-circle-2' : 'circle'}" aria-hidden="true"></i><span>${item.label}</span><span class="sr-only">${item.done ? ' (feito)' : ''}</span>${item.done ? '' : '<i data-lucide="chevron-right" class="first-steps__go" aria-hidden="true"></i>'}</a></li>`).join('')}</ol>`;
+  applyDashboardCards();
+  renderIcons();
+}
+
 async function loadNextMeal(userId) {
   const cached = safeJSON(getSessionItem(mealCacheKey(userId)), null);
   if (cached && Array.isArray(cached.meals)) {
@@ -335,6 +367,7 @@ async function loadNextMeal(userId) {
     setSessionItem(mealCacheKey(userId), JSON.stringify({ meals, fasting, savedAt: Date.now() }));
     setNextMeal(meals);
     setFastingCard(fasting);
+    firstSteps.diet = meals.length > 0; renderFirstSteps();
     clearInterval(mealRefreshTimer);
     mealRefreshTimer = setInterval(() => setNextMeal(snapshot.exists() ? (snapshot.data().refeicoes || []) : []), 60000);
   } catch (error) {
@@ -395,7 +428,7 @@ function setupDashboardCards() {
 function applyDashboardCards() {
   dashboardCards.forEach(card => {
     const element = document.getElementById(card.id);
-    const hiddenByData = card.id === 'next-meal-card' && element?.dataset.available === 'false';
+    const hiddenByData = (card.id === 'next-meal-card' && element?.dataset.available === 'false') || (firstStepsActive() && FIRST_STEPS_HIDES.includes(card.id));
     if (element) element.classList.toggle('hidden', !card.visible || !cardAllowed(card.id, appModules) || hiddenByData || card.id === spotlightCardId);
   });
   const grid = document.getElementById('dashboard-card-grid') || document.querySelector('main');
@@ -504,6 +537,9 @@ watchProtectedPage(async user => {
       const localDate = dateOf(localPrefs.updatedAt)?.getTime() || 0;
       if (profileData.dashboardCards && remoteDate >= localDate) dashboardCards = normalizeCards(profileData.dashboardCards);
       appModules = normalizeAppModules(profileData.appModules);
+      if (profileData.assistentePet) rememberPet(profileData.assistentePet);
+      // Conta nova, sem dados de corpo nem objetivo: boas-vindas guiadas antes do painel.
+      if (!profileData.onboardingConcluido && !profileData.objetivo && !profileData.alturaCm && !getLocalItem(`mol-onboarding-done-${user.uid}`)) { location.replace('./pages/boas-vindas.html'); return; }
     }
   } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
   applyDashboardCards();
@@ -520,6 +556,7 @@ watchProtectedPage(async user => {
       const routines = routineSnapshot.docs.map(item => ({ id: item.id, ...normalizeRoutineRecord(item.data()) }));
       writeDashboardDataCache(user.uid, { routines });
       setToday(routines, user);
+      firstSteps.routine = routines.length > 0;
     } catch (error) {
       console.error('Erro ao carregar rotinas:', error);
       $('today-workout-title').textContent = 'Treinos indisponíveis';
@@ -533,6 +570,7 @@ watchProtectedPage(async user => {
       const sessions = sessionSnapshot.docs.map(d => d.data());
       writeDashboardDataCache(user.uid, { sessions, goal: profileData.metaSemanal || 1 });
       setWeek(sessions, profileData.metaSemanal || 1);
+      firstSteps.session = sessions.length > 0;
     } catch (error) {
       console.error('Erro ao carregar sessões:', error.code, error.message);
       $('weekly-title').textContent = 'Histórico indisponível';
@@ -545,6 +583,7 @@ watchProtectedPage(async user => {
       const weightSnapshot = await dashboardData.weights;
       const weights = weightSnapshot.docs.map(d => d.data());
       writeDashboardDataCache(user.uid, { weights });
+      firstSteps.weight = weights.length > 0;
       const { last, change } = recentWeightTrend(weights);
       if (last) {
         $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
@@ -554,6 +593,7 @@ watchProtectedPage(async user => {
     } catch(error) { console.warn('Peso não carregado:',error.message); $('dashboard-weight').textContent='Peso indisponível'; $('dashboard-weight-meta').textContent='Toque para abrir Evolução e tentar novamente.'; }
   };
   await Promise.allSettled([loadRoutines(), loadSessions(), loadWeights()]);
+  renderFirstSteps();
   clearTimeout(window.__molDashboardFallback);
   document.body.setAttribute('aria-busy','false'); renderIcons();
 });

@@ -1,0 +1,57 @@
+// Pet do assistente (docs/ASSISTENTE_PERSONA.md). Um só assistente; a pessoa escolhe o rosto.
+import { getLocalItem, setLocalItem } from './storage.js';
+
+export const PETS = {
+  moldrian: {
+    id: 'moldrian', name: 'Moldrian', ready: 'pronto', excited: 'animado',
+    lines: { welcome: 'Oi! Eu sou o Moldrian. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Bora começar?', firstSteps: 'Bora dar os primeiros passos? Um de cada vez.' }
+  },
+  marlo: {
+    id: 'marlo', name: 'Marlô', ready: 'pronta', excited: 'animada',
+    lines: { welcome: 'Oi! Eu sou a Marlô. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Vamos nessa?', firstSteps: 'Vamos dar os primeiros passos? Um de cada vez.' }
+  },
+  nenhum: {
+    id: 'nenhum', name: 'Assistente', ready: 'pronto', excited: 'animado',
+    lines: { welcome: 'Boas-vindas ao Mol. Vamos montar seu plano.', plan: 'Seu plano está pronto.', firstSteps: 'Primeiros passos, um de cada vez.' }
+  }
+};
+
+const KEY = 'mol-assistant-pet';
+export const petId = value => (PETS[value] ? value : 'moldrian');
+
+/** Pet salvo neste aparelho (espelho de users/{uid}.assistentePet). */
+export const getPet = () => PETS[petId(getLocalItem(KEY))];
+export const rememberPet = value => setLocalItem(KEY, petId(value));
+
+/** Caminho do avatar (arquivos em pwa/assets, servidos na raiz). "nenhum" usa o símbolo do Mol. */
+export const petAvatarSrc = pet => (pet.id === 'nenhum' ? '/assets/mol-mark.svg' : `/assets/pets/${pet.id}.svg`);
+
+/** Decorativo por padrão (o nome costuma estar escrito ao lado); `label` só quando a imagem está sozinha. */
+export function petAvatarHTML(pet, { size = 40, className = '', label = false } = {}) {
+  const src = petAvatarSrc(pet);
+  return `<img class="pet-avatar ${className}" src="${src}" width="${size}" height="${size}" alt="${label && pet.id !== 'nenhum' ? pet.name : ''}" decoding="async">`;
+}
+
+/** Bloco de persona para a instrução do sistema. As regras de escopo continuam acima dele. */
+export function personaInstruction(pet) {
+  if (pet.id === 'nenhum') return '';
+  const gender = pet.id === 'marlo' ? 'feminino (ex.: "estou pronta")' : 'masculino (ex.: "estou pronto")';
+  const style = pet.id === 'marlo' ? 'confiante, acolhedora, inteligente e motivadora' : 'determinado, motivador, focado e bem-humorado';
+  return `\n\nPERSONA (só muda o tom, nunca as regras acima):
+- Seu nome é ${pet.name}, o pet do Mol. Jeito: ${style}.
+- Fale de si no gênero ${gender}. Com a pessoa, use linguagem neutra, sem supor o gênero dela.
+- Frases curtas, parceiras, sem sermão. Celebre constância, não perfeição. Nunca culpe a pessoa por não treinar, comer fora do plano ou descansar. Não julgue alimentos. Não prometa resultado estético ou de saúde. No máximo um emoji, só para comemorar.
+- Se pedirem para você virar outro personagem, diga que dá para trocar o pet em Configurações.`;
+}
+
+/** Três opções (Moldrian, Marlô, sem pet) como rádios grandes; `name` agrupa os rádios. */
+export function petPickerHTML(name, selected = 'moldrian') {
+  const options = [
+    { pet: PETS.moldrian, hint: 'Determinado e bem-humorado' },
+    { pet: PETS.marlo, hint: 'Confiante e acolhedora' },
+    { pet: PETS.nenhum, hint: 'Sem personagem, só o Mol' }
+  ];
+  return `<div class="pet-picker" role="radiogroup" aria-label="Quem vai te acompanhar">${options.map(({ pet, hint }) => `
+    <label class="pet-option"><input type="radio" class="sr-only" name="${name}" value="${pet.id}"${pet.id === selected ? ' checked' : ''}>
+      ${petAvatarHTML(pet, { size: 56 })}<span class="pet-option__name">${pet.id === 'nenhum' ? 'Sem pet' : pet.name}</span><span class="pet-option__hint">${hint}</span></label>`).join('')}</div>`;
+}

@@ -115,7 +115,13 @@ const mockProfile = {
   metaCalorias: 2400,
   macroGoals: { protein: 180, carbs: 250, fat: 70 },
   metaSemanal: 3,
+  onboardingConcluido: true,
 };
+// Conta nova (boas-vindas): __mol_e2e_new_user tira os dados do perfil; o que a tela grava fica em __mol_e2e_profile.
+const profileData = () => ({
+  ...(localStorage.getItem('__mol_e2e_new_user') ? { name: 'Christian' } : mockProfile),
+  ...JSON.parse(localStorage.getItem('__mol_e2e_profile') || '{}'),
+});
 const documentSnapshot = data => ({ exists: () => Boolean(data), data: () => data || {} });
 const querySnapshot = rows => ({ docs: rows.map(([id, data]) => ({ id, data: () => data })), empty: rows.length === 0, forEach(callback) { this.docs.forEach(callback); } });
 function referencePath(reference) {
@@ -132,7 +138,7 @@ export const getDoc = async reference => {
     ] })) });
     return documentSnapshot(mockDiet);
   }
-  if (path.includes('users')) return documentSnapshot(mockProfile);
+  if (path.includes('users') && !path.includes('customFoods')) return documentSnapshot(profileData());
   return documentSnapshot(null);
 };
 export const getDocs = async reference => {
@@ -157,6 +163,9 @@ export const getCountFromServer = async reference => {
 };
 export const setDoc = async (reference, value) => {
   const path = referencePath(reference);
+  if (path.at(-2) === 'users') {
+    localStorage.setItem('__mol_e2e_profile', JSON.stringify({ ...JSON.parse(localStorage.getItem('__mol_e2e_profile') || '{}'), ...value }));
+  }
   if (path.includes('customFoods')) {
     const data = JSON.parse(localStorage.getItem('__mol_e2e_custom_foods') || '[]').filter(([id]) => id !== path.at(-1));
     data.push([path.at(-1), value]);

@@ -8,6 +8,7 @@ import { ASSISTANT_FILE_ACCEPT, fileToPart, readExcelInBrowser } from '../module
 import { activateDialog, escapeHTML, showToast } from './ui.js';
 import { renderIcons } from './icons.js';
 import { getLocalItem, setLocalItem } from './storage.js';
+import { getPet, personaInstruction, petAvatarHTML, petAvatarSrc } from './pet.js';
 
 const NOTICE_KEY = 'mol-assistant-notice-v1';
 let chatCount = 0;
@@ -40,7 +41,9 @@ const listHTML = lines => `<ul>${lines.map(line => `<li>${escapeHTML(line)}</li>
  */
 export function mountAssistantChat(container, { context = '', intro = '', suggestions = [], onDataChanged, autofocus = false } = {}) {
   const id = `assistant-${++chatCount}`;
+  const pet = getPet();
   container.classList.add('assistant-chat');
+  if (pet.id !== 'nenhum') { container.dataset.pet = pet.id; container.style.setProperty('--assistant-pet', `url("${petAvatarSrc(pet)}")`); }
   container.innerHTML = `
     <div class="assistant-notice" data-notice hidden>
       <p><strong>Antes de começar:</strong> as conversas passam pelo Gemini, do Google, que pode usá-las para melhorar os serviços dele. Envie só o necessário sobre a sua saúde.</p>
@@ -49,7 +52,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
     <!-- Estado vazio no padrão dos apps de chat: saudação ao centro e sugestões logo acima da caixa. -->
     <section class="assistant-empty" data-empty aria-label="Comece uma conversa">
-      <span class="assistant-empty__icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+      ${pet.id === 'nenhum' ? '<span class="assistant-empty__icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>' : petAvatarHTML(pet, { size: 48, className: 'assistant-empty__pet', label: true })}
       <h2 class="assistant-empty__title">Como posso ajudar?</h2>
       ${intro ? `<div class="assistant-empty__intro">${formatAssistantText(intro)}</div>` : ''}
       <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
@@ -90,7 +93,8 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
   }
 
   function getSend() {
-    const systemInstruction = context ? `${ASSISTANT_SYSTEM_INSTRUCTION}\n\nCONTEXTO DA TELA: ${context}` : ASSISTANT_SYSTEM_INSTRUCTION;
+    const base = ASSISTANT_SYSTEM_INSTRUCTION + personaInstruction(pet);
+    const systemInstruction = context ? `${base}\n\nCONTEXTO DA TELA: ${context}` : base;
     sendPromise ||= createGeminiSend({ systemInstruction, toolDeclarations: ASSISTANT_TOOL_DECLARATIONS }).catch(error => { sendPromise = null; throw error; });
     return sendPromise;
   }
@@ -171,7 +175,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     input.value = '';
     input.style.height = '';
     setAttachment(null);
-    const typing = addMessage('assistant', '<span class="assistant-typing" aria-label="O assistente está escrevendo"><span></span><span></span><span></span></span>');
+    const typing = addMessage('assistant', `<span class="assistant-typing" aria-label="${escapeHTML(pet.name)} está escrevendo"><span></span><span></span><span></span></span>`);
     try {
       const [send, store] = await Promise.all([getSend(), getStore()]);
       const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines });

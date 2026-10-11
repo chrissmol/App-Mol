@@ -2,7 +2,7 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { auth, getDb, googleProvider } from '../config/firebase-config.js';
 const db = await getDb();
 import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
-import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
+import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, setDoc, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
 import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
@@ -10,6 +10,7 @@ import { clearUserCaches, removeLocalItemsWithPrefix } from '../utils/storage.js
 import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
+import { getPet, petId, petPickerHTML, rememberPet } from '../utils/pet.js';
 import { MODULE_DEFINITIONS, MODULE_PRESETS, normalizeAppModules, presetFromModules, saveAppModules, syncAppModulesForUser } from '../utils/app-modules.js';
 
 setupAppShell();
@@ -478,6 +479,22 @@ function authErrorMessage(error, fallback) {
   return error?.message || fallback;
 }
 
+function renderPetChoice(user) {
+  const box = $('pet-choice');
+  box.innerHTML = petPickerHTML('pet', getPet().id);
+  box.onchange = async event => {
+    const value = petId(event.target.value);
+    rememberPet(value);
+    try { await setDoc(doc(db, 'users', user.uid), { assistentePet: value }, { merge: true }); showToast(value === 'nenhum' ? 'Assistente sem pet.' : `${getPet().name} vai te acompanhar.`, 'success'); }
+    catch (error) { console.warn('Pet não sincronizado:', error.message); showToast('Salvo neste aparelho. A conta sincroniza quando voltar a conexão.'); }
+  };
+  // O valor da conta vence o deste aparelho (outro aparelho pode ter trocado).
+  getDoc(doc(db, 'users', user.uid)).then(snapshot => {
+    const saved = snapshot.data()?.assistentePet;
+    if (saved && saved !== getPet().id) { rememberPet(saved); box.innerHTML = petPickerHTML('pet', petId(saved)); }
+  }).catch(() => {});
+}
+
 watchProtectedPage(async user => {
   // As duas sincronizações abaixo são independentes (temas, módulos
   // ativos) — rodam em paralelo em vez de em série, que antes podia
@@ -490,6 +507,7 @@ watchProtectedPage(async user => {
   applyAppearance();
   if (modulesResult.status === 'rejected') console.warn('Módulos da conta não carregados:', modulesResult.reason?.message);
   renderAppModules();
+  renderPetChoice(user);
   $('session-email').textContent = user.email || user.displayName || 'Conta conectada';
 
   $('export-data').onclick = async () => {

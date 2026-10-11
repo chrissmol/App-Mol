@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mol-app-shell-v5';
+const CACHE_VERSION = 'mol-app-shell-v6';
 const SHELL_URLS = [
   '/',
   '/index.html',
@@ -12,6 +12,10 @@ const SHELL_URLS = [
   '/pages/evolucao.html',
   '/pages/configuracoes.html',
   '/pages/dados-pessoais.html',
+  '/pages/boas-vindas.html',
+  '/pages/assistente.html',
+  '/assets/pets/moldrian.svg',
+  '/assets/pets/marlo.svg',
   '/css/style.css',
   '/css/tailwind.css',
   '/theme-bootstrap.js',

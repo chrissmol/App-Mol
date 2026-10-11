@@ -43,6 +43,7 @@ export default defineConfig({
         evolucao: resolve(import.meta.dirname, 'pages/evolucao.html'),
         assistente: resolve(import.meta.dirname, 'pages/assistente.html'),
         dadosPessoais: resolve(import.meta.dirname, 'pages/dados-pessoais.html'),
+        boasVindas: resolve(import.meta.dirname, 'pages/boas-vindas.html'),
         admin: resolve(import.meta.dirname, 'pages/admin.html')
       }
     }

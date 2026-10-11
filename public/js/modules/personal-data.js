@@ -3,6 +3,8 @@ export const BACKUP_RECORD_LIMIT = 400;
 export const BACKUP_FILE_LIMIT = 5 * 1024 * 1024;
 
 const goals = ['', 'Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'];
+const sexes = ['', 'masculino', 'feminino'];
+const activityLevels = ['', 'sedentario', 'leve', 'moderado', 'alto', 'muito-alto'];
 
 function optionalNumber(value, { min, max, integer = false, label }) {
   if (String(value ?? '').trim() === '') return null;
@@ -16,7 +18,17 @@ function optionalNumber(value, { min, max, integer = false, label }) {
 export function parsePersonalData(values) {
   const objetivo = String(values.goal || '');
   if (!goals.includes(objetivo)) throw new Error('Selecione um objetivo válido.');
+  const sexo = String(values.sex || '');
+  if (!sexes.includes(sexo)) throw new Error('Selecione um sexo válido.');
+  const nivelAtividade = String(values.activity || '');
+  if (!activityLevels.includes(nivelAtividade)) throw new Error('Selecione um nível de atividade válido.');
+  const nascimento = String(values.birth || '');
+  const birthYear = Number(nascimento.slice(0, 4));
+  if (nascimento && (!/^\d{4}-\d{2}-\d{2}$/.test(nascimento) || birthYear < 1920 || birthYear > new Date().getFullYear() - 10)) throw new Error('Confira a data de nascimento.');
   return {
+    sexo,
+    nascimento,
+    nivelAtividade,
     alturaCm: optionalNumber(values.height, { min: 100, max: 250, integer: true, label: 'A altura' }),
     metaPesoKg: optionalNumber(values.goalWeight, { min: 20, max: 400, label: 'A meta de peso' }),
     objetivo,
