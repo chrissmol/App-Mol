@@ -53,3 +53,18 @@ test('excluir rotina não pergunta "tem certeza" e oferece Desfazer', async ({ p
   await toast.getByRole('button', { name: 'Desfazer' }).click();
   await expect(page.getByText('Rotina restaurada.')).toBeVisible();
 });
+
+test('treino em andamento: barra nas outras telas volta direto para a sessão', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('__mol_e2e_user', 'true');
+    const now = new Date();
+    localStorage.setItem('mol-workout-draft-e2e-user', JSON.stringify({ versao: 2, rotinaId: 'routine-upper', nomeRotina: 'Upper', exercicios: [{ nome: 'Supino reto', grupo: 'Peito', repsMin: 8, repsMax: 12, series: [{ tipo: 'N', kg: '', reps: '', rir: '2', concluida: false }] }], tempoSegundos: 60, atualizadoEm: now.toISOString(), iniciadaEm: new Date(now.getTime() - 65000).toISOString() }));
+  });
+  await page.goto('/pages/dieta.html');
+  const bar = page.getByRole('link', { name: /Treino em andamento/ });
+  await expect(bar).toBeVisible();
+  await expect(bar).toContainText('Upper');
+  await bar.click();
+  await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
+  await expect(page.getByRole('dialog', { name: /Retomar treino/ })).toHaveCount(0);
+});

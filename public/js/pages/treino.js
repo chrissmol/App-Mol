@@ -75,7 +75,7 @@ function salvarRascunho({ force = false } = {}) {
   if (!force && Date.now() - ultimoRascunhoSalvoEm < 5000) return;
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina) return;
-  if (setLocalItem(draftKey(usuarioAtual.uid), JSON.stringify({ versao: 2, rotinaId: rotinaAbertaId, exercicios: rotina.exercicios, tempoSegundos, atualizadoEm: new Date().toISOString(), iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino }))) ultimoRascunhoSalvoEm = Date.now();
+  if (setLocalItem(draftKey(usuarioAtual.uid), JSON.stringify({ versao: 2, rotinaId: rotinaAbertaId, nomeRotina: rotina.nome, exercicios: rotina.exercicios, tempoSegundos, atualizadoEm: new Date().toISOString(), iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino }))) ultimoRascunhoSalvoEm = Date.now();
 }
 function limparRascunho() { if (usuarioAtual) removeLocalItems(draftKey(usuarioAtual.uid)); }
 function exerciciosParaPersistir(rotina) { return treinoIniciado ? cleanRoutineExercises(rotina.exercicios) : rotina.exercicios; }
@@ -351,7 +351,8 @@ async function carregarRotinasDoBanco() {
     let draft = lerRascunho(usuarioAtual.uid);
     if (draft && !isRecoverableWorkoutDraft(draft, rotinasReais.map(routine => routine.id))) { limparRascunho(); draft = null; }
     if (draft) {
-      const recuperar = await confirmAction({ title: 'Retomar treino?', message: 'Encontramos um treino que ficou em andamento neste dispositivo.', confirmText: 'Retomar', cancelText: 'Descartar' });
+      // Vindo da barra "Treino em andamento" (?retomar=1) a pessoa já escolheu voltar: sem perguntar.
+      const recuperar = requestedWorkout.get('retomar') === '1' || await confirmAction({ title: 'Retomar treino?', message: 'Encontramos um treino que ficou em andamento neste dispositivo.', confirmText: 'Retomar', cancelText: 'Descartar' });
       if (!recuperar) { limparRascunho(); return; }
       const routine = rotinasReais.find(r => r.id === draft.rotinaId);
       routine.exercicios = normalizeRoutineExercises(cloneValue(draft.exercicios));

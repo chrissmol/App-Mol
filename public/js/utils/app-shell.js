@@ -95,6 +95,7 @@ export function setupAppShell() {
     });
   }
   setupAppNavigation();
+  if (document.querySelector('nav[data-mol-app-nav]')) void import('./active-workout.js').then(module => module.setupActiveWorkoutBar());
   applyModuleVisibility();
   if (!window.__molAppModulesAuthListener) {
     window.__molAppModulesAuthListener = true;
