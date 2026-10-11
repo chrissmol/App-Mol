@@ -420,9 +420,25 @@ function chooseMealForFood() {
 }
 
 function openFoodSearch(mealId) {
-  modal('Buscar alimento', `<label class="flex min-h-12 items-center gap-3 rounded-xl mol-soft px-4"><i data-lucide="search" class="h-4 w-4 text-gray-500"></i><span class="sr-only">Buscar alimento</span><input id="food-query" type="search" placeholder="Ex.: arroz, frango, banana" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></label><button id="custom-food" type="button" class="mt-3 min-h-11 w-full rounded-xl border border-neon/30 text-xs font-bold text-neon">Cadastrar alimento personalizado</button><p class="mt-3 text-[11px] leading-relaxed text-gray-500">Catálogo local com valores médios por 100 g. Confira o rótulo quando usar um produto específico.</p><div id="food-results" class="mt-4 space-y-2"></div>`);
+  modal('Buscar alimento', `<label class="flex min-h-12 items-center gap-3 rounded-xl mol-soft px-4"><i data-lucide="search" class="h-4 w-4 text-gray-500"></i><span class="sr-only">Buscar alimento</span><input id="food-query" type="search" placeholder="Ex.: arroz, frango, banana" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></label><div class="mt-3 grid grid-cols-2 gap-2"><button id="scan-food" type="button" class="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-neon/30 text-xs font-bold text-neon"><i data-lucide="scan-barcode" class="h-4 w-4" aria-hidden="true"></i>Código de barras</button><button id="custom-food" type="button" class="min-h-11 rounded-xl border border-white/10 text-xs font-bold text-gray-300">Cadastrar alimento</button></div><p class="mt-3 text-[11px] leading-relaxed text-gray-500">Catálogo local com valores médios por 100 g. Confira o rótulo quando usar um produto específico.</p><div id="food-results" class="mt-4 space-y-2"></div>`);
   const paint = () => { const term = $('food-query').value.trim().toLocaleLowerCase('pt-BR'); const list = searchFoodCatalog(term); $('food-results').innerHTML = list.map((food, index) => `<button type="button" data-food-index="${index}" class="min-h-14 w-full rounded-2xl mol-soft p-3 text-left"><strong class="text-sm">${escapeHTML(food.nome)}</strong><span class="mt-1 block text-xs text-gray-500">${food.kcal100} kcal · P ${food.proteina100} · C ${food.carbo100} · G ${food.gordura100} por 100 g</span></button>`).join('') || '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento encontrado.</p>'; $('food-results').querySelectorAll('[data-food-index]').forEach((button, index) => button.onclick = () => openFoodForm(mealId, list[index])); };
-  $('food-query').oninput = paint; $('custom-food').onclick = () => openFoodForm(mealId, null); paint(); $('food-query').focus(); window.lucide?.createIcons();
+  $('food-query').oninput = paint; $('custom-food').onclick = () => openFoodForm(mealId, null); $('scan-food').onclick = () => scanFood(mealId); paint(); $('food-query').focus(); window.lucide?.createIcons();
+}
+
+/** Câmera → Open Food Facts → formulário já preenchido (a pessoa confere a porção e salva). */
+async function scanFood(mealId) {
+  closeModal();
+  const [{ openBarcodeScanner }, { lookupBarcode }] = await Promise.all([import('../utils/barcode-scanner.js'), import('../modules/assistant-web.js')]);
+  openBarcodeScanner({
+    onCode: async code => {
+      showToast('Buscando o produto…', 'success');
+      let product = null;
+      try { product = await lookupBarcode(code); } catch (error) { console.warn('Código de barras não consultado:', error.message); }
+      if (!product?.encontrado) { showToast('Produto não encontrado. Cadastre os valores do rótulo.'); return openFoodForm(mealId, null); }
+      const per100 = product.porCemGramas;
+      openFoodForm(mealId, { nome: [product.nome, product.marca].filter(Boolean).join(' · ').slice(0, 80) || `Produto ${code}`, kcal100: per100.kcal ?? 0, proteina100: per100.proteinaG ?? 0, carbo100: per100.carboG ?? 0, gordura100: per100.gorduraG ?? 0 });
+    }
+  });
 }
 
 function openFoodForm(mealId, catalogFood) {

@@ -43,3 +43,23 @@ test('outro dia da semana mostra o planejado, sem diário', async ({ page }) => 
   await expect(page.getByRole('button', { name: /^Comi:/ })).toHaveCount(0);
   await expect(page.locator('#diet-water')).toBeEmpty();
 });
+
+test('código de barras: sem câmera, digita o código e o formulário vem preenchido pelo rótulo', async ({ page }) => {
+  await page.route('https://world.openfoodfacts.org/**', route => route.fulfill({ json: { product: { product_name: 'Granola Mol', brands: 'Marca X', nutriments: { 'energy-kcal_100g': 390, proteins_100g: 9.5, carbohydrates_100g: 66.7, fat_100g: 10 } } } }));
+  await page.goto('/pages/dieta.html');
+  await page.getByRole('button', { name: 'Registrar extra' }).click();
+  await page.getByRole('button', { name: 'Código de barras' }).click();
+  const scanner = page.getByRole('dialog', { name: 'Ler código de barras' });
+  await expect(scanner).toBeVisible();
+  await scanner.getByLabel('Código de barras').fill('123');
+  await scanner.getByRole('button', { name: 'Buscar' }).click();
+  await expect(scanner.getByText('de 8 a 14 números')).toBeVisible();
+  await scanner.getByLabel('Código de barras').fill('7891000100103');
+  await scanner.getByRole('button', { name: 'Buscar' }).click();
+  await expect(scanner).toBeHidden();
+  await expect(page.locator('#food-name')).toHaveValue('Granola Mol · Marca X');
+  await expect(page.locator('#food-kcal')).toHaveValue('390');
+  await page.locator('#food-grams').fill('40');
+  await page.getByRole('button', { name: 'Registrar no diário' }).click();
+  await expect(page.locator('#diary-extra')).toContainText('Granola Mol');
+});

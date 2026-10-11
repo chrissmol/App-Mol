@@ -14,6 +14,6 @@
     "isolatedModules": true,
     "types": []
   },
-  "include": ["js/**/*.js", "js/types/global.d.ts"],
+  "include": ["js/**/*.js", "js/types/global.d.ts", "js/types/vite-assets.d.ts"],
   "exclude": ["node_modules", "dist", "vendor", "e2e", "tests"]
 }
