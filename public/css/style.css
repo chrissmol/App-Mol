@@ -3784,3 +3784,11 @@ html[data-theme="light"] .pet-avatar { background-color: #111612; }
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   body.has-app-nav main .mol-brand { display: none; }
 }
+/* Esqueleto de carregamento: blocos no formato do conteúdo, pulsando devagar (parado com movimento reduzido). */
+.mol-skeleton-list { display: grid; gap: .75rem; }
+.mol-skeleton { display: block; border-radius: 1.5rem; background: linear-gradient(90deg, var(--mol-surface-soft) 25%, color-mix(in srgb, var(--mol-text) 9%, transparent) 50%, var(--mol-surface-soft) 75%); background-size: 200% 100%; animation: mol-skeleton 1.4s ease-in-out infinite; }
+.mol-skeleton--card { height: 7.5rem; }
+.mol-skeleton--row { height: 4rem; border-radius: 1rem; }
+@keyframes mol-skeleton { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .mol-skeleton { animation: none; } }
+html[data-reduce-motion="true"] .mol-skeleton { animation: none; }
