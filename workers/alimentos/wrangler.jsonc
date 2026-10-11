@@ -1,0 +1,8 @@
+{
+  // Worker gratuito (workers.dev) da busca de alimentos do Mol. Publicar: npx wrangler deploy (nesta pasta).
+  "name": "mol-alimentos",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-11",
+  "workers_dev": true,
+  "observability": { "enabled": true }
+}

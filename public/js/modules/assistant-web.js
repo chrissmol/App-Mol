@@ -1,7 +1,8 @@
-// Pesquisa na internet sem conta e sem chave: Wikipedia (pt) e Open Food Facts
-// por código de barras. As duas liberam leitura pelo navegador (CORS).
-// shortcut: busca do Open Food Facts por nome não libera CORS; exigiria um proxy (Cloudflare Worker).
+// Pesquisa na internet sem conta e sem chave: Wikipedia (pt) e Open Food Facts.
+// Código de barras vai direto (a API libera CORS); a busca por nome passa pelo Worker
+// mol-alimentos (workers/alimentos), porque essa API do Open Food Facts não libera CORS.
 const TIMEOUT_MS = 8000;
+export const FOOD_SEARCH_URL = 'https://mol-alimentos.chrisouzamol.workers.dev/buscar';
 const cut = (value, max) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 async function getJson(url, fetchImpl) {
@@ -35,4 +36,13 @@ export async function lookupBarcode(code, fetchImpl = fetch) {
     porCemGramas: { kcal: value('energy-kcal_100g'), proteinaG: value('proteins_100g'), carboG: value('carbohydrates_100g'), gorduraG: value('fat_100g') },
     url: `https://world.openfoodfacts.org/product/${digits}`
   };
+}
+
+/** Produtos vendidos no Brasil por nome (Open Food Facts, via Worker), com nutrientes por 100 g. */
+export async function searchFoodsOnline(term, fetchImpl = fetch) {
+  const query = cut(term, 60);
+  if (query.length < 2) return { encontrado: false, produtos: [] };
+  const data = await getJson(`${FOOD_SEARCH_URL}?q=${encodeURIComponent(query)}`, fetchImpl);
+  const produtos = Array.isArray(data?.produtos) ? data.produtos : [];
+  return { encontrado: produtos.length > 0, fonte: 'Open Food Facts', produtos, url: `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}` };
 }

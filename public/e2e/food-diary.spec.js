@@ -83,3 +83,15 @@ test('pet comemora a refeição registrada e o dia de descanso aparece no Iníci
   await expect(page.locator('#today-eyebrow')).toHaveText('Dia de descanso');
   await expect(page.locator('#today-badge img[src*="/assets/pets/marlo/descanso"]')).toHaveCount(1);
 });
+
+test('busca de alimento mostra produtos do mercado (Open Food Facts) e preenche o formulário', async ({ page }) => {
+  await page.route('https://mol-alimentos.chrisouzamol.workers.dev/**', route => route.fulfill({ json: { produtos: [{ codigo: '1', nome: 'Granola Tradicional', marca: 'Marca Y', kcal100: 410, proteina100: 9, carbo100: 70, gordura100: 11 }] }, headers: { 'Access-Control-Allow-Origin': '*' } }));
+  await page.goto('/pages/dieta.html');
+  await page.getByRole('button', { name: 'Registrar extra' }).click();
+  await page.locator('#food-query').fill('granola');
+  const online = page.locator('#food-online');
+  await expect(online).toContainText('Produtos do mercado');
+  await online.getByRole('button', { name: /Granola Tradicional/ }).click();
+  await expect(page.locator('#food-name')).toHaveValue('Granola Tradicional · Marca Y');
+  await expect(page.locator('#food-kcal')).toHaveValue('410');
+});

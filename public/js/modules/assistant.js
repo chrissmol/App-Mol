@@ -5,7 +5,7 @@
 import { FOOD_CATALOG, nutritionTotals, normalizeDietMeals, searchFoodCatalog, validateFood, validateMeal } from './nutrition.js';
 import { WORKOUT_STRUCTURE_LIMITS, cleanRoutineExercises } from './workout-session.js';
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
-import { lookupBarcode, searchWikipedia } from './assistant-web.js';
+import { lookupBarcode, searchFoodsOnline, searchWikipedia } from './assistant-web.js';
 
 const LIMITS = Object.freeze({ meals: 12, foodsPerMeal: 50, routines: WORKOUT_STRUCTURE_LIMITS.routines, exercises: WORKOUT_STRUCTURE_LIMITS.exercises, sets: 20, weightMin: 20, weightMax: 400, steps: 6 });
 
@@ -196,7 +196,7 @@ function summarizeDiet(meals) {
 export function createAssistantTools(data) {
   const proposals = [];
   const sources = [];
-  const web = data.web || { searchWikipedia, lookupBarcode };
+  const web = data.web || { searchWikipedia, lookupBarcode, searchFoodsOnline };
   const cite = result => { if (result?.encontrado && result.url) sources.push({ titulo: result.titulo || result.nome || result.fonte, url: result.url, fonte: result.fonte }); return result; };
   const propose = (tipo, resumo, dados) => {
     const proposal = { id: newId(), tipo, resumo: String(resumo || '').slice(0, 300), ...dados };
@@ -207,7 +207,13 @@ export function createAssistantTools(data) {
     /** @param {{ nome?: string }} args */
     async buscar_alimento({ nome } = {}) {
       const foods = searchFoodCatalog(nome, FOOD_CATALOG, 5);
-      if (!foods.length) return { encontrado: false, dica: 'Não está no catálogo do app.' };
+      if (!foods.length) {
+        // Fora do catálogo: produtos do Brasil no Open Food Facts (rótulos reais, com marca).
+        const online = web.searchFoodsOnline ? await web.searchFoodsOnline(nome).catch(() => null) : null;
+        if (!online?.encontrado) return { encontrado: false, dica: 'Não está no catálogo do app nem no Open Food Facts.' };
+        cite({ encontrado: true, fonte: 'Open Food Facts', titulo: `Busca: ${nome}`, url: online.url });
+        return { encontrado: true, fonte: 'Open Food Facts (rótulos de produtos)', porCemGramas: online.produtos.slice(0, 5).map(item => ({ nome: [item.nome, item.marca].filter(Boolean).join(' · '), kcal: item.kcal100, proteinaG: item.proteina100, carboG: item.carbo100, gorduraG: item.gordura100 })) };
+      }
       return { encontrado: true, porCemGramas: foods.map(food => ({ nome: food.nome, kcal: food.kcal100, proteinaG: food.proteina100, carboG: food.carbo100, gorduraG: food.gordura100 })) };
     },
     /** @param {{ nome?: string }} args */

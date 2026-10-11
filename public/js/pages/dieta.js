@@ -428,9 +428,32 @@ function chooseMealForFood() {
 }
 
 function openFoodSearch(mealId) {
-  modal('Buscar alimento', `<label class="flex min-h-12 items-center gap-3 rounded-xl mol-soft px-4"><i data-lucide="search" class="h-4 w-4 text-gray-500"></i><span class="sr-only">Buscar alimento</span><input id="food-query" type="search" placeholder="Ex.: arroz, frango, banana" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></label><div class="mt-3 grid grid-cols-2 gap-2"><button id="scan-food" type="button" class="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-neon/30 text-xs font-bold text-neon"><i data-lucide="scan-barcode" class="h-4 w-4" aria-hidden="true"></i>Código de barras</button><button id="custom-food" type="button" class="min-h-11 rounded-xl border border-white/10 text-xs font-bold text-gray-300">Cadastrar alimento</button></div><p class="mt-3 text-[11px] leading-relaxed text-gray-500">Catálogo local com valores médios por 100 g. Confira o rótulo quando usar um produto específico.</p><div id="food-results" class="mt-4 space-y-2"></div>`);
+  modal('Buscar alimento', `<label class="flex min-h-12 items-center gap-3 rounded-xl mol-soft px-4"><i data-lucide="search" class="h-4 w-4 text-gray-500"></i><span class="sr-only">Buscar alimento</span><input id="food-query" type="search" placeholder="Ex.: arroz, frango, banana" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></label><div class="mt-3 grid grid-cols-2 gap-2"><button id="scan-food" type="button" class="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-neon/30 text-xs font-bold text-neon"><i data-lucide="scan-barcode" class="h-4 w-4" aria-hidden="true"></i>Código de barras</button><button id="custom-food" type="button" class="min-h-11 rounded-xl border border-white/10 text-xs font-bold text-gray-300">Cadastrar alimento</button></div><p class="mt-3 text-[11px] leading-relaxed text-gray-500">Catálogo local com valores médios por 100 g. Confira o rótulo quando usar um produto específico.</p><div id="food-results" class="mt-4 space-y-2"></div><section id="food-online" class="mt-5 hidden" aria-live="polite"></section>`);
   const paint = () => { const term = $('food-query').value.trim().toLocaleLowerCase('pt-BR'); const list = searchFoodCatalog(term); $('food-results').innerHTML = list.map((food, index) => `<button type="button" data-food-index="${index}" class="min-h-14 w-full rounded-2xl mol-soft p-3 text-left"><strong class="text-sm">${escapeHTML(food.nome)}</strong><span class="mt-1 block text-xs text-gray-500">${food.kcal100} kcal · P ${food.proteina100} · C ${food.carbo100} · G ${food.gordura100} por 100 g</span></button>`).join('') || '<p class="py-6 text-center text-sm text-gray-500">Nenhum alimento encontrado.</p>'; $('food-results').querySelectorAll('[data-food-index]').forEach((button, index) => button.onclick = () => openFoodForm(mealId, list[index])); };
-  $('food-query').oninput = paint; $('custom-food').onclick = () => openFoodForm(mealId, null); $('scan-food').onclick = () => scanFood(mealId); paint(); $('food-query').focus(); window.lucide?.createIcons();
+  // Produtos do mercado (Open Food Facts, via Worker) abaixo do catálogo, com espera curta enquanto digita.
+  let onlineTimer = 0; let onlineSeq = 0;
+  const paintOnline = () => {
+    clearTimeout(onlineTimer);
+    const term = $('food-query').value.trim(); const box = $('food-online');
+    if (term.length < 3) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const seq = ++onlineSeq;
+    onlineTimer = window.setTimeout(async () => {
+      box.classList.remove('hidden');
+      box.innerHTML = '<p class="text-xs text-gray-500">Buscando produtos do mercado…</p>';
+      let result;
+      try { const { searchFoodsOnline } = await import('../modules/assistant-web.js'); result = await searchFoodsOnline(term); }
+      catch { result = null; }
+      if (seq !== onlineSeq || !$('food-online')) return;
+      if (!result) { box.innerHTML = '<p class="text-xs text-gray-500">A busca de produtos não respondeu agora.</p>'; return; }
+      const list = result.produtos;
+      box.innerHTML = `<p class="text-xs font-bold uppercase tracking-wider text-gray-400">Produtos do mercado</p>${list.length ? list.map((item, index) => `<button type="button" data-online-index="${index}" class="mt-2 min-h-14 w-full rounded-2xl mol-soft p-3 text-left"><strong class="text-sm">${escapeHTML(item.nome)}</strong>${item.marca ? `<span class="text-xs text-gray-400"> · ${escapeHTML(item.marca)}</span>` : ''}<span class="mt-1 block text-xs text-gray-500">${item.kcal100} kcal · P ${item.proteina100 ?? '?'} · C ${item.carbo100 ?? '?'} · G ${item.gordura100 ?? '?'} por 100 g</span></button>`).join('') : '<p class="mt-2 text-xs text-gray-500">Nenhum produto encontrado.</p>'}<p class="mt-2 text-[11px] text-gray-500">Fonte: Open Food Facts (rótulos enviados por pessoas). Confira o rótulo.</p>`;
+      box.querySelectorAll('[data-online-index]').forEach(button => button.onclick = () => {
+        const item = list[Number(button.dataset.onlineIndex)];
+        openFoodForm(mealId, { nome: [item.nome, item.marca].filter(Boolean).join(' · ').slice(0, 80), kcal100: item.kcal100, proteina100: item.proteina100 ?? 0, carbo100: item.carbo100 ?? 0, gordura100: item.gordura100 ?? 0 });
+      });
+    }, 450);
+  };
+  $('food-query').oninput = () => { paint(); paintOnline(); }; $('custom-food').onclick = () => openFoodForm(mealId, null); $('scan-food').onclick = () => scanFood(mealId); paint(); $('food-query').focus(); window.lucide?.createIcons();
 }
 
 /** Câmera → Open Food Facts → formulário já preenchido (a pessoa confere a porção e salva). */

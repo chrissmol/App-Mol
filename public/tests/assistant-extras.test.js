@@ -100,3 +100,14 @@ describe('assistente: diário de refeições', async () => {
     expect(proposals[0]).toMatchObject({ tipo: 'diario', resumo: 'Lanche' });
   });
 });
+
+describe('assistente: busca de alimentos por nome (Worker)', () => {
+  it('chama o Worker e devolve os produtos', async () => {
+    const { searchFoodsOnline, FOOD_SEARCH_URL } = await import('../js/modules/assistant-web.js');
+    const fetchImpl = vi.fn().mockResolvedValue(json({ produtos: [{ nome: 'Granola', kcal100: 390 }] }));
+    const result = await searchFoodsOnline(' granola ', fetchImpl);
+    expect(fetchImpl.mock.calls[0][0]).toBe(`${FOOD_SEARCH_URL}?q=granola`);
+    expect(result).toMatchObject({ encontrado: true, produtos: [{ nome: 'Granola' }] });
+    expect(await searchFoodsOnline('a', fetchImpl)).toEqual({ encontrado: false, produtos: [] });
+  });
+});
