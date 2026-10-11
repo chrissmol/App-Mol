@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { page: 'treino.html', icon: 'dumbbell', labelKey: 'workout', fallback: 'Treino' },
   { page: 'dieta.html', icon: 'apple', labelKey: 'diet', fallback: 'Dieta' },
   { page: 'marmitas.html', icon: 'utensils', labelKey: 'mealPrep', fallback: 'Marmitas' },
+  { page: 'assistente.html', icon: 'sparkles', labelKey: 'assistant', fallback: 'Assistente' },
   { page: 'perfil.html', icon: 'user', labelKey: 'profile', fallback: 'Perfil' },
 ];
 

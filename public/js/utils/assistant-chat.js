@@ -1,0 +1,243 @@
+// Chat do assistente: usado na tela própria (assistente.html) e na gaveta
+// aberta pelos botões da Dieta e do Treino. As mudanças só são gravadas
+// quando a pessoa toca em "Confirmar" no cartão da proposta.
+import { auth, getDb } from '../config/firebase-config.js';
+import { createGeminiSend, describeAssistantError } from '../config/assistant-gemini.js';
+import { ASSISTANT_SYSTEM_INSTRUCTION, ASSISTANT_TOOL_DECLARATIONS, MAX_MESSAGE_CHARS, createAssistantTools, runAssistantTurn, summarizeProposal } from '../modules/assistant.js';
+import { ASSISTANT_FILE_ACCEPT, fileToPart, readExcelInBrowser } from '../modules/assistant-files.js';
+import { activateDialog, escapeHTML, showToast } from './ui.js';
+import { renderIcons } from './icons.js';
+import { getLocalItem, setLocalItem } from './storage.js';
+
+const NOTICE_KEY = 'mol-assistant-notice-v1';
+let chatCount = 0;
+// any: renderIcons aceita qualquer nó, embora a assinatura diga Document.
+const icons = node => renderIcons(/** @type {any} */ (node));
+/** @returns {HTMLElement} */
+const pick = (root, selector) => /** @type {HTMLElement} */ (root.querySelector(selector));
+
+/** Negrito, listas e quebras de linha, sempre sobre texto já escapado. */
+export function formatAssistantText(text) {
+  const lines = escapeHTML(String(text || '')).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').split('\n');
+  let html = '';
+  let inList = false;
+  for (const line of lines) {
+    const item = line.match(/^\s*[-*•]\s+(.*)$/);
+    if (item && !inList) { html += '<ul>'; inList = true; }
+    if (!item && inList) { html += '</ul>'; inList = false; }
+    if (item) html += `<li>${item[1]}</li>`;
+    else if (line.trim()) html += `<p>${line}</p>`;
+  }
+  return inList ? `${html}</ul>` : html;
+}
+
+const listHTML = lines => `<ul>${lines.map(line => `<li>${escapeHTML(line)}</li>`).join('')}</ul>`;
+
+/**
+ * Monta o chat dentro de `container`.
+ * @param {HTMLElement} container
+ * @param {{ context?: string, intro?: string, suggestions?: string[], onDataChanged?: (tipo: string) => void, autofocus?: boolean }} [options]
+ */
+export function mountAssistantChat(container, { context = '', intro = '', suggestions = [], onDataChanged, autofocus = false } = {}) {
+  const id = `assistant-${++chatCount}`;
+  container.classList.add('assistant-chat');
+  container.innerHTML = `
+    <div class="assistant-notice" data-notice hidden>
+      <p><strong>Antes de começar:</strong> as conversas passam pelo Gemini, do Google, que pode usá-las para melhorar os serviços dele. Envie só o necessário sobre a sua saúde.</p>
+      <button type="button" class="mol-btn mol-btn-secondary" data-notice-ok>Entendi</button>
+    </div>
+    <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
+    <form class="assistant-composer" data-form>
+      <!-- Sugestões dentro da barra: acompanham o sticky e nunca ficam escondidas atrás dela. -->
+      <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
+      <div class="assistant-attachment" data-attachment hidden><i data-lucide="paperclip" aria-hidden="true"></i><span data-attachment-name></span><button type="button" class="assistant-icon-btn" data-attachment-remove aria-label="Remover anexo"><i data-lucide="x"></i></button></div>
+      <div class="assistant-composer__row">
+        <button type="button" class="assistant-icon-btn" data-attach aria-label="Anexar foto, PDF ou planilha"><i data-lucide="paperclip"></i></button>
+        <label class="sr-only" for="${id}-input">Mensagem para o assistente</label>
+        <textarea id="${id}-input" data-input rows="1" maxlength="${MAX_MESSAGE_CHARS}" placeholder="Escreva sua pergunta…" autocomplete="off"></textarea>
+        <button type="submit" class="assistant-send" data-send aria-label="Enviar"><i data-lucide="send"></i></button>
+      </div>
+      <input type="file" data-file accept="${ASSISTANT_FILE_ACCEPT}" hidden>
+    </form>
+    <p class="assistant-disclaimer">O assistente pode errar e não substitui nutricionista nem educador físico.</p>`;
+  const $ = selector => container.querySelector(selector);
+  const messages = $('[data-messages]');
+  const input = $('[data-input]');
+  const form = $('[data-form]');
+  const fileInput = $('[data-file]');
+  let attachment = null;
+  let busy = false;
+  let sendPromise = null;
+  let storePromise = null;
+
+  // Boas-vindas só na interface: não vai para a IA nem gasta cota.
+  if (intro) addMessage('assistant', formatAssistantText(intro));
+
+  const notice = $('[data-notice]');
+  if (!getLocalItem(NOTICE_KEY)) notice.hidden = false;
+  $('[data-notice-ok]').onclick = () => { setLocalItem(NOTICE_KEY, '1'); notice.hidden = true; input.focus(); };
+
+  function getStore() {
+    storePromise ||= (async () => {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Entre na sua conta para usar o assistente.');
+      const { createAssistantStore } = await import('../modules/assistant-store.js');
+      return createAssistantStore(await getDb(), user.uid);
+    })();
+    return storePromise;
+  }
+
+  function getSend() {
+    const systemInstruction = context ? `${ASSISTANT_SYSTEM_INSTRUCTION}\n\nCONTEXTO DA TELA: ${context}` : ASSISTANT_SYSTEM_INSTRUCTION;
+    sendPromise ||= createGeminiSend({ systemInstruction, toolDeclarations: ASSISTANT_TOOL_DECLARATIONS }).catch(error => { sendPromise = null; throw error; });
+    return sendPromise;
+  }
+
+  function scrollToEnd() {
+    const last = messages.lastElementChild;
+    last?.scrollIntoView?.({ block: 'end', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+
+  function addMessage(role, html) {
+    const item = document.createElement('li');
+    item.className = `assistant-msg assistant-msg--${role}`;
+    item.innerHTML = html;
+    messages.append(item);
+    scrollToEnd();
+    return item;
+  }
+
+  async function renderProposal(proposal, store) {
+    let current = {};
+    try {
+      if (proposal.tipo === 'dieta') current = await store.loadDiet();
+      if (proposal.tipo === 'rotina') current = { routines: await store.loadRoutines() };
+    } catch { /* sem o "antes" o cartão ainda mostra o "depois" */ }
+    const summary = summarizeProposal(proposal, current);
+    const card = addMessage('proposal', `
+      <article class="assistant-proposal" aria-label="${escapeHTML(summary.titulo)}">
+        <p class="assistant-proposal__eyebrow"><i data-lucide="sparkles" aria-hidden="true"></i> Proposta do assistente</p>
+        <h3>${escapeHTML(summary.titulo)}</h3>
+        ${summary.resumo ? `<p class="assistant-proposal__summary">${escapeHTML(summary.resumo)}</p>` : ''}
+        ${summary.antes.length ? `<div class="assistant-proposal__block assistant-proposal__block--before"><p>Antes</p>${listHTML(summary.antes)}${summary.totais?.antes ? `<p class="assistant-proposal__totals">${escapeHTML(summary.totais.antes)}</p>` : ''}</div>` : ''}
+        <div class="assistant-proposal__block assistant-proposal__block--after"><p>${summary.antes.length ? 'Depois' : 'Vai ficar assim'}</p>${listHTML(summary.depois)}${summary.totais?.depois ? `<p class="assistant-proposal__totals">${escapeHTML(summary.totais.depois)}</p>` : ''}</div>
+        <div class="assistant-proposal__actions" data-actions>
+          <button type="button" class="mol-btn mol-btn-secondary" data-discard>Descartar</button>
+          <button type="button" class="mol-btn mol-btn-primary" data-confirm>Confirmar</button>
+        </div>
+      </article>`);
+    icons(card);
+    const actions = pick(card, '[data-actions]');
+    pick(card, '[data-discard]').onclick = () => { actions.innerHTML = '<p class="assistant-proposal__status">Descartada. Nada foi alterado.</p>'; };
+    pick(card, '[data-confirm]').onclick = async event => {
+      const button = /** @type {HTMLButtonElement} */ (event.currentTarget);
+      button.disabled = true;
+      try {
+        const undo = await store.applyProposal(proposal);
+        onDataChanged?.(proposal.tipo);
+        actions.innerHTML = '<p class="assistant-proposal__status assistant-proposal__status--ok"><i data-lucide="check-circle-2" aria-hidden="true"></i> Salvo.</p><button type="button" class="mol-btn mol-btn-secondary" data-undo><i data-lucide="undo-2" aria-hidden="true"></i> Desfazer</button>';
+        icons(actions);
+        showToast('Alteração salva.', 'success');
+        pick(actions, '[data-undo]').onclick = async () => {
+          try { await undo(); onDataChanged?.(proposal.tipo); actions.innerHTML = '<p class="assistant-proposal__status">Desfeito. Voltou como estava.</p>'; showToast('Alteração desfeita.', 'success'); }
+          catch (error) { console.error('[Mol] Desfazer falhou:', error); showToast('Não foi possível desfazer agora.'); }
+        };
+      } catch (error) {
+        console.error('[Mol] Proposta não salva:', error);
+        button.disabled = false;
+        showToast(error?.code === 'permission-denied' ? 'Os dados passam dos limites permitidos.' : 'Não foi possível salvar agora.');
+      }
+    };
+  }
+
+  function setAttachment(value) {
+    attachment = value;
+    $('[data-attachment]').hidden = !value;
+    $('[data-attachment-name]').textContent = value?.name || '';
+  }
+
+  async function submit(text) {
+    const message = String(text || '').trim();
+    if (busy || (!message && !attachment)) return;
+    busy = true;
+    $('[data-send]').disabled = true;
+    $('[data-suggestions]').hidden = true;
+    container.classList.add('assistant-chat--active');
+    const sentAttachment = attachment;
+    addMessage('user', `${message ? formatAssistantText(message) : ''}${sentAttachment ? `<p class="assistant-msg__file"><i data-lucide="paperclip" aria-hidden="true"></i> ${escapeHTML(sentAttachment.name)}</p>` : ''}`);
+    icons(messages.lastElementChild);
+    input.value = '';
+    input.style.height = '';
+    setAttachment(null);
+    const typing = addMessage('assistant', '<span class="assistant-typing" aria-label="O assistente está escrevendo"><span></span><span></span><span></span></span>');
+    try {
+      const [send, store] = await Promise.all([getSend(), getStore()]);
+      const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines });
+      const attachments = sentAttachment ? [await fileToPart(sentAttachment.file, { readExcel: readExcelInBrowser })] : [];
+      const result = await runAssistantTurn({ send, executors, message, attachments });
+      const links = sources.length ? `<p class="assistant-sources">Fontes: ${sources.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.titulo || source.fonte)}</a>`).join(' · ')}</p>` : '';
+      typing.innerHTML = formatAssistantText(result.text || 'Pronto.') + links;
+      for (const proposal of proposals) await renderProposal(proposal, store);
+    } catch (error) {
+      console.error('[Mol] Assistente falhou:', error);
+      typing.classList.add('assistant-msg--error');
+      typing.textContent = error?.message?.startsWith('Entre na sua conta') || /Formato|7 MB|Excel/.test(error?.message || '') ? error.message : describeAssistantError(error);
+    } finally {
+      busy = false;
+      $('[data-send]').disabled = false;
+      scrollToEnd();
+    }
+  }
+
+  form.addEventListener('submit', event => { event.preventDefault(); submit(input.value); });
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); submit(input.value); }
+  });
+  input.addEventListener('input', () => { input.style.height = ''; input.style.height = `${Math.min(input.scrollHeight, 160)}px`; });
+  container.querySelectorAll('[data-suggestion]').forEach(button => { button.addEventListener('click', () => submit(button.textContent)); });
+  $('[data-attach]').onclick = () => fileInput.click();
+  $('[data-attachment-remove]').onclick = () => { setAttachment(null); fileInput.value = ''; };
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (file) setAttachment({ file, name: file.name });
+    fileInput.value = '';
+    input.focus();
+  });
+  icons(container);
+  if (autofocus) requestAnimationFrame(() => input.focus());
+  return { submit };
+}
+
+/**
+ * Gaveta com o chat, aberta pelos botões da Dieta e do Treino.
+ * @param {{ title?: string, context?: string, intro?: string, suggestions?: string[], onDataChanged?: (tipo: string) => void }} [options]
+ */
+export function openAssistantSheet({ title = 'Assistente', ...options } = {}) {
+  const overlay = document.createElement('div');
+  overlay.className = 'assistant-sheet-overlay';
+  overlay.innerHTML = `<section class="assistant-sheet" role="dialog" aria-modal="true" aria-labelledby="assistant-sheet-title">
+    <header class="assistant-sheet__header"><h2 id="assistant-sheet-title"><i data-lucide="sparkles" aria-hidden="true"></i> ${escapeHTML(title)}</h2><button type="button" class="assistant-icon-btn" data-close aria-label="Fechar assistente"><i data-lucide="x"></i></button></header>
+    <div class="assistant-sheet__body" data-chat></div>
+  </section>`;
+  document.body.append(overlay);
+  const close = activateDialog(overlay, { initialFocus: null });
+  mountAssistantChat(overlay.querySelector('[data-chat]'), { ...options, autofocus: true });
+  overlay.querySelector('[data-close]').addEventListener('click', close);
+  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  icons(overlay);
+  return close;
+}
+
+/**
+ * Botão "Ajustar com o assistente" para colocar dentro de outras telas.
+ * @param {string} label
+ * @param {{ block?: boolean, title?: string, context?: string, intro?: string, suggestions?: string[], onDataChanged?: (tipo: string) => void }} [options]
+ */
+export function createAssistantButton(label, { block = false, ...options } = {}) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = block ? 'assistant-entry assistant-entry--block' : 'assistant-entry';
+  button.innerHTML = `<i data-lucide="sparkles" aria-hidden="true"></i><span>${escapeHTML(label)}</span>`;
+  button.addEventListener('click', () => openAssistantSheet(options));
+  return button;
+}

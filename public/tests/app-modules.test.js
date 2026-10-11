@@ -9,6 +9,7 @@ describe('módulos do aplicativo', () => {
       progresso: true,
       evolucao: true,
       conquistas: true,
+      assistente: true,
     });
   });
 

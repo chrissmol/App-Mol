@@ -7,6 +7,7 @@ import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { activateDialog, celebrate, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
+import { createAssistantButton } from '../utils/assistant-chat.js';
 import { SET_METHODS, cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, defaultMethodDetails, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, setMethod, setSummary, setVolume, validateContextualSet, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
 import { matchesExerciseSearch, progressionAdvice, rankExerciseSubstitutes } from '../modules/workout-coach.js';
 import { completedSets, estimate1RM, muscleZoneScores } from '../modules/workout-analytics.js';
@@ -291,6 +292,26 @@ const restNext = document.getElementById('rest-next');
 const restHint = document.getElementById('rest-hint');
 const restPauseLabel = document.getElementById('rest-pause-label');
 document.getElementById('btn-concluir-treino')?.addEventListener('click', () => window.finalizarEConcluirTreino());
+
+// Atalho para o assistente sem sair do Treino; recarrega as rotinas quando uma mudança é confirmada.
+{
+  const entry = document.createElement('div');
+  entry.className = 'mt-3';
+  entry.dataset.requiresModule = 'assistente';
+  entry.append(createAssistantButton('Montar ou ajustar treino com o assistente', {
+    title: 'Assistente do treino',
+    block: true,
+    intro: 'Posso montar rotinas novas, ajustar séries e exercícios das suas rotinas ou **importar um treino** de foto, PDF ou planilha (use o clipe). Nada muda sem você confirmar.',
+    context: 'A pessoa está na tela de Treinos. Priorize ajudar a montar ou ajustar rotinas (leia com ver_meus_treinos antes de alterar) e responder sobre exercícios. Ela pode anexar foto, PDF ou planilha do treino.',
+    suggestions: ['Monta um treino de pernas para quarta', 'Adiciona remada curvada na minha rotina', 'Qual o melhor exercício para costas?'],
+    onDataChanged: tipo => {
+      if (tipo !== 'rotina' || !usuarioAtual) return;
+      removeLocalItems(routinesCacheKey(usuarioAtual.uid));
+      void carregarRotinasDoBanco();
+    }
+  }));
+  document.getElementById('btn-explorar')?.after(entry);
+}
 
 watchProtectedPage(user => {
     usuarioAtual = user;

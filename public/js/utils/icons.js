@@ -4,9 +4,9 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, Clock3,
   CalendarCheck2, ClipboardList, Compass, Copy, createIcons, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2,
   Flame, Footprints, Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole,
-  LogOut, Medal, Minus, Monitor, Moon, Palette, Pause, Pencil, Play, Plus, RefreshCw, Replace, Ruler, Scale,
+  LogOut, Medal, Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, RefreshCw, Replace, Ruler, Scale,
   Search, Send, Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star,
-  Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Upload, User,
+  Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User,
   Utensils, Weight, X
 } from 'lucide';
 
@@ -16,9 +16,9 @@ const icons = {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleHelp, ClipboardList, Clock3,
   Compass, Copy, Crown, Download, Dumbbell, Eye, EyeOff, FilePlus2, Flame, Footprints, Info, Languages,
   CalendarCheck2, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole, LogOut, Medal,
-  Minus, Monitor, Moon, Palette, Pause, Pencil, Play, Plus, RefreshCw, Replace, Ruler, Scale, Search, Send,
+  Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, RefreshCw, Replace, Ruler, Scale, Search, Send,
   Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
-  TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Upload, User, Utensils, Weight, X
+  TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User, Utensils, Weight, X
 };
 
 const kebabCase = name => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Za-z])(\d)/g, '$1-$2').toLocaleLowerCase('en-US');

@@ -30,6 +30,7 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 - Registro de séries, carga, repetições, RIR, descanso e histórico.
 - Métricas de volume, séries, sessões concluídas, consistência e evolução.
 - Dieta por refeições, horários, alimentos e totais nutricionais.
+- Assistente de IA (Gemini, camada gratuita) que responde sobre treino e dieta e ajusta os dados da pessoa (dieta, rotinas, peso) a partir de conversa, foto, PDF ou planilha, sempre com confirmação e desfazer. Atalhos na Dieta e no Treino.
 - Perfil com peso, altura, objetivo, unidades, progresso corporal e backup.
 - Tema claro, escuro e opção de seguir o sistema do aparelho.
 - Experiência mobile/PWA com bloqueio de zoom, safe-area e navegação inferior.
@@ -44,6 +45,7 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 | Build | Vite |
 | PWA | vite-plugin-pwa + Workbox |
 | Autenticação | Firebase Authentication |
+| IA | Firebase AI Logic (Gemini Developer API, sem custo) com App Check |
 | Banco | Cloud Firestore |
 | Hospedagem | Firebase Hosting |
 | Testes | Vitest, Playwright, html-validate |

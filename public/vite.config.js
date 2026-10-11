@@ -12,6 +12,7 @@ export default defineConfig({
           { find: 'firebase/app-check', replacement: firebaseBrowserMock },
           { find: 'firebase/auth', replacement: firebaseBrowserMock },
           { find: 'firebase/firestore', replacement: firebaseBrowserMock },
+          { find: 'firebase/ai', replacement: resolve(import.meta.dirname, 'e2e/firebase-ai-mock.js') },
         ]
       : [],
   },
@@ -40,6 +41,7 @@ export default defineConfig({
         progresso: resolve(import.meta.dirname, 'pages/progresso.html'),
         configuracoes: resolve(import.meta.dirname, 'pages/configuracoes.html'),
         evolucao: resolve(import.meta.dirname, 'pages/evolucao.html'),
+        assistente: resolve(import.meta.dirname, 'pages/assistente.html'),
         dadosPessoais: resolve(import.meta.dirname, 'pages/dados-pessoais.html'),
         admin: resolve(import.meta.dirname, 'pages/admin.html')
       }
