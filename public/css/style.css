@@ -1754,7 +1754,6 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 
 .routine-card {
   display: flex;
-  min-height: 13.75rem;
   flex-direction: column;
   justify-content: space-between;
 }
@@ -3817,3 +3816,15 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .profile-stats dd { margin-top: .25rem; font-size: 1rem; font-weight: 800; color: var(--mol-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-frame-btn { position: absolute; right: -.35rem; bottom: -.35rem; display: flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 999px; border: 3px solid var(--mol-surface); background: var(--mol-brand-green); color: #fff; }
 .profile-frame-btn svg { width: 1.1rem; height: 1.1rem; }
+
+/* Cartão de rotina: uma ação principal (Iniciar) e o resto no menu "⋯". */
+.routine-menu { position: relative; flex-shrink: 0; margin: -.5rem -.5rem 0 0; }
+.routine-menu__trigger { display: flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: .9rem; color: var(--mol-muted); }
+.routine-menu__trigger[aria-expanded="true"], .routine-menu__trigger:hover { background: var(--mol-surface-soft); color: var(--mol-text); }
+.routine-menu__list { position: absolute; right: 0; top: calc(100% + .25rem); z-index: 20; display: grid; min-width: 11rem; padding: .35rem; border-radius: 1rem; border: 1px solid var(--mol-border); background: var(--mol-surface); box-shadow: 0 12px 30px rgba(0, 0, 0, .45); }
+.routine-menu__list[hidden] { display: none; }
+.routine-menu__list [role="menuitem"] { display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: 0 .75rem; border-radius: .7rem; font-size: .9rem; font-weight: 700; color: var(--mol-text); text-align: left; }
+.routine-menu__list [role="menuitem"]:hover, .routine-menu__list [role="menuitem"]:focus-visible { background: var(--mol-surface-soft); }
+.routine-menu__list [role="menuitem"] svg { width: 1rem; height: 1rem; }
+.routine-menu__list .is-danger { color: #ff6b81; }
+.routine-card:has(.routine-menu__list:not([hidden])) { position: relative; z-index: 50; }

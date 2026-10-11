@@ -827,16 +827,17 @@ function renderRotinas() {
           <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
           <p class="text-xs text-gray-500">${plural(rotina.exercicios ? rotina.exercicios.length : 0, 'exercício', 'exercícios')}${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
         </div>
-        <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-colors hover:text-red-400" aria-label="Excluir ${escapeHTML(rotina.nome)}">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
+        <div class="routine-menu">
+          <button type="button" class="routine-menu__trigger" data-routine-menu aria-haspopup="menu" aria-expanded="false" aria-label="Mais opções de ${escapeHTML(rotina.nome)}"><i data-lucide="ellipsis" class="h-5 w-5"></i></button>
+          <div class="routine-menu__list" role="menu" hidden>
+            <button type="button" role="menuitem" data-routine-action="edit" data-routine-id="${escapeHTML(rotina.id)}"><i data-lucide="pencil" aria-hidden="true"></i>Editar</button>
+            <button type="button" role="menuitem" data-routine-action="duplicate" data-routine-id="${escapeHTML(rotina.id)}"><i data-lucide="copy" aria-hidden="true"></i>Duplicar</button>
+            <button type="button" role="menuitem" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="is-danger" aria-label="Excluir ${escapeHTML(rotina.nome)}"><i data-lucide="trash-2" aria-hidden="true"></i>Excluir</button>
+          </div>
+        </div>
       </div>
 
-      <div class="mt-4 grid grid-cols-2 gap-3">
-        <button type="button" data-routine-action="start" data-routine-id="${escapeHTML(rotina.id)}" class="min-h-12 rounded-xl bg-neon px-3 text-sm font-bold text-black active:scale-[0.98]">Iniciar</button>
-        <button type="button" data-routine-action="edit" data-routine-id="${escapeHTML(rotina.id)}" class="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-bold text-gray-200 active:bg-white/5"><i data-lucide="pencil" class="h-4 w-4"></i> Editar</button>
-      </div>
-      <button type="button" data-routine-action="duplicate" data-routine-id="${escapeHTML(rotina.id)}" class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-300 active:bg-white/5"><i data-lucide="copy" class="h-4 w-4"></i> Duplicar rotina</button>
+      <button type="button" data-routine-action="start" data-routine-id="${escapeHTML(rotina.id)}" class="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-neon px-3 text-sm font-bold text-black active:scale-[0.98]"><i data-lucide="play" class="h-4 w-4 fill-current" aria-hidden="true"></i>Iniciar treino</button>
     </article>
   `).join('');
   const actions = {
@@ -845,12 +846,42 @@ function renderRotinas() {
     edit: window.editarRotina,
     duplicate: window.duplicarRotina
   };
-  rotinasList.querySelectorAll('[data-routine-action]').forEach(button => button.addEventListener('click', () => {
+  rotinasList.querySelectorAll('[data-routine-action]').forEach((/** @type {HTMLElement} */ button) => button.addEventListener('click', () => {
+    fecharMenusRotina();
     const action = actions[button.dataset.routineAction];
     if (action) void action(button.dataset.routineId);
   }));
+  rotinasList.querySelectorAll('[data-routine-menu]').forEach(trigger => trigger.addEventListener('click', event => {
+    event.stopPropagation();
+    const list = /** @type {HTMLElement} */ (trigger.nextElementSibling);
+    const abrir = list.hidden;
+    fecharMenusRotina();
+    if (!abrir) return;
+    list.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    list.querySelector('[role="menuitem"]')?.focus();
+  }));
   renderIcons();
 }
+
+// Menu "⋯" da rotina: fecha ao escolher, com Esc, setas para navegar ou toque fora.
+function fecharMenusRotina({ devolverFoco = false } = {}) {
+  document.querySelectorAll('.routine-menu__list:not([hidden])').forEach((/** @type {HTMLElement} */ list) => {
+    list.hidden = true;
+    const trigger = list.previousElementSibling;
+    trigger?.setAttribute('aria-expanded', 'false');
+    if (devolverFoco) trigger?.focus();
+  });
+}
+document.addEventListener('click', event => { if (!event.target.closest?.('.routine-menu')) fecharMenusRotina(); });
+document.addEventListener('keydown', event => {
+  const list = document.querySelector('.routine-menu__list:not([hidden])');
+  if (!list) return;
+  if (event.key === 'Escape') return fecharMenusRotina({ devolverFoco: true });
+  const items = [...list.querySelectorAll('[role="menuitem"]')];
+  const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+  if (step) { event.preventDefault(); items[(items.indexOf(document.activeElement) + step + items.length) % items.length]?.focus(); }
+});
 
 function checkinCardHTML() {
   if (!treinoIniciado || checkinDispensado) return '';

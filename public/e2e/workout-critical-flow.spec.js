@@ -20,7 +20,7 @@ test('iniciar treino, concluir serie e voltar cancelando nao gera erro', async (
   page.on('pageerror', error => pageErrors.push(error.message));
 
   await openWorkout(page);
-  await page.getByRole('button', { name: /^Iniciar$/ }).first().click();
+  await page.getByRole('button', { name: 'Iniciar treino' }).first().click();
   // Começa na hora; o check-in é um cartão opcional dentro da sessão.
   await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
   await expect(page.getByRole('dialog', { name: /Como voc/ })).toHaveCount(0);
@@ -46,7 +46,9 @@ test('iniciar treino, concluir serie e voltar cancelando nao gera erro', async (
 
 test('excluir rotina não pergunta "tem certeza" e oferece Desfazer', async ({ page }) => {
   await openWorkout(page);
-  await page.getByRole('button', { name: 'Excluir Upper' }).click();
+  await page.getByRole('button', { name: 'Mais opções de Upper' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Editar' })).toBeFocused();
+  await page.getByRole('menuitem', { name: 'Excluir Upper' }).click();
   await expect(page.getByRole('dialog', { name: /Excluir rotina/ })).toHaveCount(0);
   const toast = page.getByRole('status').filter({ hasText: 'Rotina excluída: Upper.' });
   await expect(toast).toBeVisible();
