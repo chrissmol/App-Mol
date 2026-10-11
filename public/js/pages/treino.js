@@ -5,7 +5,7 @@ const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, addDoc, getDocs, getDoc, setDoc, query, where, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { activateDialog, celebrate, showToast, confirmAction, escapeHTML } from '../utils/ui.js';
+import { activateDialog, celebrate, showToast, showUndoToast, confirmAction, escapeHTML } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { createAssistantButton } from '../utils/assistant-chat.js';
 import { SET_METHODS, cleanRoutineExercises, cloneValue, completedWorkoutSnapshot, defaultMethodDetails, elapsedSeconds, isRecoverableWorkoutDraft, normalizeRoutineExercises, normalizeRoutineRecord, setMethod, setSummary, setVolume, validateContextualSet, validateExerciseTargets, validateSet, WORKOUT_LIMITS, WORKOUT_STRUCTURE_LIMITS, workoutTotals } from '../modules/workout-session.js';
@@ -35,6 +35,14 @@ let descansoInterval = null;
 let descansoPausado = false;
 let finalizandoTreino = false;
 let checkinPreTreino = null;
+// Check-in opcional: aparece no topo da sessão, em toques; quem não quiser responder segue treinando.
+let checkinRespostas = new Set();
+let checkinDispensado = false;
+const CHECKIN_OPCOES = [
+  { chave: 'energia', titulo: 'Energia', opcoes: [['Baixa', 1], ['Normal', 3], ['Alta', 5]] },
+  { chave: 'sono', titulo: 'Sono', opcoes: [['Ruim', 1], ['Ok', 3], ['Bom', 5]] },
+  { chave: 'dor', titulo: 'Dor muscular', opcoes: [['Nenhuma', 0], ['Leve', 2], ['Forte', 4]] }
+];
 let descansoTerminaEm = null;
 let descansoContexto = null;
 let ultimoRascunhoSalvoEm = 0;
@@ -609,6 +617,8 @@ document.addEventListener('click', event => {
   if (action === 'open-set-type') return void window.abrirModalTipoSerie(exIndex, setIndex);
   if (action === 'copy-previous') return void window.copiarAnterior(exIndex, setIndex);
   if (action === 'add-set') return void window.adicionarSerie(exIndex);
+  if (action === 'checkin-pick') return void responderCheckin(button.dataset.checkinKey, Number(button.dataset.checkinValue));
+  if (action === 'checkin-skip') { checkinDispensado = true; if (rotinaAbertaId) abrirRotina(rotinaAbertaId); return; }
 });
 
 document.addEventListener('change', event => {
@@ -650,6 +660,8 @@ function pararCronometro() {
   tempoSegundos = 0;
   sessaoIniciadaEm = null;
   checkinPreTreino = null;
+  checkinRespostas = new Set();
+  checkinDispensado = false;
   void liberarTelaAtiva();
 }
 
@@ -714,7 +726,7 @@ function destaqueDaSessao(exercicios = []) {
 function proximaSerieTexto(exercicio, conselho) {
   const ultimo = ultimaPerformance.get(exercicio.nome);
   const latest = ultimo?.sets?.find(item => Number(item.kg) >= 0 && Number(item.reps) > 0);
-  if (!latest) return `Primeira referência: busque ${exercicio.repsMin || 8}-${exercicio.repsMax || 12} reps com técnica limpa.`;
+  if (!latest) return ''; // sem histórico, a mensagem do conselho ("Primeira referência") já orienta
   if (conselho?.state === 'increase' && conselho.suggestedWeight) return `Próxima: ${conselho.suggestedWeight.toLocaleString('pt-BR')} kg tentando ${exercicio.repsMin || 8}+ reps.`;
   if (conselho?.state === 'reduce' && conselho.suggestedWeight) return `Próxima: reduza para ${conselho.suggestedWeight.toLocaleString('pt-BR')} kg e recupere a execução.`;
   return `Próxima: ${latest.kg} kg buscando ${Number(latest.reps) + 1} reps ou mesmo RIR.`;
@@ -814,7 +826,7 @@ function renderRotinas() {
           <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
           <p class="text-xs text-gray-500">${plural(rotina.exercicios ? rotina.exercicios.length : 0, 'exercício', 'exercícios')}${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
         </div>
-        <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="text-gray-500 hover:text-red-400 transition-colors p-1" aria-label="Excluir ${escapeHTML(rotina.nome)}">
+        <button type="button" data-routine-action="delete" data-routine-id="${escapeHTML(rotina.id)}" class="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-colors hover:text-red-400" aria-label="Excluir ${escapeHTML(rotina.nome)}">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
         </button>
       </div>
@@ -839,34 +851,28 @@ function renderRotinas() {
   renderIcons();
 }
 
-function solicitarCheckin() {
-  return new Promise(resolve => {
-    document.getElementById('workout-checkin')?.remove();
-    const modal = document.createElement('div');
-    modal.id = 'workout-checkin';
-    modal.className = 'fixed inset-0 z-[220] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
-    modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-labelledby', 'checkin-title');
-    modal.innerHTML = `<section class="mx-auto w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl"><p class="text-xs font-bold uppercase tracking-[.16em] text-neon">Antes de começar</p><h2 id="checkin-title" class="mt-1 text-xl font-extrabold">Como você está hoje?</h2><p class="mt-2 text-sm text-gray-400">Isso ajuda a ajustar a intensidade com segurança.</p><div class="mt-5 grid grid-cols-3 gap-3"><label class="text-xs font-bold text-gray-400">Energia<input data-checkin="energia" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Sono<input data-checkin="sono" type="number" inputmode="numeric" min="1" max="5" value="3" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label><label class="text-xs font-bold text-gray-400">Dor<input data-checkin="dor" type="number" inputmode="numeric" min="0" max="5" value="0" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-center text-white"></label></div><p class="mt-2 text-[11px] text-gray-500">Energia e sono: 1–5 · Dor muscular: 0–5</p><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-12 rounded-xl mol-soft text-sm font-bold text-gray-300">Cancelar</button><button type="button" data-start class="min-h-12 rounded-xl bg-neon text-sm font-bold text-black">Iniciar treino</button></div></section>`;
-    let closeDialog;
-    const close = value => { closeDialog(); resolve(value); };
-    modal.querySelector('[data-cancel]').onclick = () => close(null);
-    modal.querySelector('[data-start]').onclick = () => {
-      const value = name => Number(modal.querySelector(`[data-checkin="${name}"]`).value);
-      const energia = value('energia'), sono = value('sono'), dor = value('dor');
-      if (energia < 1 || energia > 5 || sono < 1 || sono > 5 || dor < 0 || dor > 5) return showToast('Use valores válidos nas escalas informadas.');
-      close({ energia, sono, dor });
-    };
-    modal.onclick = event => { if (event.target === modal) close(null); };
-    document.body.appendChild(modal);
-    closeDialog = activateDialog(modal, { initialFocus: modal.querySelector('input'), onCancel: () => close(null) });
-  });
+function checkinCardHTML() {
+  if (!treinoIniciado || checkinDispensado) return '';
+  const atual = checkinPreTreino || {};
+  return `<section class="workout-checkin mb-4" aria-labelledby="checkin-title"><div class="flex items-start justify-between gap-3"><div><h2 id="checkin-title" class="text-base font-extrabold">Como você está hoje?</h2><p class="mt-1 text-xs text-gray-400">Opcional. Ajuda a ajustar a intensidade.</p></div><button type="button" data-workout-action="checkin-skip" class="min-h-11 shrink-0 rounded-xl px-3 text-xs font-bold text-gray-400">Pular</button></div>${CHECKIN_OPCOES.map(grupo => `<div class="mt-3" role="group" aria-label="${grupo.titulo}"><p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">${grupo.titulo}</p><div class="mt-1.5 grid grid-cols-3 gap-2">${grupo.opcoes.map(([rotulo, valor]) => `<button type="button" data-workout-action="checkin-pick" data-checkin-key="${grupo.chave}" data-checkin-value="${valor}" aria-pressed="${checkinRespostas.has(grupo.chave) && atual[grupo.chave] === valor}" class="workout-checkin__option">${rotulo}</button>`).join('')}</div></div>`).join('')}</section>`;
+}
+
+function responderCheckin(chave, valor) {
+  checkinPreTreino = { energia: 3, sono: 3, dor: 0, ...(checkinPreTreino || {}), [chave]: valor };
+  checkinRespostas.add(chave);
+  if (checkinRespostas.size === CHECKIN_OPCOES.length) {
+    checkinDispensado = true;
+    if (checkinPreTreino.energia <= 1 || checkinPreTreino.dor >= 4) showToast('Hoje priorize técnica e reduza a carga se precisar.');
+    else showToast('Anotado. Bom treino!', 'success');
+  }
+  salvarRascunho({ force: true });
+  if (rotinaAbertaId) abrirRotina(rotinaAbertaId);
 }
 
 async function iniciarRotinaComCheckin(id) {
-  const checkin = await solicitarCheckin();
-  if (!checkin) return;
-  checkinPreTreino = checkin;
-  if (checkin.energia <= 2 || checkin.dor >= 4) showToast('Hoje priorize técnica e reduza carga se necessário.');
+  checkinPreTreino = null;
+  checkinRespostas = new Set();
+  checkinDispensado = false;
   iniciarCronometroGlobal(); abrirRotina(id);
 }
 
@@ -927,15 +933,22 @@ window.salvarDiasRotina = async () => {
   }
 };
 
+// Exclui na hora e oferece "Desfazer" (regrava o mesmo documento com o mesmo id).
 window.deletarRotina = async (id) => {
-  if (await confirmAction({ title: 'Excluir rotina?', message: 'Essa rotina e seus exercícios serão removidos permanentemente.', confirmText: 'Excluir', danger: true })) {
-    try {
-      await deleteDoc(doc(db, "treinos", id));
-      carregarRotinasDoBanco();
-    } catch (error) {
-      console.error("Erro ao deletar treino:", error);
-      showToast('Não foi possível excluir o treino.');
-    }
+  const ref = doc(db, 'treinos', id);
+  try {
+    const snapshot = await getDoc(ref);
+    const backup = snapshot.exists() ? snapshot.data() : null;
+    await deleteDoc(ref);
+    await carregarRotinasDoBanco();
+    if (!backup) return;
+    showUndoToast(`Rotina excluída: ${backup.nome || 'sem nome'}.`, async () => {
+      try { await setDoc(ref, backup); await carregarRotinasDoBanco(); showToast('Rotina restaurada.', 'success'); }
+      catch (error) { console.error('Rotina não restaurada:', error); showToast('Não foi possível restaurar a rotina.'); }
+    });
+  } catch (error) {
+    console.error("Erro ao deletar treino:", error);
+    showToast('Não foi possível excluir o treino.');
   }
 };
 
@@ -1277,9 +1290,10 @@ function abrirRotina(id) {
       btnConcluir.textContent = `Finalizar ${seriesFeitas}/${totalSeries}`;
     } else {
       btnConcluir.classList.remove('hidden');
-      btnConcluir.disabled = true;
-      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-white/10 text-gray-500 opacity-60 cursor-not-allowed";
-      btnConcluir.textContent = 'Finalize uma série';
+      // Sempre ativo, como nos apps de treino: sem série feita, oferece descartar a sessão.
+      btnConcluir.disabled = false;
+      btnConcluir.className = "min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-white/15 text-gray-300 transition-all active:scale-95";
+      btnConcluir.textContent = 'Concluir';
     }
   }
 
@@ -1304,11 +1318,12 @@ function abrirRotina(id) {
       </div>
     </div>${miniMapaMuscularHTML}</div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão · tela ativa</p><button type="button" data-workout-action="toggle-compact" aria-pressed="${modoCompacto}" class="min-h-9 rounded-xl mol-soft px-3 text-[10px] font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
   ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button type="button" data-workout-action="start-edit-workout" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
+  const painelComCheckinHTML = painelMetricasHTML + checkinCardHTML();
   const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" data-workout-action="save-routine-name" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><label for="input-editar-horario-rotina" class="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">Horário do treino <span class="font-normal normal-case tracking-normal text-gray-500">(opcional)</span><input id="input-editar-horario-rotina" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-white"></label><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
 
   if (!rotina.exercicios || rotina.exercicios.length === 0) {
     exerciciosList.innerHTML = `
-      ${painelMetricasHTML}
+      ${painelComCheckinHTML}
       ${editorNomeHTML}
       <div class="mol-state my-10"><p class="mol-state-title">Nenhum exercício.</p><p class="mol-state-copy">Adicione exercícios para montar esta rotina.</p></div>
     `;
@@ -1341,7 +1356,7 @@ function abrirRotina(id) {
           <div class="flex gap-1">${toggleSupersetHTML}<button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="-1" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="1" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" data-workout-action="delete-exercise" data-ex-index="${indexEx}" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
         </div>
         ${notaHTML}
-        <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p><p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p></div></div></section>
+        <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p>${sugestaoProxima ? `<p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p>` : ''}</div></div></section>
         <button type="button" data-workout-action="replace-exercise" data-ex-index="${indexEx}" class="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
         ${editorNotaHTML}
         <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="repsMin" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="repsMax" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="rirAlvo" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="descansoSegundos" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
@@ -1439,7 +1454,7 @@ function abrirRotina(id) {
       </article>
     `}).join('');
 
-    exerciciosList.innerHTML = painelMetricasHTML + editorNomeHTML + exerciciosHtml;
+    exerciciosList.innerHTML = painelComCheckinHTML + editorNomeHTML + exerciciosHtml;
   }
   const inputEditarNome = document.getElementById('input-editar-nome-rotina');
   if (inputEditarNome) inputEditarNome.value = rotina.nome;
@@ -1583,7 +1598,7 @@ window.finalizarEConcluirTreino = async () => {
   if (!rotina || !rotina.exercicios) return;
 
   const totais = workoutTotals(rotina.exercicios);
-  if (totais.completed === 0) return showToast('Conclua ao menos uma série antes de finalizar.');
+  if (totais.completed === 0) return void btnVoltar?.click();
   if (totais.completed < totais.total) {
     const confirmar = await confirmAction({ title: 'Finalizar treino?', message: `${plural(totais.total - totais.completed, 'série ficará', 'séries ficarão')} como não realizada${totais.total - totais.completed === 1 ? '' : 's'}.`, confirmText: 'Finalizar assim' });
     if (!confirmar) return;
@@ -1686,12 +1701,17 @@ window.alternarSuperset = async (indexEx) => {
 window.excluirExercicio = async (indexEx) => {
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[indexEx]) return;
-  if (!await confirmAction({ title: 'Excluir exercício?', message: `${rotina.exercicios[indexEx].nome} e todas as suas séries serão removidos da rotina.`, confirmText: 'Excluir', danger: true })) return;
-  rotina.exercicios.splice(indexEx, 1);
+  const routineId = rotinaAbertaId;
+  const [removido] = rotina.exercicios.splice(indexEx, 1);
 
   try {
-    await updateDoc(doc(db, "treinos", rotinaAbertaId), { exercicios: exerciciosParaPersistir(rotina) });
-    abrirRotina(rotinaAbertaId);
+    await updateDoc(doc(db, "treinos", routineId), { exercicios: exerciciosParaPersistir(rotina) });
+    abrirRotina(routineId);
+    showUndoToast(`Exercício removido: ${removido.nome}.`, async () => {
+      rotina.exercicios.splice(indexEx, 0, removido);
+      try { await updateDoc(doc(db, 'treinos', routineId), { exercicios: exerciciosParaPersistir(rotina) }); if (rotinaAbertaId === routineId) abrirRotina(routineId); }
+      catch (error) { rotina.exercicios.splice(indexEx, 1); console.error(error); showToast('Não foi possível desfazer.'); }
+    });
   } catch (error) { console.error(error); showToast('Não foi possível excluir o exercício.'); await carregarRotinasDoBanco(); }
 };
 
