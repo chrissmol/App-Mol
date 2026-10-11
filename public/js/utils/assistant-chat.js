@@ -52,7 +52,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
     <!-- Estado vazio no padrão dos apps de chat: saudação ao centro e sugestões logo acima da caixa. -->
     <section class="assistant-empty" data-empty aria-label="Comece uma conversa">
-      ${pet.id === 'nenhum' ? '<span class="assistant-empty__icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>' : petAvatarHTML(pet, { size: 64, className: 'assistant-empty__pet' })}
+      ${pet.id === 'nenhum' ? '<span class="assistant-empty__icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>' : petAvatarHTML(pet, { size: 48, className: 'assistant-empty__pet' })}
       <h2 class="assistant-empty__title">${pet.id === 'nenhum' ? 'Como posso ajudar?' : `${escapeHTML(pet.name)} aqui. Como posso ajudar?`}</h2>
       ${intro ? `<div class="assistant-empty__intro">${formatAssistantText(intro)}</div>` : ''}
       <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
