@@ -140,6 +140,7 @@ export const getDoc = async reference => {
   }
   if (path.includes('users') && !path.includes('customFoods')) return documentSnapshot(profileData());
   if (path.includes('diario')) return documentSnapshot(JSON.parse(localStorage.getItem('__mol_e2e_diary') || 'null'));
+  if (path.includes('treinos')) return documentSnapshot(mockRoutine);
   return documentSnapshot(null);
 };
 export const getDocs = async reference => {

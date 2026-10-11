@@ -3767,3 +3767,16 @@ html[data-theme="light"] .pet-avatar { background-color: #111612; }
 .barcode-view video { width: 100%; height: 100%; object-fit: cover; }
 .barcode-frame { position: absolute; inset: 30% 12%; border: 2px solid var(--mol-brand-text); border-radius: 1rem; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); }
 @media (min-width: 640px) { .barcode-overlay { align-items: center; } .barcode-sheet { border-radius: 1.5rem; } }
+/* Check-in opcional no topo do treino: três toques, sem digitar. */
+.workout-checkin { padding: 1rem; border-radius: 1.5rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); }
+.workout-checkin__option { min-height: 44px; border-radius: 1rem; border: 1px solid var(--mol-border); background: var(--mol-surface); font-size: .85rem; font-weight: 700; color: var(--mol-text); transition: background-color .2s, border-color .2s, transform .12s; }
+.workout-checkin__option:active { transform: scale(.97); }
+.workout-checkin__option[aria-pressed="true"] { border-color: var(--mol-brand-green); background: var(--mol-brand-green); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .workout-checkin__option { transition: none; } .workout-checkin__option:active { transform: none; } }
+
+/* Aviso com Desfazer: acima do dock, botão de 44 px. */
+.mol-undo-toast { position: fixed; left: 50%; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .5rem); z-index: 999; display: flex; align-items: center; gap: .75rem; width: max-content; max-width: calc(100% - 2rem); padding: .4rem .4rem .4rem 1rem; transform: translateX(-50%); border-radius: 1rem; border: 1px solid var(--mol-border); background: var(--mol-surface); box-shadow: 0 10px 30px rgba(0, 0, 0, .45); font-size: .9rem; font-weight: 600; color: var(--mol-text); animation: mol-undo-in .2s ease-out both; }
+.mol-undo-toast span { min-width: 0; }
+.mol-undo-toast button { min-height: 44px; flex-shrink: 0; padding: 0 1rem; border-radius: .75rem; font-weight: 800; color: var(--mol-brand-text); }
+@keyframes mol-undo-in { from { opacity: 0; transform: translate(-50%, .5rem); } }
+@media (prefers-reduced-motion: reduce) { .mol-undo-toast { animation: none; } }

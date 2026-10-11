@@ -13,7 +13,6 @@ async function openActiveWorkout(page) {
   });
   await page.goto('/pages/treino.html');
   await page.getByRole('button', { name: /^Iniciar$/ }).first().click();
-  await page.getByRole('button', { name: /Iniciar treino/ }).click();
   await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
 }
 

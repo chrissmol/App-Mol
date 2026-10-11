@@ -44,6 +44,32 @@ export function showToast(message, type = "error") {
   }, 3200);
 }
 
+/**
+ * Aviso com "Desfazer" (no lugar de "Tem certeza?"): a ação já aconteceu e pode voltar por alguns segundos.
+ * Fica parado enquanto o botão tem foco ou o ponteiro está em cima.
+ * @param {string} message
+ * @param {() => (void | Promise<void>)} onUndo
+ */
+export function showUndoToast(message, onUndo, { duration = 6000 } = {}) {
+  document.getElementById('mol-toast')?.remove();
+  const toast = document.createElement('div');
+  toast.id = 'mol-toast';
+  toast.className = 'mol-undo-toast';
+  toast.setAttribute('role', 'status');
+  toast.innerHTML = `<span></span><button type="button">Desfazer</button>`;
+  toast.querySelector('span').textContent = message;
+  document.body.appendChild(toast);
+  let timer = 0;
+  const dismiss = () => { clearTimeout(timer); toast.remove(); };
+  const schedule = () => { clearTimeout(timer); timer = window.setTimeout(dismiss, duration); };
+  const button = toast.querySelector('button');
+  button.addEventListener('click', async () => { dismiss(); await onUndo(); });
+  ['focusin', 'pointerenter'].forEach(name => toast.addEventListener(name, () => clearTimeout(timer)));
+  ['focusout', 'pointerleave'].forEach(name => toast.addEventListener(name, schedule));
+  schedule();
+  return dismiss;
+}
+
 const CONFETTI_COLORS = ['#57d493', '#1e7349', '#e1b12c', '#ffffff', '#7cffbd'];
 
 /**
