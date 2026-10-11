@@ -62,6 +62,8 @@ test('código de barras: sem câmera, digita o código e o formulário vem preen
   await page.locator('#food-grams').fill('40');
   await page.getByRole('button', { name: 'Registrar no diário' }).click();
   await expect(page.locator('#diary-extra')).toContainText('Granola Mol');
+});
+
 test('Início mostra o consumido do dia contra a meta', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('__mol_e2e_diary', JSON.stringify({ itens: [{ nome: 'Banana', gramas: 200, kcal100: 89, proteina100: 1, carbo100: 23, gordura100: 0 }], aguaMl: 0 })));
   await page.goto('/index.html');
