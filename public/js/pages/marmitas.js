@@ -31,9 +31,29 @@ async function action(button, task) {
   catch (error) { status(error.code === 'permission-denied' ? 'Não foi possível acessar as marmitas. Confira o vínculo e as regras do banco.' : error.message || 'Não foi possível concluir. Tente novamente.'); }
   finally { button.disabled = false; }
 }
+// Passos: 1 refeições → 2 ingredientes → 3 potes (resultado). O cálculo não muda; só o que aparece.
+let prepStep = 1;
+function showPrepStep(step, { focus = true } = {}) {
+  prepStep = step;
+  document.querySelectorAll('[data-prep-step]').forEach(section => { /** @type {HTMLElement} */ (section).hidden = Number(/** @type {HTMLElement} */ (section).dataset.prepStep) !== step; });
+  $('prep-result').hidden = step !== 3;
+  document.querySelectorAll('[data-step-label]').forEach(item => {
+    const n = Number(/** @type {HTMLElement} */ (item).dataset.stepLabel);
+    if (n === step) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
+    item.classList.toggle('is-done', n < step);
+  });
+  if (focus) (step === 3 ? $('prep-result') : document.querySelector(`[data-prep-step="${step}"] h2`))?.focus?.();
+}
+document.addEventListener('click', event => {
+  const go = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest?.('[data-prep-go]'));
+  if (go) showPrepStep(Number(go.dataset.prepGo));
+});
+document.querySelectorAll('[data-prep-step] h2').forEach(title => title.setAttribute('tabindex', '-1'));
+
 function invalidate() {
   preparation = null;
   $('prep-result').hidden = true;
+  if (prepStep === 3) showPrepStep(2, { focus: false });
 }
 function viewHistory(active) {
   historyActive = active;
@@ -96,8 +116,22 @@ function resultsMarkup(value) {
 }
 function renderResult() {
   $('result-content').innerHTML = resultsMarkup(preparation);
-  $('prep-result').hidden = false;
+  showPrepStep(3, { focus: false });
 }
+
+/** Lista de compras do preparo (peso antes de cozinhar quando estimado), para mandar no WhatsApp. */
+function shoppingListText(value) {
+  const lines = value.batch.map(item => `• ${item.nome}: ${n(item.rawGrams ?? item.cookedGrams)} g${item.rawGrams === null ? ' (pronto)' : ''}`);
+  return `Lista de compras · ${n(value.potCount)} marmitas${$('prep-title').value.trim() ? ` · ${$('prep-title').value.trim()}` : ''}\n${lines.join('\n')}`;
+}
+$('share-shopping').addEventListener('click', async () => {
+  if (!preparation) return;
+  const text = shoppingListText(preparation);
+  try {
+    if (navigator.share) await navigator.share({ title: 'Lista de compras', text });
+    else { await navigator.clipboard.writeText(text); status('Lista de compras copiada.'); }
+  } catch (error) { if (/** @type {any} */ (error)?.name !== 'AbortError') status('Não foi possível compartilhar a lista.'); }
+});
 function renderHistory() {
   $('history-list').innerHTML = history.length ? history.map((item, index) => `<article class="glass-card prep-card"><h3>${esc(item.title)}</h3><p>${esc(item.preparedOn.split('-').reverse().join('/'))}</p><details><summary>Ver detalhes</summary>${resultsMarkup(item.preparation)}${item.notes ? `<p>${esc(item.notes)}</p>` : ''}${item.rating ? `<p>${esc(ratingNames[item.rating] || '')}</p>` : ''}<button class="mol-btn mol-btn-secondary" type="button" data-repeat="${index}">Preparar novamente</button></details></article>`).join('') : '<p>Seus cardápios aparecem aqui quando você salvar um preparo.</p>';
 }
@@ -237,7 +271,7 @@ $('history-list').addEventListener('click', event => {
   const item = history[Number(/** @type {HTMLElement} */ (button).dataset.repeat)];
   ingredients = item.ingredients.map(ingredient => ({ ...ingredient }));
   $('prep-title').value = item.title;
-  renderIngredients(); invalidate(); viewHistory(false);
+  renderIngredients(); invalidate(); viewHistory(false); showPrepStep(1);
   $('prep-title').focus();
   status('Ingredientes recuperados. Ajuste o número de potes e calcule com as dietas atuais.');
 });
