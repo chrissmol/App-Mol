@@ -3206,15 +3206,17 @@ html[data-theme="light"] body .mol-brand img {
     margin-bottom: 0 !important;
   }
 
+  /* Por id, não por posição: a seção escondida da refeição em foco deslocava o nth-of-type
+     e o resumo caía numa coluna de 340 px com dois cartões espremidos. */
   .diet-page #diet-content > #diet-day-selector,
-  .diet-page #diet-content > section:nth-of-type(2),
-  .diet-page #diet-content > section:nth-of-type(3) {
-    grid-column: span 4;
+  .diet-page #diet-content > #focused-meal-section,
+  .diet-page #diet-content > #diet-summary-section {
+    grid-column: 1 / -1;
     grid-row: auto;
   }
 
-  .diet-page #diet-content > section:nth-of-type(2) > .grid {
-    grid-template-columns: 1fr;
+  .diet-page #diet-summary-section > .grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   }
 
   .diet-page #diet-content > section:nth-of-type(4),

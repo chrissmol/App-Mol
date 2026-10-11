@@ -1573,7 +1573,7 @@ async function gravarSessao({ session, exerciciosLimpos, concluidoEm }) {
 async function enviarTreinosPendentes() {
   if (!usuarioAtual || !navigator.onLine) return;
   const enviados = await flushPendingSessions(usuarioAtual.uid, gravarSessao);
-  if (enviados) { showToast(enviados + ' treino(s) pendente(s) enviado(s).', 'success'); carregarRotinasDoBanco(); }
+  if (enviados) { showToast(`${plural(enviados, 'treino pendente enviado', 'treinos pendentes enviados')}.`, 'success'); carregarRotinasDoBanco(); }
 }
 window.addEventListener('online', enviarTreinosPendentes);
 

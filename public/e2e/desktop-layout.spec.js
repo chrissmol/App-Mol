@@ -43,6 +43,23 @@ test.describe('layout desktop', () => {
       expect(narrow).toEqual([]);
     });
 
+    test(`${path} não quebra títulos uma palavra por linha`, async ({ page }) => {
+      // Card com ~160 px passava no teste acima, mas "Café da manhã" virava três linhas.
+      for (const width of [1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await prepare(page, path);
+        const broken = await page.evaluate(() => [...document.querySelectorAll('main h2, main h3')]
+          .filter(element => element.offsetParent)
+          .map(element => {
+            const words = element.innerText.trim().split(/\s+/).length;
+            const lines = Math.round(element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight));
+            return { text: element.innerText.trim(), words, lines };
+          })
+          .filter(item => item.words >= 3 && item.lines >= item.words));
+        expect(broken, `${width}px`).toEqual([]);
+      }
+    });
+
     test(`${path} não cria rolagem horizontal nem cards fora do viewport`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await prepare(page, path);
