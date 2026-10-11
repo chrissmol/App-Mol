@@ -23,12 +23,21 @@ export const petId = value => (PETS[value] ? value : 'moldrian');
 export const getPet = () => PETS[petId(getLocalItem(KEY))];
 export const rememberPet = value => setLocalItem(KEY, petId(value));
 
-/** Caminho do avatar (arquivos em pwa/assets, servidos na raiz). "nenhum" usa o símbolo do Mol. */
-export const petAvatarSrc = pet => (pet.id === 'nenhum' ? '/assets/mol-mark.svg' : `/assets/pets/${pet.id}.svg`);
+// Arte oficial (docs/ASSISTENTE_PERSONA.md): WebP 512 px por estado; os estados do chat também têm 192 px.
+export const PET_CHAT_STATES = ['principal', 'feliz', 'animado', 'curioso', 'apoio', 'focado', 'descanso-chat'];
+
+/** Caminho da imagem do pet num estado (arquivos em pwa/assets, servidos na raiz). "nenhum" usa o símbolo do Mol. */
+export function petImageSrc(pet, state = 'feliz', { small = false } = {}) {
+  if (pet.id === 'nenhum') return '/assets/mol-mark.svg';
+  const avatar = small && PET_CHAT_STATES.includes(state) ? '-avatar' : '';
+  return `/assets/pets/${pet.id}/${state}${avatar}.webp`;
+}
+
+export const petAvatarSrc = pet => petImageSrc(pet, 'feliz', { small: true });
 
 /** Decorativo por padrão (o nome costuma estar escrito ao lado); `label` só quando a imagem está sozinha. */
-export function petAvatarHTML(pet, { size = 40, className = '', label = false } = {}) {
-  const src = petAvatarSrc(pet);
+export function petAvatarHTML(pet, { size = 40, className = '', label = false, state = 'feliz' } = {}) {
+  const src = petImageSrc(pet, state, { small: size <= 96 });
   return `<img class="pet-avatar ${className}" src="${src}" width="${size}" height="${size}" alt="${label && pet.id !== 'nenhum' ? pet.name : ''}" decoding="async">`;
 }
 
@@ -53,5 +62,5 @@ export function petPickerHTML(name, selected = 'moldrian') {
   ];
   return `<div class="pet-picker" role="radiogroup" aria-label="Quem vai te acompanhar">${options.map(({ pet, hint }) => `
     <label class="pet-option"><input type="radio" class="sr-only" name="${name}" value="${pet.id}"${pet.id === selected ? ' checked' : ''}>
-      ${petAvatarHTML(pet, { size: 56 })}<span class="pet-option__name">${pet.id === 'nenhum' ? 'Sem pet' : pet.name}</span><span class="pet-option__hint">${hint}</span></label>`).join('')}</div>`;
+      ${petAvatarHTML(pet, { size: 56, state: 'principal' })}<span class="pet-option__name">${pet.id === 'nenhum' ? 'Sem pet' : pet.name}</span><span class="pet-option__hint">${hint}</span></label>`).join('')}</div>`;
 }

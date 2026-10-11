@@ -348,7 +348,7 @@ function renderFirstSteps() {
     card.setAttribute('aria-labelledby', 'first-steps-title');
     document.getElementById('dashboard-card-grid')?.before(card);
   }
-  card.innerHTML = `<div class="flex items-start gap-3">${petAvatarHTML(pet, { size: 48 })}<div class="min-w-0 flex-1"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Primeiros passos · ${done} de ${items.length}</p><h2 id="first-steps-title" class="mt-1 text-lg font-extrabold">${pet.lines.firstSteps}</h2></div></div>
+  card.innerHTML = `<div class="flex items-start gap-3">${petAvatarHTML(pet, { size: 56, state: 'pronto' })}<div class="min-w-0 flex-1"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Primeiros passos · ${done} de ${items.length}</p><h2 id="first-steps-title" class="mt-1 text-lg font-extrabold">${pet.lines.firstSteps}</h2></div></div>
     <div class="first-steps__bar mt-4" aria-hidden="true"><span style="width:${Math.round(done / items.length * 100)}%"></span></div>
     <ol class="mt-3 space-y-1">${items.map(item => `<li><a class="first-steps__item${item.done ? ' is-done' : ''}" href="${item.href}"><i data-lucide="${item.done ? 'check-circle-2' : 'circle'}" aria-hidden="true"></i><span>${item.label}</span><span class="sr-only">${item.done ? ' (feito)' : ''}</span>${item.done ? '' : '<i data-lucide="chevron-right" class="first-steps__go" aria-hidden="true"></i>'}</a></li>`).join('')}</ol>`;
   applyDashboardCards();
