@@ -3759,3 +3759,11 @@ html[data-theme="light"] .pet-avatar { background-color: #111612; }
 .diary-log[aria-pressed="true"] { border-color: var(--mol-brand-green); background: var(--mol-brand-green); color: #fff; }
 .diary-log[aria-pressed="true"] svg { color: #fff; }
 @media (prefers-reduced-motion: reduce) { .diary-log { transition: none; } .diary-log:active { transform: none; } }
+
+/* Leitor de código de barras: câmera com moldura e campo para digitar o código. */
+.barcode-overlay { position: fixed; inset: 0; z-index: 1001; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .7); }
+.barcode-sheet { width: 100%; max-width: 32rem; padding: 1.25rem 1.25rem max(1.25rem, env(safe-area-inset-bottom)); border-radius: 1.5rem 1.5rem 0 0; background: var(--mol-surface); border: 1px solid var(--mol-border); }
+.barcode-view { position: relative; margin-top: 1rem; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 1.5rem; background: #000; }
+.barcode-view video { width: 100%; height: 100%; object-fit: cover; }
+.barcode-frame { position: absolute; inset: 30% 12%; border: 2px solid var(--mol-brand-text); border-radius: 1rem; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); }
+@media (min-width: 640px) { .barcode-overlay { align-items: center; } .barcode-sheet { border-radius: 1.5rem; } }
