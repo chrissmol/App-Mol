@@ -2,7 +2,8 @@ import { getDb } from '../config/firebase-config.js';
 const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { collection, doc, getCountFromServer, getDoc, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { recentWeightTrend } from '../modules/dashboard-analytics.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog } from '../utils/ui.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
@@ -132,6 +133,15 @@ function setPageReady(message = '') {
   renderIcons();
 }
 
+/** Resumo no topo do perfil: treinos concluídos, meta semanal e peso atual contra a meta. */
+function renderStats(profile = {}, latestWeight = null) {
+  const number = value => Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  $('stat-workouts').textContent = Number.isFinite(completedWorkouts) ? number(completedWorkouts) : '—';
+  $('stat-goal').textContent = Number(profile.metaSemanal) > 0 ? `${profile.metaSemanal}×/sem` : '—';
+  const goal = Number(profile.metaPesoKg) > 0 ? ` → ${number(profile.metaPesoKg)}` : '';
+  $('stat-weight').textContent = latestWeight ? `${number(latestWeight)} kg${goal}` : '—';
+}
+
 async function loadProfile(account) {
   currentAccount = account;
   const cachedProfile = safeJSON(getSessionItem(profileCacheKey(account.uid)), {});
@@ -140,15 +150,17 @@ async function loadProfile(account) {
   setPageReady();
 
   try {
-    const [snapshot, sessionsSnapshot] = await Promise.all([
+    const [snapshot, sessionsSnapshot, weightsSnapshot] = await Promise.all([
       withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil'),
-      withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas')
+      withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas'),
+      withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', account.uid))), 'Os pesos').catch(() => null)
     ]);
     const profile = snapshot.exists() ? snapshot.data() : {};
     completedWorkouts = sessionsSnapshot.data().count;
     setSessionItem(profileCacheKey(account.uid), JSON.stringify(profile));
     applyProfileModules(profile);
     renderIdentity(account, profile);
+    renderStats(profile, weightsSnapshot ? recentWeightTrend(weightsSnapshot.docs.map(item => item.data())).last?.pesoKg : null);
     setPageReady();
   } catch (error) {
     console.warn('Perfil não sincronizado agora:', error.message);
