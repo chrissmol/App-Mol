@@ -153,6 +153,20 @@ export function setupAppNavigation() {
   renderIcons(sidebar);
 }
 
+// Enquanto a pessoa digita, marca <html class="mol-typing">: no celular o dock some e
+// barras "grudadas" soltam, porque o iOS as posicionava flutuando acima do teclado.
+const TEXT_ENTRY = 'textarea, select, [contenteditable="true"], input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="file"])';
+if (!window.__molTypingListener) {
+  window.__molTypingListener = true;
+  document.addEventListener('focusin', event => {
+    if (/** @type {Element} */ (event.target)?.matches?.(TEXT_ENTRY)) document.documentElement.classList.add('mol-typing');
+  });
+  document.addEventListener('focusout', () => {
+    // Espera o foco ir para o próximo elemento (ex.: tocar de um campo para outro).
+    setTimeout(() => { if (!document.activeElement?.matches?.(TEXT_ENTRY)) document.documentElement.classList.remove('mol-typing'); }, 0);
+  });
+}
+
 if (!window.__molAppNavModulesListener) {
   window.__molAppNavModulesListener = true;
   window.addEventListener('mol-app-modules-changed', () => setupAppNavigation());

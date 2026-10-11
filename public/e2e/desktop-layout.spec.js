@@ -8,6 +8,9 @@ const desktopPages = [
   '/pages/historico.html',
   '/pages/progresso.html',
   '/pages/configuracoes.html',
+  '/pages/configuracoes.html#dispositivo',
+  '/pages/marmitas.html',
+  '/pages/assistente.html',
   '/pages/evolucao.html',
   '/pages/dados-pessoais.html',
 ];
@@ -29,6 +32,34 @@ async function prepare(page, path) {
 
 test.describe('layout desktop', () => {
   for (const path of desktopPages) {
+    test(`${path} não espreme cards em colunas estreitas`, async ({ page }) => {
+      // Elemento sem regra de largura numa grade de 12 colunas caía em ~72 px.
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await prepare(page, path);
+      const narrow = await page.evaluate(() => [...document.querySelectorAll('main section, main article, main .glass-card, main > div, main > nav')]
+        .filter(element => element.offsetParent && (element.innerText || '').trim().length > 20)
+        .map(element => ({ id: element.id || String(element.className).slice(0, 60), width: Math.round(element.getBoundingClientRect().width) }))
+        .filter(item => item.width > 0 && item.width < 160));
+      expect(narrow).toEqual([]);
+    });
+
+    test(`${path} não quebra títulos uma palavra por linha`, async ({ page }) => {
+      // Card com ~160 px passava no teste acima, mas "Café da manhã" virava três linhas.
+      for (const width of [1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await prepare(page, path);
+        const broken = await page.evaluate(() => [...document.querySelectorAll('main h2, main h3')]
+          .filter(element => element.offsetParent)
+          .map(element => {
+            const words = element.innerText.trim().split(/\s+/).length;
+            const lines = Math.round(element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight));
+            return { text: element.innerText.trim(), words, lines };
+          })
+          .filter(item => item.words >= 3 && item.lines >= item.words));
+        expect(broken, `${width}px`).toEqual([]);
+      }
+    });
+
     test(`${path} não cria rolagem horizontal nem cards fora do viewport`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await prepare(page, path);

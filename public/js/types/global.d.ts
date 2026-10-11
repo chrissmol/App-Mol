@@ -13,6 +13,8 @@ declare global {
     __molReminderMonitor?: number;
     __molServiceWorkerListener?: EventListener;
     __molServiceWorkerRegistration?: ServiceWorkerRegistration;
+    __molTypingListener?: boolean;
+    __molAppNavModulesListener?: boolean;
   }
 
   interface Node {

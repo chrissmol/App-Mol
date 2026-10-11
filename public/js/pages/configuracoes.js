@@ -23,8 +23,18 @@ const CONFIG_VIEWS = ['aparencia', 'acessibilidade', 'modulos', 'dispositivo', '
 // contém aquela seção.
 const CONFIG_HASH_ALIASES = { experience: 'modulos' };
 
+// Um único "voltar" no topo: na lista leva ao Perfil; dentro de uma seção, volta para a lista.
+function setBackTarget(inSection) {
+  const back = $('back');
+  if (!back) return;
+  back.querySelector('span').textContent = inSection ? 'Configurações' : 'Perfil';
+  back.setAttribute('aria-label', inSection ? 'Voltar para configurações' : 'Voltar para o perfil');
+  back.dataset.inSection = inSection ? 'true' : '';
+}
+
 function openConfigView(name, { pushHash = true } = {}) {
   if (!CONFIG_VIEWS.includes(name)) return false;
+  setBackTarget(true);
   $('config-home')?.classList.add('hidden');
   CONFIG_VIEWS.forEach(view => $(`config-view-${view}`)?.classList.toggle('hidden', view !== name));
   if (pushHash) history.replaceState(null, '', `#${name}`);
@@ -33,6 +43,7 @@ function openConfigView(name, { pushHash = true } = {}) {
 }
 
 function closeConfigView() {
+  setBackTarget(false);
   CONFIG_VIEWS.forEach(view => $(`config-view-${view}`)?.classList.add('hidden'));
   $('config-home')?.classList.remove('hidden');
   history.replaceState(null, '', location.pathname);
@@ -42,8 +53,10 @@ function closeConfigView() {
 document.querySelectorAll('[data-config-open]').forEach(button => {
   button.addEventListener('click', () => openConfigView(button.dataset.configOpen));
 });
-document.querySelectorAll('[data-config-back]').forEach(button => {
-  button.addEventListener('click', closeConfigView);
+$('back')?.addEventListener('click', event => {
+  if (!$('back').dataset.inSection) return;
+  event.preventDefault();
+  closeConfigView();
 });
 
 function openConfigViewFromHash() {

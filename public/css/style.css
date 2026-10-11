@@ -827,7 +827,8 @@ html[data-card-style="neon"] .glass-card, html[data-card-style="neon"] .mol-card
     width: min(100%, 72rem) !important;
     max-width: 72rem !important;
     margin: 0 auto !important;
-    padding: 2rem !important;
+    /* Fim usa variável: 0 onde o body já reserva o dock (ver fim do arquivo). */
+    padding: 2rem 2rem var(--mol-main-end-pad, 2rem) !important;
   }
   .dashboard-surface main > *, .diet-page main > *, .profile-page main > *,
   .settings-page main > *, .workout-page main > * {
@@ -3205,15 +3206,17 @@ html[data-theme="light"] body .mol-brand img {
     margin-bottom: 0 !important;
   }
 
+  /* Por id, não por posição: a seção escondida da refeição em foco deslocava o nth-of-type
+     e o resumo caía numa coluna de 340 px com dois cartões espremidos. */
   .diet-page #diet-content > #diet-day-selector,
-  .diet-page #diet-content > section:nth-of-type(2),
-  .diet-page #diet-content > section:nth-of-type(3) {
-    grid-column: span 4;
+  .diet-page #diet-content > #focused-meal-section,
+  .diet-page #diet-content > #diet-summary-section {
+    grid-column: 1 / -1;
     grid-row: auto;
   }
 
-  .diet-page #diet-content > section:nth-of-type(2) > .grid {
-    grid-template-columns: 1fr;
+  .diet-page #diet-summary-section > .grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   }
 
   .diet-page #diet-content > section:nth-of-type(4),
@@ -3450,7 +3453,8 @@ html[data-theme="light"] body .mol-brand img {
     width: min(100%, 64rem) !important;
     max-width: 64rem !important;
     margin: 0 auto !important;
-    padding: 2rem !important;
+    /* Fim usa variável: 0 onde o body já reserva o dock (ver fim do arquivo). */
+    padding: 2rem 2rem var(--mol-main-end-pad, 2rem) !important;
   }
   .dashboard-surface main > *,
   .diet-page main > *,
@@ -3552,10 +3556,10 @@ html[data-theme="light"] body .mol-brand img {
 /* ==================================================================
    Assistente de IA (tela própria e gaveta da Dieta/Treino)
    ================================================================== */
-.assistant-chat { display: flex; flex-direction: column; gap: .75rem; min-height: 0; }
+.assistant-chat { display: flex; flex-direction: column; gap: .75rem; min-height: 0; width: 100%; max-width: 48rem; margin-inline: auto; }
 .assistant-notice { border: 1px solid var(--mol-border); background: var(--mol-surface-soft); border-radius: 1.1rem; padding: .9rem 1rem; font-size: .85rem; line-height: 1.5; color: var(--mol-muted-strong); }
 .assistant-notice .mol-btn { margin-top: .6rem; min-height: 2.5rem; }
-.assistant-notice[hidden], .assistant-attachment[hidden], .assistant-suggestions[hidden] { display: none; }
+.assistant-notice[hidden], .assistant-attachment[hidden], .assistant-suggestions[hidden], .assistant-empty[hidden] { display: none; }
 .assistant-messages { display: flex; flex-direction: column; gap: .65rem; list-style: none; margin: 0; padding: 0; }
 .assistant-msg { max-width: 88%; border-radius: 1.15rem; padding: .7rem .95rem; font-size: .925rem; line-height: 1.55; overflow-wrap: anywhere; animation: assistant-in .22s ease-out both; }
 .assistant-msg p + p, .assistant-msg ul + p, .assistant-msg p + ul { margin-top: .45rem; }
@@ -3593,8 +3597,15 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-proposal__status { flex: 1 1 100%; display: flex; align-items: center; gap: .4rem; font-size: .85rem; font-weight: 700; color: var(--mol-muted-strong); }
 .assistant-proposal__status--ok { color: var(--mol-brand-text); }
 .assistant-proposal__status svg, .assistant-proposal__actions .mol-btn svg { width: 1rem; height: 1rem; }
-.assistant-suggestions { display: flex; flex-wrap: wrap; gap: .5rem; padding: .3rem .3rem 0; }
-.assistant-chip { min-height: 2.5rem; border-radius: 999px; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); padding: .45rem .9rem; font-size: .82rem; font-weight: 700; color: var(--mol-muted-strong); text-align: left; transition: border-color .2s ease, color .2s ease, transform .15s ease; }
+.assistant-suggestions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .6rem; width: 100%; margin-top: 1.25rem; }
+/* Estado vazio: saudação centralizada empurrando a caixa para o rodapé (sem sticky, nada a cobre). */
+.assistant-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; padding-top: 1rem; }
+.assistant-empty__icon { display: inline-flex; width: 3rem; height: 3rem; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--mol-brand-green) 18%, transparent); color: var(--mol-brand-text); }
+.assistant-empty__icon svg { width: 1.5rem; height: 1.5rem; }
+.assistant-empty__title { margin-top: .9rem; font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 800; letter-spacing: -.02em; color: var(--mol-text); }
+.assistant-empty__intro { margin-top: .5rem; max-width: 34rem; font-size: .92rem; line-height: 1.55; color: var(--mol-muted); }
+.assistant-empty__intro strong { color: var(--mol-muted-strong); }
+.assistant-chip { min-height: 3rem; border-radius: 1rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); padding: .7rem .95rem; font-size: .85rem; font-weight: 700; line-height: 1.35; color: var(--mol-muted-strong); text-align: left; transition: border-color .2s ease, color .2s ease, transform .15s ease; }
 .assistant-chip:hover { border-color: var(--mol-brand-text); color: var(--mol-text); }
 .assistant-chip:active, .assistant-send:active, .assistant-entry:active { transform: scale(.97); }
 .assistant-composer { display: grid; gap: .45rem; border: 1px solid var(--mol-border); background: var(--mol-surface); border-radius: 1.4rem; padding: .45rem; box-shadow: 0 12px 32px rgba(0, 0, 0, .22); }
@@ -3604,6 +3615,8 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-composer__row { display: flex; align-items: flex-end; gap: .35rem; }
 .assistant-composer textarea { flex: 1; min-width: 0; min-height: 2.75rem; max-height: 10rem; resize: none; border: 0; background: transparent; color: var(--mol-text); padding: .7rem .35rem; line-height: 1.4; outline: none; }
 .assistant-composer textarea::placeholder { color: var(--mol-muted); }
+/* Vence o fundo/borda globais de campos (inclusive no tema claro) e o visual nativo do iOS. */
+html body .assistant-composer textarea { -webkit-appearance: none; appearance: none; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .assistant-icon-btn { display: inline-flex; flex: none; width: 2.75rem; height: 2.75rem; align-items: center; justify-content: center; border-radius: 999px; color: var(--mol-muted-strong); }
 .assistant-icon-btn:hover { background: var(--mol-surface-soft); color: var(--mol-text); }
 .assistant-icon-btn svg, .assistant-send svg { width: 1.2rem; height: 1.2rem; }
@@ -3614,7 +3627,10 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-attachment .assistant-icon-btn { width: 2.25rem; height: 2.25rem; }
 .assistant-disclaimer { text-align: center; font-size: .72rem; color: var(--mol-muted); }
 /* Tela própria: composer fixo acima do dock. */
-/* Sem altura mínima: com ela, o composer "grudado" subia por cima das sugestões em telas baixas (axe target-size no CI). */
+/* Antes da conversa a coluna ocupa a altura da tela e a caixa fica no rodapé pelo fluxo (sem sticky). */
+.assistant-page .assistant-chat:not(.assistant-chat--active) { min-height: calc(100svh - 14rem - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); }
+/* Desktop com mouse usa a barra lateral: não há dock para descontar. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; } }
 /* Só gruda no rodapé depois da 1ª mensagem; antes, aviso e sugestões ficam em sequência sem nada flutuando por cima. */
 .assistant-page .assistant-chat--active .assistant-composer { position: sticky; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .25rem); z-index: 5; }
 /* Ao rolar até a mensagem nova, ela para acima da caixa de texto e do dock. */
@@ -3642,4 +3658,34 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 }
 @media (prefers-reduced-motion: reduce) {
   .assistant-msg, .assistant-sheet, .assistant-typing span { animation: none; }
+}
+
+/* ==================================================================
+   Grades de 12 colunas (telas largas): quem não define largura ocupa a
+   linha inteira. Sem isso, elementos novos ou sem regra caíam em uma
+   coluna de ~72 px (cartão do Início, seções da Dieta, resumo do
+   Progresso e seções de Configurações). :where() tem especificidade zero,
+   então os "span 4/6" existentes continuam valendo.
+   ================================================================== */
+@media (min-width: 900px) {
+  :where(.dashboard-surface main, .settings-page main, .history-page main, .progress-page main, .admin-page main, .diet-page main,
+    #personal-content, #evolution-content, #diet-content, #diet-edit-content, #admin-content, #profile-content) > * {
+    grid-column: 1 / -1;
+  }
+  /* Uma regra antiga (.dashboard-surface main > section { grid-column: auto }) vence o :where() acima. */
+  .dashboard-surface main > #daily-brief-card { grid-column: 1 / -1; }
+}
+
+/* Digitando no celular: o dock sai e barras "grudadas" voltam ao fluxo, para o iOS
+   colocar o campo logo acima do teclado em vez de deixá-los flutuando no meio da tela. */
+@media (pointer: coarse) {
+  html.mol-typing .mol-app-nav { display: none; }
+  html.mol-typing .assistant-page .assistant-chat--active .assistant-composer { position: static; }
+}
+
+/* Onde o body já reserva o espaço do dock (tudo menos desktop com mouse), o main não
+   soma outro respiro no fim: era o "vão" vazio no fim do Perfil e da Dieta no tablet. */
+@media (max-width: 1023px), (hover: none), (pointer: coarse) {
+  body.has-app-nav { --mol-main-end-pad: 0px; }
+  body.has-app-nav main { padding-bottom: 0; }
 }
