@@ -3687,6 +3687,8 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 @media (max-width: 1023px), (hover: none), (pointer: coarse) {
   body.has-app-nav { --mol-main-end-pad: 0px; }
   body.has-app-nav main { padding-bottom: 0; }
+  /* Treino em andamento em tela cheia: o dock sai para não cobrir séries e cronômetro. */
+  html.mol-workout-focus .mol-app-nav { display: none; }
 }
 
 /* Pet do assistente (docs/ASSISTENTE_PERSONA.md): avatar ao lado das respostas, sem animação constante. */
@@ -3830,3 +3832,4 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .routine-card:has(.routine-menu__list:not([hidden])) { position: relative; z-index: 50; }
 .diet-page #diet-mode-tabs[hidden] { display: none; }
 .diet-page #diet-edit-content { display: none; }
+

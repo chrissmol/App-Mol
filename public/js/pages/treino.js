@@ -300,6 +300,10 @@ const restNext = document.getElementById('rest-next');
 const restHint = document.getElementById('rest-hint');
 const restPauseLabel = document.getElementById('rest-pause-label');
 document.getElementById('btn-concluir-treino')?.addEventListener('click', () => window.finalizarEConcluirTreino());
+document.getElementById('btn-minimizar-treino')?.addEventListener('click', () => {
+  salvarRascunho({ force: true });
+  window.location.href = '../index.html';
+});
 
 // Atalho para o assistente sem sair do Treino; recarrega as rotinas quando uma mudança é confirmada.
 {
@@ -658,6 +662,7 @@ function pararCronometro() {
     timerInterval = null;
   }
   treinoIniciado = false;
+  document.documentElement.classList.remove('mol-workout-focus');
   tempoSegundos = 0;
   sessaoIniciadaEm = null;
   checkinPreTreino = null;
@@ -1306,6 +1311,11 @@ function abrirRotina(id) {
   }
 
   // REQUISITO 1 & 2: O botão só fica com fundo neon sólido se 100% das séries estiverem concluídas
+  // Sessão em andamento ocupa a tela (sem dock no celular) e oferece minimizar.
+  document.documentElement.classList.toggle('mol-workout-focus', treinoIniciado);
+  const btnMinimizar = document.getElementById('btn-minimizar-treino');
+  btnMinimizar?.classList.toggle('hidden', !treinoIniciado);
+  btnMinimizar?.classList.toggle('flex', treinoIniciado);
   const btnConcluir = document.getElementById('btn-concluir-treino');
   if (btnConcluir) {
     if (!treinoIniciado) {

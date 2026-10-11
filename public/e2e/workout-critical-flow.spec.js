@@ -70,3 +70,14 @@ test('treino em andamento: barra nas outras telas volta direto para a sessão', 
   await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
   await expect(page.getByRole('dialog', { name: /Retomar treino/ })).toHaveCount(0);
 });
+
+test('treino em tela cheia no celular: sem dock, e minimizar não encerra a sessão', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'O dock só sai em telas de toque.');
+  await openWorkout(page);
+  await page.getByRole('button', { name: /^Iniciar/ }).first().click();
+  await expect(page.locator('#detalhe-titulo')).toHaveText(/Upper/);
+  await expect(page.locator('.mol-app-nav')).toBeHidden();
+  await page.getByRole('button', { name: 'Minimizar treino' }).click();
+  await expect(page).toHaveURL(/index\.html$/);
+  await expect(page.getByText('Treino em andamento').first()).toBeVisible();
+});
