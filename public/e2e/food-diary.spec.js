@@ -69,3 +69,17 @@ test('Início mostra o consumido do dia contra a meta', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.locator('#next-meal-today')).toHaveText('Hoje: 178 de 2.400 kcal registradas');
 });
+
+test('pet comemora a refeição registrada e o dia de descanso aparece no Início', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('mol-assistant-pet', 'marlo'));
+  await page.goto('/pages/dieta.html');
+  await page.getByRole('button', { name: 'Comi: Café da manhã' }).click();
+  const moment = page.getByRole('status').filter({ hasText: 'Refeição salva' });
+  await expect(moment).toBeVisible();
+  await expect(moment.locator('img[src*="/assets/pets/marlo/refeicao"]')).toHaveCount(1);
+
+  await page.addInitScript(() => localStorage.setItem('__mol_e2e_routine_days', JSON.stringify([(new Date().getDay() + 1) % 7])));
+  await page.goto('/index.html');
+  await expect(page.locator('#today-eyebrow')).toHaveText('Dia de descanso');
+  await expect(page.locator('#today-badge img[src*="/assets/pets/marlo/descanso"]')).toHaveCount(1);
+});

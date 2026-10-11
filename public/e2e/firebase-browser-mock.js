@@ -71,7 +71,8 @@ export const query = (...args) => ({ kind: 'query', args, path: args[0]?.path ||
 const mockRoutine = {
   userId: 'e2e-user',
   nome: 'Upper',
-  diasSemana: [new Date().getDay()],
+  // __mol_e2e_routine_days permite simular dia de descanso (rotina marcada para outro dia).
+  diasSemana: JSON.parse(localStorage.getItem('__mol_e2e_routine_days') || 'null') || [new Date().getDay()],
   exercicios: [
     {
       nome: 'Supino reto',

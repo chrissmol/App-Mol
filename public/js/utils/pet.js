@@ -4,15 +4,15 @@ import { getLocalItem, setLocalItem } from './storage.js';
 export const PETS = {
   moldrian: {
     id: 'moldrian', name: 'Moldrian', ready: 'pronto', excited: 'animado',
-    lines: { welcome: 'Oi! Eu sou o Moldrian. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Bora começar?', firstSteps: 'Bora dar os primeiros passos? Um de cada vez.' }
+    lines: { welcome: 'Oi! Eu sou o Moldrian. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Bora começar?', firstSteps: 'Bora dar os primeiros passos? Um de cada vez.', workoutDone: 'Mais uma sessão registrada. Boa!', record: 'Novo recorde! Constância dá nisso.', mealLogged: 'Refeição salva. Bora ver como está o dia?', waterGoal: 'Meta de água batida. Boa!', rest: 'Recuperação também é treino.' }
   },
   marlo: {
     id: 'marlo', name: 'Marlô', ready: 'pronta', excited: 'animada',
-    lines: { welcome: 'Oi! Eu sou a Marlô. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Vamos nessa?', firstSteps: 'Vamos dar os primeiros passos? Um de cada vez.' }
+    lines: { welcome: 'Oi! Eu sou a Marlô. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Vamos nessa?', firstSteps: 'Vamos dar os primeiros passos? Um de cada vez.', workoutDone: 'Sessão concluída. Mandou bem!', record: 'Novo recorde! Sua constância aparecendo.', mealLogged: 'Refeição salva. Quer ver como está seu dia?', waterGoal: 'Meta de água concluída. Mandou bem!', rest: 'Recuperação também faz parte do processo.' }
   },
   nenhum: {
     id: 'nenhum', name: 'Assistente', ready: 'pronto', excited: 'animado',
-    lines: { welcome: 'Boas-vindas ao Mol. Vamos montar seu plano.', plan: 'Seu plano está pronto.', firstSteps: 'Primeiros passos, um de cada vez.' }
+    lines: { welcome: 'Boas-vindas ao Mol. Vamos montar seu plano.', plan: 'Seu plano está pronto.', firstSteps: 'Primeiros passos, um de cada vez.', workoutDone: 'Sessão registrada.', record: 'Novo recorde.', mealLogged: 'Refeição salva.', waterGoal: 'Meta de água concluída.', rest: 'Dia de descanso.' }
   }
 };
 
@@ -63,4 +63,22 @@ export function petPickerHTML(name, selected = 'moldrian') {
   return `<div class="pet-picker" role="radiogroup" aria-label="Quem vai te acompanhar">${options.map(({ pet, hint }) => `
     <label class="pet-option"><input type="radio" class="sr-only" name="${name}" value="${pet.id}"${pet.id === selected ? ' checked' : ''}>
       ${petAvatarHTML(pet, { size: 56, state: 'principal' })}<span class="pet-option__name">${pet.id === 'nenhum' ? 'Sem pet' : pet.name}</span><span class="pet-option__hint">${hint}</span></label>`).join('')}</div>`;
+}
+
+/**
+ * Aviso curto com o pet num estado (refeição salva, recorde, meta de água). Some sozinho;
+ * no lugar do toast comum, então nunca empilha. Sem pet, vira só o texto.
+ * @param {{ state: string, message: string }} moment
+ */
+export function showPetMoment({ state, message }) {
+  const pet = getPet();
+  document.getElementById('mol-toast')?.remove();
+  const toast = document.createElement('div');
+  toast.id = 'mol-toast';
+  toast.className = 'pet-moment';
+  toast.setAttribute('role', 'status');
+  toast.innerHTML = `${pet.id === 'nenhum' ? '' : petAvatarHTML(pet, { size: 56, state })}<p></p>`;
+  toast.querySelector('p').textContent = message;
+  document.body.appendChild(toast);
+  window.setTimeout(() => toast.remove(), 3600);
 }

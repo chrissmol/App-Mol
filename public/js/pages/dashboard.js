@@ -235,6 +235,21 @@ function setToday(routines, user) {
   } else if (routines.length) {
     const scheduled = routines.find(r => (r.diasSemana || []).map(Number).includes(new Date().getDay()));
     const routine = selectRoutine(routines); const series = (routine.exercicios || []).reduce((sum, ex) => sum + (ex.series?.length || 0), 0);
+    // Rotinas com dias marcados e nenhuma hoje: dia de descanso, com o pet descansando (sem culpa, pode treinar se quiser).
+    const restDay = !scheduled && routines.some(r => (r.diasSemana || []).length);
+    const pet = getPet();
+    if (restDay) {
+      $('today-eyebrow').textContent = 'Dia de descanso';
+      $('today-workout-title').textContent = pet.lines.rest;
+      $('today-workout-subtitle').textContent = `Próximo treino: ${routine.nome}.`;
+      if (pet.id !== 'nenhum') { $('today-badge').className = 'shrink-0'; $('today-badge').innerHTML = petAvatarHTML(pet, { size: 64, state: 'descanso' }); }
+      card.href = `./pages/treino.html?rotina=${encodeURIComponent(routine.id)}`;
+      card.innerHTML = '<i data-lucide="play" class="h-4 w-4 fill-current"></i><span>Treinar mesmo assim</span>';
+      setFocusCandidate('workout', { module: 'treino', cardId: 'today-card', priority: 15, eyebrow: 'Dia de descanso', title: pet.lines.rest, subtitle: `Próximo treino: ${routine.nome}.`, context: '', href: card.href, label: 'Treinar mesmo assim', icon: 'dumbbell' });
+      updateDailyBrief();
+      renderIcons();
+      return;
+    }
     $('today-eyebrow').textContent = scheduled ? 'Planejado para hoje' : 'Seu próximo treino';
     $('today-workout-title').textContent = scheduled ? `Hoje é dia de ${routine.nome}` : routine.nome;
     $('today-workout-subtitle').textContent = `${plural(routine.exercicios?.length || 0, 'exercício', 'exercícios')} · ${plural(series, 'série', 'séries')} · cerca de ${estimatedWorkoutMinutes(routine)} min`;
