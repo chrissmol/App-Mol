@@ -371,3 +371,27 @@ $('save-measures').onclick = async () => {
 };
 
 window.lucide?.createIcons();
+
+// Abas (Peso, Medidas, Treino, Conquistas): padrão de abas ARIA, com setas e link direto (#medidas).
+const evoTabs = /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll('[data-evo-tab]')]);
+function selectEvoTab(name, { focus = false } = {}) {
+  const tab = evoTabs.find(item => item.dataset.evoTab === name) || evoTabs[0];
+  evoTabs.forEach(item => {
+    const active = item === tab;
+    item.setAttribute('aria-selected', String(active));
+    item.tabIndex = active ? 0 : -1;
+    const panel = document.getElementById(`evo-panel-${item.dataset.evoTab}`);
+    if (panel) panel.hidden = !active;
+  });
+  if (focus) tab.focus();
+  history.replaceState(null, '', `#${tab.dataset.evoTab}`);
+}
+evoTabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => selectEvoTab(tab.dataset.evoTab));
+  tab.addEventListener('keydown', event => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+    if (step) { event.preventDefault(); selectEvoTab(evoTabs[(index + step + evoTabs.length) % evoTabs.length].dataset.evoTab, { focus: true }); }
+    if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); selectEvoTab(evoTabs[event.key === 'Home' ? 0 : evoTabs.length - 1].dataset.evoTab, { focus: true }); }
+  });
+});
+if (location.hash) selectEvoTab(location.hash.slice(1));

@@ -3802,3 +3802,11 @@ html[data-reduce-motion="true"] .mol-skeleton { animation: none; }
 .mol-active-workout__go { display: flex; align-items: center; min-height: 44px; padding: 0 .9rem; border-radius: .9rem; background: rgba(0, 0, 0, .2); font-size: .85rem; font-weight: 800; }
 body.has-active-workout main { padding-bottom: 5rem; }
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .mol-active-workout { left: auto; right: 1.5rem; bottom: 1.5rem; width: 26rem; } }
+/* Evolução em abas: controle segmentado no topo e um painel por vez. */
+.evo-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .25rem; padding: .25rem; border-radius: 1rem; background: var(--mol-surface-soft); }
+.evo-tabs [role="tab"] { min-height: 44px; border-radius: .75rem; font-size: .8rem; font-weight: 800; color: var(--mol-muted); transition: background-color .2s, color .2s; }
+.evo-tabs [role="tab"][aria-selected="true"] { background: var(--mol-brand-green); color: #fff; }
+.evo-panel { display: grid; gap: .75rem; margin-top: 1rem; }
+.evo-panel[hidden] { display: none; }
+@media (min-width: 900px) { .evo-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+@media (prefers-reduced-motion: reduce) { .evo-tabs [role="tab"] { transition: none; } }
