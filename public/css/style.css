@@ -3830,3 +3830,8 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .routine-card:has(.routine-menu__list:not([hidden])) { position: relative; z-index: 50; }
 .diet-page #diet-mode-tabs[hidden] { display: none; }
 .diet-page #diet-edit-content { display: none; }
+
+/* Treino em andamento em tela cheia no celular: o dock sai para não cobrir séries e cronômetro. */
+@media (max-width: 1023px), (hover: none), (pointer: coarse) {
+  html.mol-workout-focus .mol-app-nav { display: none; }
+}

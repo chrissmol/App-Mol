@@ -84,15 +84,19 @@
     <!-- TELA 2: DETALHE DO TREINO -->
     <div id="view-detalhe" class="hidden pt-3">
       <div class="mol-screen-header sticky top-0 z-40 -mx-5 mb-4 flex items-center justify-between border-b border-white/10 mol-panel px-5 backdrop-blur-xl">
-        <button type="button" id="btn-voltar" aria-label="Voltar para as rotinas" class="text-gray-400 hover:text-neon p-2 -ml-2 active:scale-95 transition-all">
+        <button type="button" id="btn-voltar" aria-label="Voltar para as rotinas" class="-ml-2 flex h-11 w-11 items-center justify-center text-gray-400 transition-all hover:text-neon active:scale-95">
           <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
         <h1 id="detalhe-titulo" class="text-xl font-bold tracking-tight">Nome do Treino</h1>
 
-        <!-- Botão Concluir -->
-        <button type="button" id="btn-concluir-treino" class="min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon active:scale-95">
-          Concluir
-        </button>
+        <div class="flex items-center gap-1">
+          <!-- Minimizar: sai da tela sem encerrar; a barra "Treino em andamento" traz de volta. -->
+          <button type="button" id="btn-minimizar-treino" aria-label="Minimizar treino" class="hidden h-11 w-11 items-center justify-center rounded-xl text-gray-400 active:scale-95"><i data-lucide="chevron-down" class="h-5 w-5"></i></button>
+          <!-- Botão Concluir -->
+          <button type="button" id="btn-concluir-treino" class="min-h-11 px-4 py-2 rounded-xl text-xs font-bold border border-neon/50 text-neon active:scale-95">
+            Concluir
+          </button>
+        </div>
       </div>
 
       <div id="exercicios-list" class="space-y-6"></div>
