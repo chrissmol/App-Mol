@@ -3828,3 +3828,5 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .routine-menu__list [role="menuitem"] svg { width: 1rem; height: 1rem; }
 .routine-menu__list .is-danger { color: #ff6b81; }
 .routine-card:has(.routine-menu__list:not([hidden])) { position: relative; z-index: 50; }
+.diet-page #diet-mode-tabs[hidden] { display: none; }
+.diet-page #diet-edit-content { display: none; }

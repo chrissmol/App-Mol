@@ -16,16 +16,16 @@ async function openDiet(page) {
   await expect(page.locator('#diet-content')).toBeVisible();
 }
 
-test('visualizacao da dieta nao expoe controles de edicao da refeicao', async ({ page }) => {
+test('tocar na refeição abre ela já editável, sem modo separado', async ({ page }) => {
   await openDiet(page);
+  await expect(page.getByRole('tab', { name: /Edi/ })).toBeHidden();
   await page.locator('[data-open-meal="meal-breakfast"]').click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('Banana').first()).toBeVisible();
-  await expect(dialog.getByRole('button', { name: /Adicionar alimento/i })).toHaveCount(0);
-  await expect(dialog.getByRole('button', { name: /^Editar$/i })).toHaveCount(0);
-  await expect(dialog.getByRole('button', { name: /^Excluir$/i })).toHaveCount(0);
-  await expect(dialog.getByRole('button', { name: /Remover/i })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: /Adicionar alimento/i })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Nome, horário e dias' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /^Excluir$/i })).toBeVisible();
 });
 
 test('link direto da refeicao abre visualizacao focada sem controles de edicao', async ({ page }) => {
@@ -51,14 +51,10 @@ test('link direto da refeicao abre visualizacao focada sem controles de edicao',
   await expect(page.locator('#meal-list')).toBeVisible();
 });
 
-test('edicao da dieta concentra os controles de alterar refeicao', async ({ page }) => {
+test('importar plano fica no cabeçalho das refeições', async ({ page }) => {
   await openDiet(page);
-  await page.getByRole('tab', { name: /Edi/ }).click();
-  await page.getByRole('button', { name: /Visualizar/ }).first().click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('button', { name: /Adicionar alimento/i })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: /^Editar$/i })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: /^Excluir$/i })).toBeVisible();
+  await page.getByRole('button', { name: 'Importar plano' }).click();
+  await expect(page.getByRole('dialog', { name: 'Importar plano' })).toBeVisible();
 });
 
 test('dieta abre no dia de hoje quando a URL nao informa o dia', async ({ page }) => {
