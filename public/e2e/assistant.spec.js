@@ -85,7 +85,7 @@ test('atalhos da Dieta e do Treino abrem a gaveta do assistente', async ({ page 
   await page.getByRole('button', { name: 'Ajustar dieta com o assistente' }).click();
   const sheet = page.getByRole('dialog', { name: 'Assistente da dieta' });
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByText('importar sua dieta')).toBeVisible();
+  await expect(sheet.getByText('registro no diário', { exact: false })).toBeVisible();
   await expect(sheet.getByLabel('Mensagem para o assistente')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(sheet).toBeHidden();

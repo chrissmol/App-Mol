@@ -2,13 +2,15 @@
 const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { DIET_PLANS } from '../data/diet-plans.js';
 import { FASTING_PROTOCOLS, FOOD_CATALOG, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { plural } from '../utils/plural.js';
+import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl } from '../modules/food-diary.js';
+import { recentWeightTrend } from '../modules/dashboard-analytics.js';
 import { createAssistantButton } from '../utils/assistant-chat.js';
 
 setupAppShell();
@@ -20,6 +22,14 @@ let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };
 let fasting = normalizeFastingSettings();
 let dietMode = 'view';
 let selectedDay = new Date().getDay();
+// Diário de hoje (o que foi comido de fato). Só aparece quando o dia escolhido é hoje.
+let diary = normalizeDiary();
+let diaryKey = dayKey();
+let diaryReady = false;
+let diaryVersion = 0;
+let waterGoal = 2000;
+const DIARY_TARGET = '__diario__';
+const isToday = () => selectedDay === new Date().getDay();
 const requestedParams = new URLSearchParams(window.location.search);
 const requestedMealId = requestedParams.get('meal');
 let pendingRequestedMealId = requestedMealId;
@@ -139,14 +149,68 @@ function renderDaySelector() {
   });
 }
 
+async function loadDiary() {
+  diaryKey = dayKey();
+  try {
+    const [snapshot, weights] = await Promise.all([
+      withTimeout(getDoc(doc(db, 'diario', diaryDocId(user.uid, diaryKey))), 'O diário'),
+      withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid))), 'Os pesos').catch(() => null)
+    ]);
+    diary = normalizeDiary(snapshot.data());
+    if (weights) waterGoal = waterGoalMl(recentWeightTrend(weights.docs.map(item => item.data())).last?.pesoKg);
+    diaryReady = true;
+    render();
+  } catch (error) { console.warn('Diário não carregado:', error.message); }
+}
+
+/** Grava o dia inteiro; a tela muda na hora e volta atrás se a gravação falhar. */
+async function saveDiary(next, message = '') {
+  if (dayKey() !== diaryKey) { diary = normalizeDiary(); diaryKey = dayKey(); }
+  const previous = diary;
+  diary = normalizeDiary(next);
+  const version = ++diaryVersion;
+  render();
+  try {
+    await setDoc(doc(db, 'diario', diaryDocId(user.uid, diaryKey)), { userId: user.uid, data: diaryKey, ...diary, atualizadoEm: serverTimestamp() });
+    if (message) showToast(message, 'success');
+    return true;
+  } catch (error) {
+    console.error('Diário não salvo:', error);
+    // Só volta atrás se nada mudou depois; senão a próxima gravação já leva o estado certo.
+    if (version === diaryVersion) { diary = previous; render(); }
+    showToast('Não foi possível salvar no diário. Tente de novo.');
+    return false;
+  }
+}
+
+const nowTime = () => new Date().toTimeString().slice(0, 5);
+
+function renderDiaryExtras() {
+  const showDiary = isToday() && diaryReady;
+  const extras = showDiary ? diary.itens.filter(item => !item.refeicaoId) : [];
+  $('diary-extra').innerHTML = extras.length ? `<div class="mt-4 border-t border-white/5 pt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Fora do plano</p><ul class="mt-2 space-y-1">${extras.map(item => `<li class="flex items-center justify-between gap-3 text-sm"><span class="min-w-0 truncate">${escapeHTML(item.nome)} · ${rounded(item.gramas)} g</span><button type="button" data-remove-entry="${escapeHTML(item.id)}" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500" aria-label="Remover ${escapeHTML(item.nome)} do diário"><i data-lucide="x" class="h-4 w-4"></i></button></li>`).join('')}</ul></div>` : '';
+  $('diary-extra').querySelectorAll('[data-remove-entry]').forEach(button => button.onclick = () => saveDiary(removeItem(diary, button.dataset.removeEntry), 'Removido do diário.'));
+  const glasses = Math.round(diary.aguaMl / DIARY_LIMITS.waterStep);
+  const goalGlasses = Math.round(waterGoal / DIARY_LIMITS.waterStep);
+  $('diet-water').innerHTML = showDiary ? `<div class="mt-4 flex items-center justify-between gap-3 border-t border-white/5 pt-4"><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Água</p><p class="mt-1 text-sm"><strong class="text-base">${(diary.aguaMl / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} L</strong> <span class="text-gray-500">de ${(waterGoal / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} L · ${plural(glasses, 'copo', 'copos')} de ${goalGlasses}</span></p></div><div class="flex shrink-0 gap-2"><button type="button" data-water="-1" class="flex h-11 w-11 items-center justify-center rounded-xl mol-soft" aria-label="Tirar um copo de água"${diary.aguaMl ? '' : ' disabled'}><i data-lucide="minus" class="h-4 w-4"></i></button><button type="button" data-water="1" class="flex h-11 w-11 items-center justify-center rounded-xl bg-neon text-black" aria-label="Somar um copo de água (250 ml)"><i data-lucide="plus" class="h-4 w-4"></i></button></div></div>` : '';
+  $('diet-water').querySelectorAll('[data-water]').forEach(button => button.onclick = () => saveDiary(changeWater(diary, Number(button.dataset.water) * DIARY_LIMITS.waterStep)));
+}
+
 function render() {
   setDietMode(dietMode);
   renderDaySelector();
   renderFastingCard();
   const dayMeals = mealsForDay(meals, selectedDay);
-  const totals = nutritionTotals(dayMeals);
+  const planned = nutritionTotals(dayMeals);
+  // Hoje mostra o consumido (diário) contra a meta; outros dias mostram o planejado.
+  const consumedView = isToday() && diaryReady;
+  const totals = consumedView ? diaryTotals(diary) : planned;
+  $('diet-goals-title').textContent = consumedView ? 'Consumido hoje' : 'Planejado neste dia';
   $('diet-total').textContent = `${rounded(totals.kcal).toLocaleString('pt-BR')} kcal`;
-  $('calorie-goal').textContent = `Meta: ${goals.kcal.toLocaleString('pt-BR')} kcal`;
+  $('calorie-goal').textContent = consumedView
+    ? `de ${goals.kcal.toLocaleString('pt-BR')} kcal · planejado ${rounded(planned.kcal).toLocaleString('pt-BR')} kcal`
+    : `Meta: ${goals.kcal.toLocaleString('pt-BR')} kcal`;
+  $('food-search').textContent = consumedView ? 'Registrar extra' : 'Buscar alimento';
   $('calorie-progress').style.width = `${Math.min(100, (totals.kcal / goals.kcal) * 100)}%`;
   $('macro-total').innerHTML = [['Proteína', totals.protein, goals.protein], ['Carbo', totals.carbs, goals.carbs], ['Gordura', totals.fat, goals.fat]].map(([label, value, goal]) => `<div class="rounded-2xl mol-soft p-3"><strong class="block text-sm">${rounded(value)} g</strong><span class="mt-1 block text-[10px] text-gray-500">${label} · ${goal} g</span></div>`).join('');
   const next = nextMeal(dayMeals, selectedDay === new Date().getDay() ? new Date().toTimeString().slice(0, 5) : '00:00');
@@ -157,9 +221,17 @@ function render() {
     const total = nutritionTotals([meal]);
     const outsideWindow = mealIsOutsideFastingWindow(meal, fasting) ? ' · fora da janela' : '';
     const macroLine = [['P', total.protein], ['C', total.carbs], ['G', total.fat]].map(([label, value]) => `<span class="rounded-xl bg-white/5 px-2 py-1">${label} ${rounded(value)}g</span>`).join('');
-    return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${plural(mealFoods(meal).length, 'alimento', 'alimentos')} · ${rounded(total.kcal)} kcal${outsideWindow}</p><div class="mt-3 flex flex-wrap gap-1.5 text-[10px] font-bold text-gray-300">${macroLine}</div>${meal.observacao ? `<p class="mt-3 line-clamp-2 rounded-2xl bg-white/5 p-3 text-xs text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}</div><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-gray-400"><i data-lucide="chevron-right" class="h-5 w-5"></i></span></div></button></article>`;
+    return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${plural(mealFoods(meal).length, 'alimento', 'alimentos')} · ${rounded(total.kcal)} kcal${outsideWindow}</p><div class="mt-3 flex flex-wrap gap-1.5 text-[10px] font-bold text-gray-300">${macroLine}</div>${meal.observacao ? `<p class="mt-3 line-clamp-2 rounded-2xl bg-white/5 p-3 text-xs text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}</div><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-gray-400"><i data-lucide="chevron-right" class="h-5 w-5"></i></span></div></button>${consumedView && mealFoods(meal).length ? (logged => `<button type="button" data-log-meal="${escapeHTML(meal.id)}" aria-pressed="${logged}" aria-label="Comi: ${escapeHTML(meal.nome)}" class="diary-log mt-4"><i data-lucide="${logged ? 'check-circle-2' : 'circle'}" aria-hidden="true"></i><span>Comi</span></button>`)(mealLogged(diary, meal.id)) : ''}</article>`;
   }).join('') : '<div class="mol-state"><p class="mol-state-title">Nenhuma refeição neste dia</p><p class="mol-state-copy">Use a edição para escolher em quais dias cada refeição aparece.</p><button type="button" data-empty-add class="mol-state-action mt-5">Adicionar refeição</button></div>';
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
+  $('meal-list').querySelectorAll('[data-log-meal]').forEach(button => button.onclick = () => {
+    const meal = meals.find(item => item.id === button.dataset.logMeal);
+    if (!meal) return;
+    const wasLogged = mealLogged(diary, meal.id);
+    try { void saveDiary(toggleMeal(diary, meal, nowTime()), wasLogged ? `Desmarcado: ${meal.nome}.` : `Registrado: ${meal.nome}.`); }
+    catch (error) { showToast(error.message); }
+  });
+  renderDiaryExtras();
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
   renderFocusedMeal();
   renderEditView();
@@ -355,9 +427,9 @@ function openFoodSearch(mealId) {
 
 function openFoodForm(mealId, catalogFood) {
   const food = catalogFood || { nome: '', kcal100: 0, proteina100: 0, carbo100: 0, gordura100: 0 };
-  modal(catalogFood ? 'Definir porção' : 'Novo alimento', `<label class="block text-xs font-bold text-gray-400">Alimento<input id="food-name" maxlength="80" value="${escapeHTML(food.nome)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><label class="mt-4 block text-xs font-bold text-gray-400">Porção (g)<input id="food-grams" type="number" min="1" max="5000" step="1" value="100" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><p class="mt-5 text-xs font-bold uppercase tracking-wider text-neon">Valores por 100 g</p><div class="mt-3 grid grid-cols-2 gap-3">${[['food-kcal','Kcal',food.kcal100,1000],['food-protein','Proteína',food.proteina100,100],['food-carbs','Carboidrato',food.carbo100,100],['food-fat','Gordura',food.gordura100,100]].map(([id,label,value,max]) => `<label class="text-xs text-gray-400">${label}<input id="${id}" type="number" min="0" max="${max}" step="0.1" value="${value}" class="mt-1 min-h-11 w-full rounded-xl mol-field px-3"></label>`).join('')}</div><button id="save-food" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Adicionar alimento</button>`);
+  modal(catalogFood ? 'Definir porção' : 'Novo alimento', `<label class="block text-xs font-bold text-gray-400">Alimento<input id="food-name" maxlength="80" value="${escapeHTML(food.nome)}" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><label class="mt-4 block text-xs font-bold text-gray-400">Porção (g)<input id="food-grams" type="number" min="1" max="5000" step="1" value="100" class="mt-2 min-h-12 w-full rounded-xl mol-field px-4"></label><p class="mt-5 text-xs font-bold uppercase tracking-wider text-neon">Valores por 100 g</p><div class="mt-3 grid grid-cols-2 gap-3">${[['food-kcal','Kcal',food.kcal100,1000],['food-protein','Proteína',food.proteina100,100],['food-carbs','Carboidrato',food.carbo100,100],['food-fat','Gordura',food.gordura100,100]].map(([id,label,value,max]) => `<label class="text-xs text-gray-400">${label}<input id="${id}" type="number" min="0" max="${max}" step="0.1" value="${value}" class="mt-1 min-h-11 w-full rounded-xl mol-field px-3"></label>`).join('')}</div><button id="save-food" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">${mealId === DIARY_TARGET ? 'Registrar no diário' : 'Adicionar alimento'}</button>`);
   $(catalogFood ? 'food-grams' : 'food-name').focus();
-  $('save-food').onclick = async () => { const value = { id: newId(), nome: $('food-name').value.trim(), gramas: Number($('food-grams').value), kcal100: Number($('food-kcal').value), proteina100: Number($('food-protein').value), carbo100: Number($('food-carbs').value), gordura100: Number($('food-fat').value) }; const error = validateFood(value); if (error) return showToast(error); const next = clone(meals); const target = next.find(item => item.id === mealId); if (!target) return; if (target.alimentos.length >= 50) return showToast('O limite é de 50 alimentos por refeição.'); target.alimentos.push(value); $('save-food').disabled = true; if (await persist(next)) { closeModal(); openMeal(mealId); showToast('Alimento adicionado.', 'success'); } else $('save-food').disabled = false; };
+  $('save-food').onclick = async () => { const value = { id: newId(), nome: $('food-name').value.trim(), gramas: Number($('food-grams').value), kcal100: Number($('food-kcal').value), proteina100: Number($('food-protein').value), carbo100: Number($('food-carbs').value), gordura100: Number($('food-fat').value) }; const error = validateFood(value); if (error) return showToast(error); if (mealId === DIARY_TARGET) { let nextDiary; try { nextDiary = addFood(diary, value, nowTime()); } catch (problem) { return showToast(problem.message); } closeModal(); void saveDiary(nextDiary, `No diário: ${value.nome}.`); return; } const next = clone(meals); const target = next.find(item => item.id === mealId); if (!target) return; if (target.alimentos.length >= 50) return showToast('O limite é de 50 alimentos por refeição.'); target.alimentos.push(value); $('save-food').disabled = true; if (await persist(next)) { closeModal(); openMeal(mealId); showToast('Alimento adicionado.', 'success'); } else $('save-food').disabled = false; };
 }
 
 function openRequestedMeal() {
@@ -409,6 +481,7 @@ async function load() {
     } else console.warn('Metas nutricionais não carregadas; usando valores locais:', profileResult.reason?.message);
     writeDietCache();
     showDietContent();
+    void loadDiary();
   } catch (error) {
     console.error('Dieta não carregada:', error);
     document.body.setAttribute('aria-busy', 'false');
@@ -425,7 +498,7 @@ async function load() {
   }
 }
 
-$('add-meal').onclick = () => openMealForm(); $('food-search').onclick = chooseMealForFood;
+$('add-meal').onclick = () => openMealForm(); $('food-search').onclick = () => (isToday() && diaryReady ? openFoodSearch(DIARY_TARGET) : chooseMealForFood());
 $('edit-add-meal').onclick = () => openMealForm();
 $('import-diet-plan').onclick = openDietPlanImport;
 $('diet-mode-view').onclick = () => setDietMode('view');
@@ -438,9 +511,9 @@ assistantEntry.className = 'mt-4';
 assistantEntry.dataset.requiresModule = 'assistente';
 assistantEntry.append(createAssistantButton('Ajustar dieta com o assistente', {
   title: 'Assistente da dieta',
-  intro: 'Posso trocar alimentos, ajustar porções e horários, responder sobre nutrientes ou **importar sua dieta** de uma foto, PDF ou planilha (use o clipe). Nada muda sem você confirmar.',
+  intro: 'Me conte o que você comeu (ou mande foto do prato) que eu registro no diário. Também troco alimentos, ajusto porções ou **importo sua dieta** de foto, PDF ou planilha. Nada muda sem você confirmar.',
   context: 'A pessoa está na tela de Dieta. Priorize ajudar a ajustar a dieta dela (leia com ver_minha_dieta antes de propor) e responder sobre alimentos e refeições. Ela pode anexar foto, PDF ou planilha da dieta.',
-  suggestions: ['Troca o arroz do meu almoço por batata-doce', 'Quantas calorias tem a minha dieta?', 'Quanto de proteína eu como por dia?'],
-  onDataChanged: tipo => { if (tipo === 'dieta' && user) void load(); }
+  suggestions: ['Comi um pão com ovo e um café com leite', 'Troca o arroz do meu almoço por batata-doce', 'Como estou hoje nas calorias?'],
+  onDataChanged: tipo => { if (tipo === 'dieta' && user) void load(); if (tipo === 'diario' && user) void loadDiary(); }
 }));
 document.querySelector('.app-page-header')?.after(assistantEntry);

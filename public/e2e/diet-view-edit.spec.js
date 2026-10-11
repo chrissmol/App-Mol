@@ -18,7 +18,7 @@ async function openDiet(page) {
 
 test('visualizacao da dieta nao expoe controles de edicao da refeicao', async ({ page }) => {
   await openDiet(page);
-  await page.getByRole('button', { name: /Caf/ }).click();
+  await page.locator('[data-open-meal="meal-breakfast"]').click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('Banana').first()).toBeVisible();

@@ -62,7 +62,20 @@ export const ASSISTANT_TOOL_DECLARATIONS = [
   },
   { name: 'pesquisar_internet', description: 'Pesquisa na Wikipedia em português um assunto de treino, exercício, nutrição ou saúde quando os dados da pessoa e o catálogo do app não bastam. Nunca use para outros assuntos.', parameters: { type: 'object', properties: { assunto: string('Termo curto, ex.: supino inclinado, creatina, índice glicêmico') }, required: ['assunto'] } },
   { name: 'buscar_codigo_de_barras', description: 'Busca calorias e macros por 100 g de um produto embalado pelo código de barras (Open Food Facts).', parameters: { type: 'object', properties: { codigo: string('Código de barras com 8 a 14 números') }, required: ['codigo'] } },
-  { name: 'registrar_peso', description: 'Propõe registrar o peso corporal de hoje. Não salva: a pessoa confirma na tela.', parameters: { type: 'object', properties: { pesoKg: number('Peso em kg') }, required: ['pesoKg'] } }
+  { name: 'registrar_peso', description: 'Propõe registrar o peso corporal de hoje. Não salva: a pessoa confirma na tela.', parameters: { type: 'object', properties: { pesoKg: number('Peso em kg') }, required: ['pesoKg'] } },
+  { name: 'ver_meu_dia', description: 'Lê o diário de hoje: o que a pessoa já comeu, calorias e macros consumidos e água.' },
+  {
+    name: 'registrar_refeicao',
+    description: 'Propõe registrar no diário de HOJE o que a pessoa comeu (descrito em texto ou em foto do prato). Não altera o plano da dieta. Não salva: a pessoa confirma na tela.',
+    parameters: {
+      type: 'object',
+      properties: {
+        resumo: string('Uma frase, ex.: Almoço: arroz, feijão e frango.'),
+        alimentos: { type: 'array', items: { type: 'object', properties: { nome: string('Nome do alimento'), gramas: number('Porção em gramas (estime se for foto)'), kcal100: number('kcal por 100 g; omita se o alimento estiver no catálogo'), proteina100: number('g por 100 g'), carbo100: number('g por 100 g'), gordura100: number('g por 100 g') }, required: ['nome', 'gramas'] } }
+      },
+      required: ['resumo', 'alimentos']
+    }
+  }
 ];
 
 export const OFF_TOPIC_REPLY = 'Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.';
@@ -81,6 +94,7 @@ COMO TRABALHAR:
 - Para nutrientes de alimentos, use buscar_alimento antes de responder. Se não estiver no catálogo, dê uma estimativa e diga que é estimativa.
 - Para perguntas sobre a dieta ou os treinos da pessoa, leia os dados com ver_minha_dieta ou ver_meus_treinos. Nunca invente dados dela.
 - Para mudar dieta, treino ou peso, use as ferramentas propor_*. Elas não salvam: diga que a mudança aparece para a pessoa confirmar.
+- "Comi...", "almocei..." ou foto de um prato: use registrar_refeicao (vai para o diário de hoje, não muda o plano). Em foto, estime as porções, diga que é estimativa e peça para ajustar se precisar. Para "como estou hoje?", leia ver_meu_dia.
 - Ao alterar a dieta, leia a atual primeiro e envie a lista completa, mantendo o que não muda.
 - Se uma ferramenta devolver "erro", corrija os dados e tente de novo, ou explique o problema.
 - Dieta e treino: lembre, quando fizer sentido, que você não substitui nutricionista ou educador físico. Não dê orientação médica nem diagnóstico; para dor, lesão ou doença, oriente procurar um profissional.`;
@@ -141,6 +155,23 @@ export function buildRoutineProposal(args = {}, routines = []) {
   }
   const routine = { nome, descricao, horario, diasSemana: days(args.diasSemana), exercicios: cleanRoutineExercises(exercises) };
   return existing ? { id: existing.id, routine } : { routine };
+}
+
+/** Valida o que a pessoa comeu (para o diário). Devolve { alimentos } ou { error }. */
+export function buildDiaryProposal(args = {}) {
+  const source = Array.isArray(args.alimentos) ? args.alimentos : [];
+  if (!source.length) return { error: 'Envie ao menos um alimento.' };
+  if (source.length > 20) return { error: 'Registre no máximo 20 alimentos por vez.' };
+  const alimentos = [];
+  for (const food of source) {
+    const known = catalogFood(food?.nome);
+    const merged = { nome: String(food?.nome || '').trim(), gramas: Number(food?.gramas), kcal100: food?.kcal100 ?? known?.kcal100, proteina100: food?.proteina100 ?? known?.proteina100, carbo100: food?.carbo100 ?? known?.carbo100, gordura100: food?.gordura100 ?? known?.gordura100 };
+    if ([merged.kcal100, merged.proteina100, merged.carbo100, merged.gordura100].some(value => value == null || value === '')) return { error: `"${merged.nome || 'Alimento'}" não está no catálogo: informe kcal100, proteina100, carbo100 e gordura100.` };
+    const problem = validateFood(merged);
+    if (problem) return { error: `${merged.nome || 'Alimento'}: ${problem}` };
+    alimentos.push(merged);
+  }
+  return { alimentos };
 }
 
 export function buildWeightProposal(args = {}) {
@@ -215,6 +246,17 @@ export function createAssistantTools(data) {
       const result = buildWeightProposal(args);
       if (result.error) return { erro: result.error };
       return propose('peso', `Registrar ${result.pesoKg} kg`, { pesoKg: result.pesoKg });
+    },
+    async ver_meu_dia() {
+      const day = data.loadDiary ? await data.loadDiary() : null;
+      if (!day) return { indisponivel: true };
+      const total = nutritionTotals([{ alimentos: day.itens }]);
+      return { comidoHoje: day.itens.map(item => ({ nome: item.nome, gramas: item.gramas, hora: item.hora })), consumido: { kcal: Math.round(total.kcal), proteinaG: round(total.protein), carboG: round(total.carbs), gorduraG: round(total.fat) }, aguaMl: day.aguaMl };
+    },
+    async registrar_refeicao(args = {}) {
+      const result = buildDiaryProposal(args);
+      if (result.error) return { erro: result.error };
+      return propose('diario', args.resumo, { alimentos: result.alimentos });
     }
   };
   return { executors, proposals, sources };
@@ -262,6 +304,10 @@ export function summarizeProposal(proposal, current = {}) {
   if (proposal.tipo === 'rotina') {
     const existing = (current.routines || []).find(routine => routine.id === proposal.routineId);
     return { titulo: existing ? `Alterar rotina: ${existing.nome}` : `Nova rotina: ${proposal.routine.nome}`, resumo: proposal.resumo, antes: existing ? (existing.exercicios || []).map(exerciseLine) : [], depois: proposal.routine.exercicios.map(exerciseLine) };
+  }
+  if (proposal.tipo === 'diario') {
+    const meal = [{ alimentos: proposal.alimentos }];
+    return { titulo: 'Registrar no diário de hoje', resumo: proposal.resumo, antes: [], depois: proposal.alimentos.map(food => `${food.nome} ${grams(food.gramas)}`), totais: { antes: '', depois: totalsLine(meal) } };
   }
   if (proposal.tipo === 'peso') return { titulo: 'Registrar peso', resumo: proposal.resumo, antes: [], depois: [`${String(proposal.pesoKg).replace('.', ',')} kg hoje`] };
   return { titulo: 'Alteração', resumo: proposal.resumo, antes: [], depois: [] };

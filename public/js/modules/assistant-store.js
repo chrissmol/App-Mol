@@ -1,9 +1,10 @@
 // Leitura e gravação dos dados que o assistente usa. A gravação só acontece
 // depois que a pessoa confirma uma proposta, e devolve `undo` para desfazer.
 // Usa as mesmas coleções e formatos das telas, então passa pelas mesmas
-// regras do Firestore (validDiet, validRoutine, validWeight).
+// regras do Firestore (validDiet, validRoutine, validWeight, validDiary).
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { normalizeDietMeals, normalizeFastingSettings } from './nutrition.js';
+import { addFood, dayKey, diaryDocId, normalizeDiary } from './food-diary.js';
 
 export function createAssistantStore(db, uid) {
   const dietRef = doc(db, 'dietas', uid);
@@ -47,6 +48,25 @@ export function createAssistantStore(db, uid) {
     return async () => updateDoc(ref, restore);
   }
 
+  async function loadDiary() {
+    const snapshot = await getDoc(doc(db, 'diario', diaryDocId(uid)));
+    return normalizeDiary(snapshot.exists() ? snapshot.data() : {});
+  }
+
+  async function applyDiary(proposal) {
+    const key = dayKey();
+    const ref = doc(db, 'diario', diaryDocId(uid, key));
+    const snapshot = await getDoc(ref);
+    const previous = snapshot.exists() ? normalizeDiary(snapshot.data()) : null;
+    const time = new Date().toTimeString().slice(0, 5);
+    const next = proposal.alimentos.reduce((day, food) => addFood(day, food, time), previous || normalizeDiary());
+    await setDoc(ref, { userId: uid, data: key, ...next, atualizadoEm: serverTimestamp() });
+    return async () => {
+      if (previous) await setDoc(ref, { userId: uid, data: key, ...previous, atualizadoEm: serverTimestamp() });
+      else await deleteDoc(ref);
+    };
+  }
+
   async function applyWeight(proposal) {
     const created = await addDoc(collection(db, 'pesos'), { userId: uid, pesoKg: proposal.pesoKg, registradoEm: serverTimestamp() });
     return async () => deleteDoc(doc(db, 'pesos', created.id));
@@ -57,8 +77,9 @@ export function createAssistantStore(db, uid) {
     if (proposal?.tipo === 'dieta') return applyDiet(proposal);
     if (proposal?.tipo === 'rotina') return applyRoutine(proposal);
     if (proposal?.tipo === 'peso') return applyWeight(proposal);
+    if (proposal?.tipo === 'diario') return applyDiary(proposal);
     throw new Error('Proposta desconhecida.');
   }
 
-  return { loadDiet, loadRoutines, applyProposal };
+  return { loadDiet, loadRoutines, loadDiary, applyProposal };
 }

@@ -211,6 +211,19 @@ service cloud.firestore {
         && request.resource.data.pesoKg <= 400;
     }
 
+    // Diário: um documento por dia, id "{uid}_{AAAA-MM-DD}", itens limitados.
+    function validDiary(diaryId) {
+      return request.resource.data.keys().hasOnly(['userId', 'data', 'itens', 'aguaMl', 'atualizadoEm'])
+        && request.resource.data.data is string
+        && request.resource.data.data.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$')
+        && diaryId == request.auth.uid + '_' + request.resource.data.data
+        && request.resource.data.itens is list
+        && request.resource.data.itens.size() <= 80
+        && request.resource.data.aguaMl is number
+        && request.resource.data.aguaMl >= 0
+        && request.resource.data.aguaMl <= 10000;
+    }
+
     function validFasting() {
       return !('jejum' in request.resource.data)
         || (request.resource.data.jejum is map
@@ -270,6 +283,14 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
       allow create: if ownsNew() && validSession();
       allow update: if false;
+    }
+
+    match /diario/{diaryId} {
+      // get pelo id: o dia pode ainda não existir (resource nulo) e o id já diz de quem é.
+      allow get: if signedIn() && diaryId.matches(request.auth.uid + '_20[0-9]{2}-[01][0-9]-[0-3][0-9]');
+      allow list, delete: if ownsExisting();
+      allow create: if ownsNew() && validDiary(diaryId);
+      allow update: if ownsExisting() && ownsNew() && validDiary(diaryId);
     }
 
     match /pesos/{pesoId} {

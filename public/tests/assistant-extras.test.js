@@ -81,3 +81,22 @@ describe('assistente: resumo do cartão de confirmação', async () => {
     expect(summarizeProposal({ tipo: 'peso', pesoKg: 82.4 }).depois).toEqual(['82,4 kg hoje']);
   });
 });
+
+describe('assistente: diário de refeições', async () => {
+  const { buildDiaryProposal, summarizeProposal, createAssistantTools: tools } = await import('../js/modules/assistant.js');
+  it('propõe registrar o que a pessoa comeu, completando pelo catálogo', () => {
+    const result = buildDiaryProposal({ alimentos: [{ nome: 'Arroz branco cozido', gramas: 150 }] });
+    expect(result.alimentos[0]).toMatchObject({ nome: 'Arroz branco cozido', gramas: 150 });
+    expect(result.alimentos[0].kcal100).toBeGreaterThan(0);
+    expect(buildDiaryProposal({ alimentos: [{ nome: 'Prato desconhecido', gramas: 100 }] }).error).toMatch(/kcal100/);
+    expect(buildDiaryProposal({ alimentos: [] }).error).toMatch(/ao menos um/);
+  });
+  it('mostra o cartão e lê o dia', async () => {
+    const summary = summarizeProposal({ tipo: 'diario', resumo: 'Almoço', alimentos: [{ nome: 'Banana', gramas: 100, kcal100: 89, proteina100: 1.1, carbo100: 22.8, gordura100: 0.3 }] });
+    expect(summary).toMatchObject({ titulo: 'Registrar no diário de hoje', depois: ['Banana 100 g'] });
+    const { executors, proposals } = tools({ loadDiet: async () => ({ meals: [] }), loadRoutines: async () => [], loadDiary: async () => ({ itens: [{ nome: 'Banana', gramas: 100, kcal100: 89, proteina100: 1.1, carbo100: 22.8, gordura100: 0.3, hora: '08:00' }], aguaMl: 500 }) });
+    expect(await executors.ver_meu_dia()).toMatchObject({ consumido: { kcal: 89 }, aguaMl: 500 });
+    await executors.registrar_refeicao({ resumo: 'Lanche', alimentos: [{ nome: 'Banana', gramas: 120 }] });
+    expect(proposals[0]).toMatchObject({ tipo: 'diario', resumo: 'Lanche' });
+  });
+});
