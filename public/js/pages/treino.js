@@ -83,6 +83,7 @@ function exerciciosParaPersistir(rotina) { return treinoIniciado ? cleanRoutineE
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
 import { exercisePoseFrames, exercisePoseLabel } from '../modules/exercise-poses.js';
 import { plural } from '../utils/plural.js';
+import { getPet, petAvatarHTML, showPetMoment } from '../utils/pet.js';
 let favoritosExercicios = [];
 let recentesExercicios = [];
 let exerciciosPersonalizados = [];
@@ -708,7 +709,7 @@ function avisarSeRecordePessoal(nomeExercicio, serie) {
   const atual = estimate1RM(serie.kg, serie.reps);
   if (!atual) return;
   const anterior = melhorE1rmHistorico(nomeExercicio);
-  if (anterior > 0 && atual > anterior) { celebrate(); showToast(`🏆 Novo recorde em ${nomeExercicio}!`, 'success'); }
+  if (anterior > 0 && atual > anterior) { celebrate(); showPetMoment({ state: 'conquista', message: `${nomeExercicio}: ${getPet().lines.record}` }); }
 }
 
 function novosRecordesDaSessao(exercicios) {
@@ -776,12 +777,13 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDe
   const musculosDaSessao = muscleZoneScores(completedSets({ exercicios: exerciciosDetalhados }));
   const legendaMusculos = muscleMapLegendEntries(musculosDaSessao);
   const mapaMuscularHTML = legendaMusculos.length ? `<div class="mt-4 rounded-2xl mol-soft p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Músculos trabalhados</p><div class="mt-2 mx-auto max-w-[11rem]">${renderMuscleMap(musculosDaSessao)}</div><div class="mol-muscle-legend mt-2">${legendaMusculos.map(item => `<span class="mol-muscle-legend-item">${escapeHTML(item.label)}</span>`).join('')}</div></div>` : '';
+  const pet = getPet();
   const modal = document.createElement('div');
   modal.id = 'mol-workout-summary';
   modal.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.setAttribute('aria-labelledby', 'workout-summary-title');
   modal.setAttribute('aria-describedby', 'workout-summary-description');
-  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up"><div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div><p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">Mandou bem.</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${exercicios} exercícios registrados no seu histórico.</p>${destaqueHTML}${mapaMuscularHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
+  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up">${pet.id === 'nenhum' ? '<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div>' : petAvatarHTML(pet, { size: 112, state: 'conquista', className: 'mx-auto' })}<p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">${escapeHTML(pet.lines.workoutDone)}</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${plural(exercicios, 'exercício registrado', 'exercícios registrados')} no seu histórico.</p>${destaqueHTML}${mapaMuscularHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
   document.body.appendChild(modal);
   if (records > 0) celebrate({ count: 32 });
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });

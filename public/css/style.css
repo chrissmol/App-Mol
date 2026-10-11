@@ -3779,7 +3779,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .mol-undo-toast span { min-width: 0; }
 .mol-undo-toast button { min-height: 44px; flex-shrink: 0; padding: 0 1rem; border-radius: .75rem; font-weight: 800; color: var(--mol-brand-text); }
 @keyframes mol-undo-in { from { opacity: 0; transform: translate(-50%, .5rem); } }
-@media (prefers-reduced-motion: reduce) { .mol-undo-toast { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mol-undo-toast, .pet-moment { animation: none; } }
 /* Desktop com barra lateral: a marca já está na lateral, então sai do topo da página. */
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   body.has-app-nav main .mol-brand { display: none; }
@@ -3832,3 +3832,8 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .diet-page #diet-mode-tabs[hidden] { display: none; }
 .diet-page #diet-edit-content { display: none; }
 
+
+/* Momento do pet: aviso curto com o estado (refeição, recorde, água), acima do dock. */
+.pet-moment { position: fixed; inset-inline: 1rem; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .5rem); z-index: 999; display: flex; align-items: center; gap: .75rem; max-width: 26rem; margin-inline: auto; padding: .5rem 1rem .5rem .5rem; border-radius: 1.25rem; border: 1px solid color-mix(in srgb, var(--mol-brand-green) 45%, var(--mol-border)); background: var(--mol-surface); box-shadow: 0 12px 30px rgba(0, 0, 0, .45), 0 0 24px color-mix(in srgb, var(--mol-brand-green) 25%, transparent); animation: pet-moment-in .45s cubic-bezier(.2, .9, .3, 1.2) both; }
+.pet-moment p { font-size: .9rem; font-weight: 700; color: var(--mol-text); }
+@keyframes pet-moment-in { from { opacity: 0; transform: translateY(.75rem) scale(.96); } }

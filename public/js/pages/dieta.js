@@ -9,6 +9,7 @@ import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { plural } from '../utils/plural.js';
+import { getPet, showPetMoment } from '../utils/pet.js';
 import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl } from '../modules/food-diary.js';
 import { recentWeightTrend } from '../modules/dashboard-analytics.js';
 import { createAssistantButton } from '../utils/assistant-chat.js';
@@ -193,7 +194,11 @@ function renderDiaryExtras() {
   const glasses = Math.round(diary.aguaMl / DIARY_LIMITS.waterStep);
   const goalGlasses = Math.round(waterGoal / DIARY_LIMITS.waterStep);
   $('diet-water').innerHTML = showDiary ? `<div class="mt-4 flex items-center justify-between gap-3 border-t border-white/5 pt-4"><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Água</p><p class="mt-1 text-sm"><strong class="text-base">${(diary.aguaMl / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} L</strong> <span class="text-gray-500">de ${(waterGoal / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} L · ${plural(glasses, 'copo', 'copos')} de ${goalGlasses}</span></p></div><div class="flex shrink-0 gap-2"><button type="button" data-water="-1" class="flex h-11 w-11 items-center justify-center rounded-xl mol-soft" aria-label="Tirar um copo de água"${diary.aguaMl ? '' : ' disabled'}><i data-lucide="minus" class="h-4 w-4"></i></button><button type="button" data-water="1" class="flex h-11 w-11 items-center justify-center rounded-xl bg-neon text-black" aria-label="Somar um copo de água (250 ml)"><i data-lucide="plus" class="h-4 w-4"></i></button></div></div>` : '';
-  $('diet-water').querySelectorAll('[data-water]').forEach(button => button.onclick = () => saveDiary(changeWater(diary, Number(button.dataset.water) * DIARY_LIMITS.waterStep)));
+  $('diet-water').querySelectorAll('[data-water]').forEach(button => button.onclick = async () => {
+    const before = diary.aguaMl;
+    const next = changeWater(diary, Number(button.dataset.water) * DIARY_LIMITS.waterStep);
+    if (await saveDiary(next) && before < waterGoal && next.aguaMl >= waterGoal) showPetMoment({ state: 'conquista-dieta', message: getPet().lines.waterGoal });
+  });
 }
 
 function render() {
@@ -228,8 +233,10 @@ function render() {
     const meal = meals.find(item => item.id === button.dataset.logMeal);
     if (!meal) return;
     const wasLogged = mealLogged(diary, meal.id);
-    try { void saveDiary(toggleMeal(diary, meal, nowTime()), wasLogged ? `Desmarcado: ${meal.nome}.` : `Registrado: ${meal.nome}.`); }
-    catch (error) { showToast(error.message); }
+    let next;
+    try { next = toggleMeal(diary, meal, nowTime()); } catch (error) { return showToast(error.message); }
+    if (wasLogged) return void saveDiary(next, `Desmarcado: ${meal.nome}.`);
+    void saveDiary(next).then(ok => { if (ok) showPetMoment({ state: 'refeicao', message: `${meal.nome}: ${getPet().lines.mealLogged}` }); });
   });
   renderDiaryExtras();
   $('meal-list').querySelector('[data-empty-add]')?.addEventListener('click', () => openMealForm());
