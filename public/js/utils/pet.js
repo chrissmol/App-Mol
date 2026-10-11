@@ -4,15 +4,15 @@ import { getLocalItem, setLocalItem } from './storage.js';
 export const PETS = {
   moldrian: {
     id: 'moldrian', name: 'Moldrian', ready: 'pronto', excited: 'animado',
-    lines: { welcome: 'Oi! Eu sou o Moldrian. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Bora começar?', firstSteps: 'Bora dar os primeiros passos? Um de cada vez.', workoutDone: 'Mais uma sessão registrada. Boa!', record: 'Novo recorde! Constância dá nisso.', mealLogged: 'Refeição salva. Bora ver como está o dia?', waterGoal: 'Meta de água batida. Boa!', rest: 'Recuperação também é treino.' }
+    lines: { welcome: 'Oi! Eu sou o Moldrian. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Bora começar?', firstSteps: 'Bora dar os primeiros passos? Um de cada vez.', workoutDone: 'Mais uma sessão registrada. Boa!', record: 'Novo recorde! Constância dá nisso.', mealLogged: 'Refeição salva. Bora ver como está o dia?', waterGoal: 'Meta de água batida. Boa!', rest: 'Recuperação também é treino.', workoutReminder: 'Seu treino de hoje está pronto. Bora?', mealReminder: 'Hora da refeição. Quer conferir o que está no plano?' }
   },
   marlo: {
     id: 'marlo', name: 'Marlô', ready: 'pronta', excited: 'animada',
-    lines: { welcome: 'Oi! Eu sou a Marlô. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Vamos nessa?', firstSteps: 'Vamos dar os primeiros passos? Um de cada vez.', workoutDone: 'Sessão concluída. Mandou bem!', record: 'Novo recorde! Sua constância aparecendo.', mealLogged: 'Refeição salva. Quer ver como está seu dia?', waterGoal: 'Meta de água concluída. Mandou bem!', rest: 'Recuperação também faz parte do processo.' }
+    lines: { welcome: 'Oi! Eu sou a Marlô. Vou te acompanhar no treino, na dieta e na evolução.', plan: 'Seu plano está pronto. Vamos nessa?', firstSteps: 'Vamos dar os primeiros passos? Um de cada vez.', workoutDone: 'Sessão concluída. Mandou bem!', record: 'Novo recorde! Sua constância aparecendo.', mealLogged: 'Refeição salva. Quer ver como está seu dia?', waterGoal: 'Meta de água concluída. Mandou bem!', rest: 'Recuperação também faz parte do processo.', workoutReminder: 'Seu treino está pronto. Vamos nessa?', mealReminder: 'Hora da refeição. Vamos ver o que está no plano?' }
   },
   nenhum: {
     id: 'nenhum', name: 'Assistente', ready: 'pronto', excited: 'animado',
-    lines: { welcome: 'Boas-vindas ao Mol. Vamos montar seu plano.', plan: 'Seu plano está pronto.', firstSteps: 'Primeiros passos, um de cada vez.', workoutDone: 'Sessão registrada.', record: 'Novo recorde.', mealLogged: 'Refeição salva.', waterGoal: 'Meta de água concluída.', rest: 'Dia de descanso.' }
+    lines: { welcome: 'Boas-vindas ao Mol. Vamos montar seu plano.', plan: 'Seu plano está pronto.', firstSteps: 'Primeiros passos, um de cada vez.', workoutDone: 'Sessão registrada.', record: 'Novo recorde.', mealLogged: 'Refeição salva.', waterGoal: 'Meta de água concluída.', rest: 'Dia de descanso.', workoutReminder: 'Reserve alguns minutos para o seu treino de hoje.', mealReminder: 'Confira sua dieta e a próxima refeição planejada.' }
   }
 };
 
