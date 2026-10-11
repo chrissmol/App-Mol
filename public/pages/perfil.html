@@ -30,15 +30,22 @@
 
     <div id="profile-content" class="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
       <section class="glass-card flex flex-col items-center rounded-3xl border border-white/5 p-6 text-center lg:items-start lg:text-left" aria-labelledby="user-name">
+        <div class="relative">
         <div id="avatar-frame" role="img" class="avatar-frame avatar-frame--plastic relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-white/10 mol-field shadow-md" aria-label="Foto do perfil">
           <i id="default-avatar-icon" data-lucide="user" class="h-9 w-9 text-neon"></i>
           <img id="user-avatar" src="../assets/mol-mark.svg" alt="" class="hidden h-full w-full object-cover">
+        </div>
+          <button id="change-frame" type="button" class="profile-frame-btn" aria-label="Trocar moldura do avatar"><i data-lucide="sparkles" aria-hidden="true"></i></button>
         </div>
         <div class="mt-5 min-w-0">
           <h2 id="user-name" class="text-2xl font-extrabold">Carregando...</h2>
           <p id="user-email" class="mt-2 break-all text-sm text-gray-400"></p>
         </div>
-        <button id="change-frame" type="button" class="mt-4 flex min-h-10 items-center gap-2 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300"><i data-lucide="sparkles" class="h-4 w-4 text-neon"></i><span>Trocar moldura</span></button>
+        <dl class="profile-stats">
+          <div><dt>Treinos</dt><dd id="stat-workouts">—</dd></div>
+          <div><dt>Meta</dt><dd id="stat-goal">—</dd></div>
+          <div><dt>Peso</dt><dd id="stat-weight">—</dd></div>
+        </dl>
       </section>
 
       <nav aria-label="Atalhos do perfil">
