@@ -1,3 +1,4 @@
+import { getPet, petImageSrc } from './pet.js';
 const KEY = 'mol-reminders';
 const notificationIcon = new URL('../../assets/mol-mark.svg', import.meta.url).href;
 const defaults = { enabled: false, workoutTime: '18:00', mealTime: '12:00' };
@@ -33,10 +34,13 @@ export function saveReminderPreferences(prefs) {
   }
 }
 
-export async function notify(title, body) {
+/** @param {string} title @param {string} body @param {{ petState?: string }} [options] Com pet, o ícone é ele no estado do lembrete. */
+export async function notify(title, body, { petState } = {}) {
   if (!('Notification' in window)) throw new Error('Este navegador não oferece notificações.');
   if (Notification.permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
-  const options = { body, icon: notificationIcon, tag: `mol-${title}`, renotify: false, data: { url: '/' } };
+  const pet = getPet();
+  const icon = petState && pet.id !== 'nenhum' ? new URL(petImageSrc(pet, petState), location.origin).href : notificationIcon;
+  const options = { body, icon, tag: `mol-${title}`, renotify: false, data: { url: '/' } };
   const registration = await navigator.serviceWorker?.getRegistration?.().catch(() => null);
   if (registration?.showNotification) {
     await registration.showNotification(title, options);
@@ -88,8 +92,9 @@ export function startReminderMonitor() {
     checking = true;
     const now = new Date();
     try {
-      if (due('workout', prefs.workoutTime, now)) { await notify('Hora de treinar', 'Reserve alguns minutos para o seu treino de hoje.'); markSent('workout', now); }
-      if (due('meal', prefs.mealTime, now)) { await notify('Hora da refeição', 'Confira sua dieta e a próxima refeição planejada.'); markSent('meal', now); }
+      const pet = getPet();
+      if (due('workout', prefs.workoutTime, now)) { await notify(pet.id === 'nenhum' ? 'Hora de treinar' : pet.name, pet.lines.workoutReminder, { petState: 'pronto' }); markSent('workout', now); }
+      if (due('meal', prefs.mealTime, now)) { await notify(pet.id === 'nenhum' ? 'Hora da refeição' : pet.name, pet.lines.mealReminder, { petState: 'refeicao' }); markSent('meal', now); }
     } catch (error) { console.warn('Lembrete não enviado:', error.message); }
     finally { checking = false; }
   };
