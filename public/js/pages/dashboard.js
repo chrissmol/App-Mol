@@ -13,6 +13,7 @@ import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, set
 import { cardAllowed, normalizeAppModules, presetFromModules } from '../utils/app-modules.js';
 import { plural } from '../utils/plural.js';
 import { getPet, petAvatarHTML, rememberPet } from '../utils/pet.js';
+import { diaryDocId, diaryTotals } from '../modules/food-diary.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -354,6 +355,19 @@ function renderFirstSteps() {
   renderIcons();
 }
 
+/** Linha "Hoje: X de Y kcal" no cartão da refeição, com o que foi registrado no diário. */
+async function loadTodayIntake(userId) {
+  try {
+    const snapshot = await withTimeout(getDoc(doc(db, 'diario', diaryDocId(userId))), 'O diário');
+    const kcal = Math.round(diaryTotals(snapshot.data()).kcal);
+    const goal = Number(profileData.metaCalorias ?? profileData.dailyCalorieGoal) || 0;
+    const line = document.getElementById('next-meal-today');
+    if (!line) return;
+    line.textContent = goal ? `Hoje: ${kcal.toLocaleString('pt-BR')} de ${goal.toLocaleString('pt-BR')} kcal registradas` : `Hoje: ${kcal.toLocaleString('pt-BR')} kcal registradas`;
+    line.classList.remove('hidden');
+  } catch (error) { console.warn('Diário do dia não carregado:', error.message); }
+}
+
 async function loadNextMeal(userId) {
   const cached = safeJSON(getSessionItem(mealCacheKey(userId)), null);
   if (cached && Array.isArray(cached.meals)) {
@@ -397,7 +411,7 @@ function setupDashboardCards() {
   }
   if (!document.getElementById('next-meal-card')) {
     const card = document.createElement('section'); card.id = 'next-meal-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
-    card.innerHTML = '<a href="./pages/dieta.html" class="flex items-start justify-between gap-4" aria-label="Abrir próxima refeição na dieta"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400" aria-live="polite"></p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></span></a>';
+    card.innerHTML = '<a href="./pages/dieta.html" class="flex items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Próxima refeição</p><h2 id="next-meal-name" class="mt-1 text-lg font-extrabold">Refeição</h2><p id="next-meal-meta" class="mt-1 text-sm text-gray-400" aria-live="polite"></p><p id="next-meal-today" class="mt-2 hidden text-xs font-bold text-neon"></p></div><span class="rounded-2xl bg-neon/15 p-3 text-neon"><i data-lucide="utensils" class="h-5 w-5"></i></span></a>';
     insertAfterOrAppend(document.getElementById('today-card'), card, grid);
   }
   if (!document.getElementById('fasting-card')) {
@@ -544,7 +558,7 @@ watchProtectedPage(async user => {
   } catch (error) { console.warn('Preferências do painel não carregadas:', error.message); }
   applyDashboardCards();
   updateDailyBrief();
-  if (appModules.dieta) void loadNextMeal(user.uid);
+  if (appModules.dieta) { void loadNextMeal(user.uid); void loadTodayIntake(user.uid); }
   const fullName = String(user.displayName || profileData.name || profileData.nome || '');
   $('user-name').textContent = fullName.trim().split(/\s+/)[0].slice(0, 40) || 'Atleta';
   $('week-label').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
