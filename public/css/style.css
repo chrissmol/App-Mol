@@ -3837,3 +3837,16 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .pet-moment { position: fixed; inset-inline: 1rem; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .5rem); z-index: 999; display: flex; align-items: center; gap: .75rem; max-width: 26rem; margin-inline: auto; padding: .5rem 1rem .5rem .5rem; border-radius: 1.25rem; border: 1px solid color-mix(in srgb, var(--mol-brand-green) 45%, var(--mol-border)); background: var(--mol-surface); box-shadow: 0 12px 30px rgba(0, 0, 0, .45), 0 0 24px color-mix(in srgb, var(--mol-brand-green) 25%, transparent); animation: pet-moment-in .45s cubic-bezier(.2, .9, .3, 1.2) both; }
 .pet-moment p { font-size: .9rem; font-weight: 700; color: var(--mol-text); }
 @keyframes pet-moment-in { from { opacity: 0; transform: translateY(.75rem) scale(.96); } }
+/* Marmitas em passos: indicador no topo, um passo por vez. */
+.prep-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: 1rem 0; counter-reset: prep-step; list-style: none; padding: 0; }
+.prep-steps li { counter-increment: prep-step; display: flex; align-items: center; gap: .5rem; min-height: 44px; padding: .5rem .75rem; border-radius: 1rem; background: var(--mol-surface-soft); font-size: .8rem; font-weight: 800; color: var(--mol-muted); }
+.prep-steps li::before { content: counter(prep-step); display: inline-flex; width: 1.5rem; height: 1.5rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid var(--mol-border); font-size: .75rem; }
+.prep-steps li[aria-current="step"] { background: color-mix(in srgb, var(--mol-brand-green) 18%, var(--mol-surface-soft)); color: var(--mol-text); }
+.prep-steps li[aria-current="step"]::before, .prep-steps li.is-done::before { border-color: var(--mol-brand-green); background: var(--mol-brand-green); color: #fff; }
+.prep-next { width: 100%; min-height: 52px; margin-top: 1rem; }
+.prep-step-actions { display: flex; gap: .6rem; margin-top: 1rem; }
+.prep-step-actions > * { flex: 1; min-height: 52px; }
+.prep-result-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.prep-more { margin-top: .75rem; border-radius: 1rem; background: var(--mol-surface-soft); padding: .25rem .9rem; }
+.prep-more summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+.prep-card h2:focus { outline: none; }

@@ -11,11 +11,12 @@ for (const theme of ['dark', 'light']) {
     }, theme);
     await page.goto('/pages/marmitas.html');
     await expect(page.locator('#prep-status')).toContainText('Dietas carregadas');
+    await page.getByRole('button', { name: 'Continuar para ingredientes' }).click();
     await page.locator('#catalog-food').selectOption('Arroz branco cozido', { force: true });
     await page.locator('#add-ingredient').click();
     await page.locator('#catalog-food').selectOption('Peito de frango grelhado', { force: true });
     await page.locator('#add-ingredient').click();
-    await page.getByRole('button', { name: 'Calcular preparo' }).click();
+    await page.getByRole('button', { name: 'Calcular potes' }).click();
     await expect(page.locator('#prep-result')).toBeFocused();
     await page.addScriptTag({ content: axe });
     const violations = await page.evaluate(async () => (await window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] } })).violations.filter(item => ['critical', 'serious'].includes(item.impact)).map(item => ({ id: item.id, targets: item.nodes.map(node => node.target) })));
