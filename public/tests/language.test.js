@@ -34,9 +34,27 @@ describe('idioma do aplicativo', () => {
     button.textContent = 'Continuar com Google';
     button.setAttribute('aria-label', 'Buscar exercício');
     dom.window.document.body.appendChild(button);
-    await new Promise(resolve => dom.window.setTimeout(resolve, 60));
-    expect(button.textContent).toBe('Continue with Google');
-    expect(button.getAttribute('aria-label')).toBe('Search exercise');
+    // Espera ativa (até 2 s) em vez de 60 ms fixos: no CI carregado o observador às vezes demorava mais.
+    await vi.waitFor(() => {
+      expect(button.textContent).toBe('Continue with Google');
+      expect(button.getAttribute('aria-label')).toBe('Search exercise');
+    }, { timeout: 2000, interval: 20 });
+    dom.window.close();
+  });
+
+  it('traduz textos novos e frases com números, em inglês e espanhol', async () => {
+    const dom = setupDom();
+    vi.stubGlobal('navigator', { languages: ['en-US'], language: 'en-US' });
+    dom.window.document.body.innerHTML = '<p id="a">Passo 2 de 5</p><p id="b">Hoje: 178 de 2.400 kcal registradas</p><p id="c">Consumido hoje</p><p id="d">Para calcular sua meta, preencha: sexo, peso atual.</p>';
+    applyLanguage({ mode: 'system', value: 'pt-BR' });
+    const text = id => dom.window.document.getElementById(id).textContent;
+    expect(text('a')).toBe('Step 2 of 5');
+    expect(text('b')).toBe('Today: 178 of 2.400 kcal logged');
+    expect(text('c')).toBe('Eaten today');
+    expect(text('d')).toBe('To calculate your goal, fill in: sex, current weight.');
+    applyLanguage({ mode: 'es-ES', value: 'es-ES' });
+    expect(text('a')).toBe('Paso 2 de 5');
+    expect(text('c')).toBe('Consumido hoy');
     dom.window.close();
   });
 

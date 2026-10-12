@@ -59,6 +59,7 @@ test('excluir rotina não pergunta "tem certeza" e oferece Desfazer', async ({ p
 test('treino em andamento: barra nas outras telas volta direto para a sessão', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('__mol_e2e_user', 'true');
+    localStorage.setItem('mol-accessibility', JSON.stringify({ language: { mode: 'pt-BR', value: 'pt-BR' } }));
     const now = new Date();
     localStorage.setItem('mol-workout-draft-e2e-user', JSON.stringify({ versao: 2, rotinaId: 'routine-upper', nomeRotina: 'Upper', exercicios: [{ nome: 'Supino reto', grupo: 'Peito', repsMin: 8, repsMax: 12, series: [{ tipo: 'N', kg: '', reps: '', rir: '2', concluida: false }] }], tempoSegundos: 60, atualizadoEm: now.toISOString(), iniciadaEm: new Date(now.getTime() - 65000).toISOString() }));
   });

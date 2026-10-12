@@ -25,7 +25,7 @@ test('login, navegação privada, dieta e tema permanecem estáveis', async ({ p
 
   await navigateMain(page, 'treino.html');
   await page.waitForURL('**/pages/treino.html');
-  await expect(page.getByRole('heading', { name: /Treinos|Training|Entreno/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Treinos|Training|Workouts|Entreno/ })).toBeVisible();
   await expect(page).not.toHaveURL(/login\.html/);
 
   await navigateMain(page, 'dieta.html');

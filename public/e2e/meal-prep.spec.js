@@ -4,6 +4,8 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('__mol_e2e_user', 'true');
     localStorage.setItem('__mol_e2e_prep_diet', 'true');
+    // Os textos procurados são em português; sem isso o idioma do sistema (inglês no desktop) traduz a tela.
+    localStorage.setItem('mol-accessibility', JSON.stringify({ language: { mode: 'pt-BR', value: 'pt-BR' } }));
   });
   await page.goto('/pages/marmitas.html');
   await expect(page.locator('#prep-status')).toContainText('Dietas carregadas');
