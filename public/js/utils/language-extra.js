@@ -333,7 +333,21 @@ const ROWS = [
   ['Atualizar busca a versão mais recente e recarrega o app. Limpar temporários remove caches locais sem apagar sua conta.', 'Update fetches the latest version and reloads the app. Clear temporary files removes local caches without deleting your account.', 'Actualizar busca la versión más reciente y recarga la app. Limpiar temporales borra cachés locales sin eliminar tu cuenta.'],
   ['Se o botão nativo não abrir, use o ícone de instalar na barra do navegador ou o menu do Chrome.', "If the native button doesn't open, use the install icon in the browser bar or the Chrome menu.", 'Si el botón nativo no abre, usa el ícono de instalar en la barra del navegador o el menú de Chrome.'],
   ['Quem te acompanha', 'Who is with you', 'Quién te acompaña'],
-  ['Assistente', 'Assistant', 'Asistente']
+  ['Assistente', 'Assistant', 'Asistente'],
+  ['Sua semana', 'Your week', 'Tu semana'],
+  ['Volume', 'Volume', 'Volumen'],
+  ['Dias com refeição', 'Days with meals', 'Días con comidas'],
+  ['Peso na semana', 'Weight this week', 'Peso en la semana'],
+  ['Ver progresso', 'See progress', 'Ver progreso'],
+  ['Semana fechada com constância. Bora manter!', "Week closed with consistency. Let's keep it up!", 'Semana cerrada con constancia. ¡A mantenerla!'],
+  ['Cada treino conta. Bora pra próxima?', "Every workout counts. Ready for the next one?", 'Cada entrenamiento cuenta. ¿Vamos por la próxima?'],
+  ['Semana corrida? A próxima começa agora.', 'Busy week? The next one starts now.', '¿Semana movida? La próxima empieza ahora.'],
+  ['Você manteve a rotina nesta semana. Veja seus avanços.', 'You kept your routine this week. See your progress.', 'Mantuviste la rutina esta semana. Mira tus avances.'],
+  ['Cada treino conta. Vamos com tudo na próxima?', 'Every workout counts. All in next week?', 'Cada entrenamiento cuenta. ¿Con todo la próxima?'],
+  ['Tudo bem ter semanas assim. A próxima é nova.', "It's okay to have weeks like this. Next one is new.", 'Está bien tener semanas así. La próxima es nueva.'],
+  ['Meta da semana cumprida.', 'Weekly goal met.', 'Meta de la semana cumplida.'],
+  ['Semana com treinos registrados.', 'Week with logged workouts.', 'Semana con entrenamientos registrados.'],
+  ['Nenhum treino nesta semana.', 'No workouts this week.', 'Ningún entrenamiento esta semana.']
 ];
 
 /** Frases com números ou nomes. Cada linha: [regex, inglês, espanhol] com $1, $2… */

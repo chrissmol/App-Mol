@@ -3672,7 +3672,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
     grid-column: 1 / -1;
   }
   /* Uma regra antiga (.dashboard-surface main > section { grid-column: auto }) vence o :where() acima. */
-  .dashboard-surface main > #daily-brief-card, .dashboard-surface main > #first-steps-card { grid-column: 1 / -1; }
+  .dashboard-surface main > #daily-brief-card, .dashboard-surface main > #first-steps-card, .dashboard-surface main > #weekly-review-card { grid-column: 1 / -1; }
 }
 
 /* Digitando no celular: o dock sai e barras "grudadas" voltam ao fluxo, para o iOS
@@ -3850,3 +3850,9 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .prep-more { margin-top: .75rem; border-radius: 1rem; background: var(--mol-surface-soft); padding: .25rem .9rem; }
 .prep-more summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
 .prep-card h2:focus { outline: none; }
+
+/* Resumo semanal no Início. */
+.weekly-review__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
+.weekly-review__stats > div { padding: .75rem; border-radius: 1rem; background: var(--mol-surface-soft); }
+.weekly-review__stats dt { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mol-muted); }
+.weekly-review__stats dd { margin-top: .2rem; font-size: 1.05rem; font-weight: 800; color: var(--mol-text); }
