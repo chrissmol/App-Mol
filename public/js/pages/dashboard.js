@@ -13,7 +13,8 @@ import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, set
 import { cardAllowed, normalizeAppModules, presetFromModules } from '../utils/app-modules.js';
 import { plural } from '../utils/plural.js';
 import { getPet, petAvatarHTML, rememberPet } from '../utils/pet.js';
-import { diaryDocId, diaryTotals } from '../modules/food-diary.js';
+import { dayKey, diaryDocId, diaryTotals } from '../modules/food-diary.js';
+import { showWeeklyReview, weeklyReview } from '../modules/weekly-review.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -371,6 +372,39 @@ function renderFirstSteps() {
 }
 
 /** Linha "Hoje: X de Y kcal" no cartão da refeição, com o que foi registrado no diário. */
+// Resumo semanal (domingo e segunda): dados reais dos últimos 7 dias e o pet no estado do resultado.
+const weekData = { sessions: [], weights: [] };
+
+async function renderWeeklyReview(userId) {
+  document.getElementById('weekly-review-card')?.remove();
+  if (!showWeeklyReview(weekData.sessions)) return;
+  let mealDays = null;
+  if (/** @type {any} */ (appModules).dieta) {
+    const days = Array.from({ length: 7 }, (_, index) => dayKey(new Date(Date.now() - index * 86400000)));
+    const docs = await Promise.all(days.map(key => getDoc(doc(db, 'diario', diaryDocId(userId, key))).catch(() => null)));
+    mealDays = docs.filter(snapshot => (snapshot?.data()?.itens || []).length > 0).length;
+  }
+  const review = weeklyReview({ sessions: weekData.sessions, weights: weekData.weights, mealDays, goal: profileData.metaSemanal || 3 });
+  const pet = getPet();
+  const line = { conquista: pet.lines.weekGood, evolucao: pet.lines.weekPartial, apoio: pet.lines.weekEmpty }[review.state];
+  const weight = review.weightChange === null ? '—' : `${review.weightChange.toLocaleString('pt-BR', { signDisplay: 'exceptZero', maximumFractionDigits: 1 })} kg`;
+  const stats = [
+    ['Treinos', `${review.workouts}/${review.goal}`],
+    ['Volume', `${review.volume.toLocaleString('pt-BR')} kg`],
+    review.mealDays === null ? null : ['Dias com refeição', `${review.mealDays}/7`],
+    ['Peso na semana', weight]
+  ].filter(Boolean);
+  const card = document.createElement('section');
+  card.id = 'weekly-review-card';
+  card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up';
+  card.setAttribute('aria-labelledby', 'weekly-review-title');
+  card.innerHTML = `<div class="flex items-start gap-3">${pet.id === 'nenhum' ? '' : petAvatarHTML(pet, { size: 64, state: review.state })}<div class="min-w-0 flex-1"><p class="text-xs font-semibold uppercase tracking-wider text-neon">Sua semana</p><h2 id="weekly-review-title" class="mt-1 text-lg font-extrabold">${line}</h2></div></div>
+    <dl class="weekly-review__stats mt-4">${stats.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>
+    <a href="./pages/progresso.html" class="mt-4 flex min-h-11 items-center justify-center rounded-2xl mol-soft text-sm font-bold">Ver progresso</a>`;
+  (document.getElementById('first-steps-card') || document.getElementById('dashboard-card-grid'))?.before(card);
+  renderIcons();
+}
+
 async function loadTodayIntake(userId) {
   try {
     const snapshot = await withTimeout(getDoc(doc(db, 'diario', diaryDocId(userId))), 'O diário');
@@ -600,6 +634,7 @@ watchProtectedPage(async user => {
       writeDashboardDataCache(user.uid, { sessions, goal: profileData.metaSemanal || 1 });
       setWeek(sessions, profileData.metaSemanal || 1);
       firstSteps.session = sessions.length > 0;
+      weekData.sessions = sessions;
     } catch (error) {
       console.error('Erro ao carregar sessões:', error.code, error.message);
       $('weekly-title').textContent = 'Histórico indisponível';
@@ -613,6 +648,7 @@ watchProtectedPage(async user => {
       const weights = weightSnapshot.docs.map(d => d.data());
       writeDashboardDataCache(user.uid, { weights });
       firstSteps.weight = weights.length > 0;
+      weekData.weights = weights;
       const { last, change } = recentWeightTrend(weights);
       if (last) {
         $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
@@ -623,6 +659,7 @@ watchProtectedPage(async user => {
   };
   await Promise.allSettled([loadRoutines(), loadSessions(), loadWeights()]);
   renderFirstSteps();
+  void renderWeeklyReview(user.uid);
   clearTimeout(window.__molDashboardFallback);
   document.body.setAttribute('aria-busy','false'); renderIcons();
 });

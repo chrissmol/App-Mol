@@ -156,7 +156,8 @@ export const getDocs = async reference => {
   }
   if (path.includes('treinos')) return querySnapshot([['routine-upper', mockRoutine]]);
   if (path.includes('dietas')) return querySnapshot([['diet-e2e', mockDiet]]);
-  if (path.includes('sessoes')) return querySnapshot([]);
+  // __mol_e2e_sessions: sessões simuladas (para o resumo semanal e o histórico).
+  if (path.includes('sessoes')) return querySnapshot(JSON.parse(localStorage.getItem('__mol_e2e_sessions') || '[]'));
   if (path.includes('pesos')) return querySnapshot([]);
   return querySnapshot([]);
 };
