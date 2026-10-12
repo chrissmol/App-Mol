@@ -1,3 +1,4 @@
+import { EXTRA_PATTERNS, EXTRA_STRINGS } from './language-extra.js';
 const STORAGE_KEY = 'mol-accessibility';
 const LEGACY_LANGUAGE_KEY = 'mol-language';
 
@@ -497,6 +498,10 @@ const dictionary = {
   }
 };
 
+// Textos novos (diário, pets, boas-vindas, marmitas, treino…) ficam em language-extra.js.
+Object.assign(dictionary['en-US'], EXTRA_STRINGS['en-US']);
+Object.assign(dictionary['es-ES'], EXTRA_STRINGS['es-ES']);
+
 function closestSupported(language) {
   const normalized = String(language || '').trim();
   if (languageSet.has(normalized)) return normalized;
@@ -533,11 +538,21 @@ export function t(key, fallback = key, language = currentLanguage()) {
 }
 
 
+/** Frases com números ou nomes ("Passo 2 de 5"): o primeiro padrão que casar traduz. */
+function translatePattern(clean, language) {
+  for (const [pattern, replace] of EXTRA_PATTERNS[language] || []) {
+    const match = pattern.exec(clean);
+    if (match) return replace(...match.slice(1));
+  }
+  return '';
+}
+
 function translateTextValue(value, language) {
   const original = String(value || '');
   const clean = original.replace(/\s+/g, ' ').trim();
   if (!clean || language === 'pt-BR') return value;
-  const translated = dictionary[closestSupported(language)]?.[clean];
+  const code = closestSupported(language);
+  const translated = dictionary[code]?.[clean] || translatePattern(clean, code);
   if (!translated) return value;
   const leading = original.match(/^\s*/)?.[0] || '';
   const trailing = original.match(/\s*$/)?.[0] || '';
