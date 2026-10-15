@@ -8,7 +8,7 @@ import { ASSISTANT_FILE_ACCEPT, fileToPart, readExcelInBrowser } from '../module
 import { activateDialog, escapeHTML, showToast } from './ui.js';
 import { renderIcons } from './icons.js';
 import { getLocalItem, setLocalItem } from './storage.js';
-import { getPet, personaInstruction, petAvatarHTML, petAvatarSrc } from './pet.js';
+import { chatPetState, getPet, personaInstruction, petAvatarHTML, petAvatarSrc, petImageSrc, showPetMoment } from './pet.js';
 
 const NOTICE_KEY = 'mol-assistant-notice-v1';
 let chatCount = 0;
@@ -143,7 +143,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
         onDataChanged?.(proposal.tipo);
         actions.innerHTML = '<p class="assistant-proposal__status assistant-proposal__status--ok"><i data-lucide="check-circle-2" aria-hidden="true"></i> Salvo.</p><button type="button" class="mol-btn mol-btn-secondary" data-undo><i data-lucide="undo-2" aria-hidden="true"></i> Desfazer</button>';
         icons(actions);
-        showToast('Alteração salva.', 'success');
+        showPetMoment({ state: 'animado', message: 'Alteração salva.' });
         pick(actions, '[data-undo]').onclick = async () => {
           try { await undo(); onDataChanged?.(proposal.tipo); actions.innerHTML = '<p class="assistant-proposal__status">Desfeito. Voltou como estava.</p>'; showToast('Alteração desfeita.', 'success'); }
           catch (error) { console.error('[Mol] Desfazer falhou:', error); showToast('Não foi possível desfazer agora.'); }
@@ -176,6 +176,9 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     input.style.height = '';
     setAttachment(null);
     const typing = addMessage('assistant', `<span class="assistant-typing" aria-label="${escapeHTML(pet.name)} está escrevendo"><span></span><span></span><span></span></span>`);
+    // O avatar ao lado da resposta muda de estado: focado escrevendo, depois apoio, curioso ou feliz.
+    const setPetState = state => { if (pet.id !== 'nenhum') typing.style.setProperty('--assistant-pet', `url("${petImageSrc(pet, state, { small: true })}")`); };
+    setPetState('focado');
     try {
       const [send, store] = await Promise.all([getSend(), getStore()]);
       const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines, loadDiary: store.loadDiary });
@@ -183,6 +186,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       const result = await runAssistantTurn({ send, executors, message, attachments });
       const links = sources.length ? `<p class="assistant-sources">Fontes: ${sources.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.titulo || source.fonte)}</a>`).join(' · ')}</p>` : '';
       typing.innerHTML = formatAssistantText(result.text || 'Pronto.') + links;
+      setPetState(chatPetState(message, result.text));
       for (const proposal of proposals) await renderProposal(proposal, store);
     } catch (error) {
       console.error('[Mol] Assistente falhou:', error);
