@@ -13,6 +13,7 @@ export default defineConfig({
           { find: 'firebase/auth', replacement: firebaseBrowserMock },
           { find: 'firebase/firestore', replacement: firebaseBrowserMock },
           { find: 'firebase/ai', replacement: resolve(import.meta.dirname, 'e2e/firebase-ai-mock.js') },
+          { find: 'firebase/remote-config', replacement: resolve(import.meta.dirname, 'e2e/firebase-remote-config-mock.js') },
         ]
       : [],
   },
