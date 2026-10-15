@@ -3,6 +3,16 @@
 // Nomes de alimentos e exercícios do catálogo são conteúdo e ficam em português.
 
 const ROWS = [
+  // Apple Saúde (Evolução)
+  ['Importar do Apple Saúde', 'Import from Apple Health', 'Importar de Apple Salud'],
+  ['Arquivo exportado do app Saúde', 'File exported from the Health app', 'Archivo exportado de la app Salud'],
+  ['No iPhone: Saúde › sua foto › Exportar todos os dados de saúde.', 'On iPhone: Health › your photo › Export All Health Data.', 'En el iPhone: Salud › tu foto › Exportar todos los datos de salud.'],
+  ['Nenhum peso novo no arquivo do Saúde.', 'No new weights in the Health file.', 'No hay pesos nuevos en el archivo de Salud.'],
+  ['Não foi possível ler o arquivo do Saúde.', "Couldn't read the Health file.", 'No se pudo leer el archivo de Salud.'],
+  ['O arquivo não é um .zip válido.', 'The file is not a valid .zip.', 'El archivo no es un .zip válido.'],
+  ['Não achei o export.xml dentro do .zip.', "Couldn't find export.xml inside the .zip.", 'No encontré export.xml dentro del .zip.'],
+  ['Exportação grande demais: descompacte e envie o export.xml.', 'Export too large: unzip it and send export.xml.', 'Exportación demasiado grande: descomprímela y envía export.xml.'],
+
   // Navegação e atalhos
   ['Pular para o conteúdo', 'Skip to content', 'Saltar al contenido'],
   ['Navegação principal', 'Main navigation', 'Navegación principal'],
@@ -393,7 +403,8 @@ const PATTERN_ROWS = [
   [/^(\d+), sem treino, hoje$/, '$1, no workout, today', '$1, sin entrenamiento, hoy'],
   [/^(\d+), sem treino$/, '$1, no workout', '$1, sin entrenamiento'],
   [/^Referência do preparo: (.+)$/, 'Prep reference: $1', 'Referencia de la preparación: $1'],
-  [/^Proteína · (.+)$/, 'Protein · $1', 'Proteína · $1']
+  [/^Proteína · (.+)$/, 'Protein · $1', 'Proteína · $1'],
+  [/^Pesos importados do Apple Saúde: (\d+)$/, 'Weights imported from Apple Health: $1', 'Pesos importados de Apple Salud: $1']
 ];
 
 const build = column => Object.fromEntries(ROWS.map(row => [row[0], row[column]]));

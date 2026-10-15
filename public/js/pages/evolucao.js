@@ -2,7 +2,8 @@ import { getDb } from '../config/firebase-config.js';
 const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { newDailyWeights, readHealthWeights } from '../modules/apple-health.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
 import { dateFrom, monthCalendar, workoutStats } from '../modules/evolution-analytics.js';
@@ -311,6 +312,30 @@ $('goal-down').onclick = () => saveGoal(-1);
 $('goal-up').onclick = () => saveGoal(1);
 $('previous-month').onclick = () => { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1); selectedCalendarDay = null; renderCalendar(); };
 $('next-month').onclick = () => { if (!$('next-month').disabled) { visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1); selectedCalendarDay = null; renderCalendar(); } };
+
+$('health-import').onclick = () => $('health-file').click();
+$('health-file').onchange = async event => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!currentUser) return showToast('Aguarde o carregamento da conta.');
+  const button = $('health-import');
+  setButtonLoading(button, true);
+  try {
+    const found = newDailyWeights(await readHealthWeights(file), weights.map(item => dateFrom(item.registradoEm)));
+    if (!found.length) return showToast('Nenhum peso novo no arquivo do Saúde.');
+    // Lotes de 400: o Firestore aceita até 500 gravações por lote.
+    for (let i = 0; i < found.length; i += 400) {
+      const batch = writeBatch(db);
+      found.slice(i, i + 400).forEach(item => batch.set(doc(collection(db, 'pesos')), { userId: currentUser.uid, pesoKg: item.pesoKg, registradoEm: Timestamp.fromDate(item.date) }));
+      await batch.commit();
+    }
+    await load();
+    showToast(`Pesos importados do Apple Saúde: ${found.length}`, 'success');
+  } catch (error) {
+    showToast(error?.message?.includes('export.xml') || error?.message?.includes('.zip') ? error.message : 'Não foi possível ler o arquivo do Saúde.');
+  } finally { setButtonLoading(button, false); }
+};
 
 $('save').onclick = async () => {
   if (!currentUser) return showToast('Aguarde o carregamento da conta.');
