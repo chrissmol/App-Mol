@@ -82,3 +82,10 @@ export function showPetMoment({ state, message }) {
   document.body.appendChild(toast);
   window.setTimeout(() => toast.remove(), 3600);
 }
+
+/** Estado do pet na resposta do chat: apoio quando a pessoa fala de dor ou desânimo, curioso quando ele pergunta. */
+export function chatPetState(message, reply) {
+  if (/\b(dor|dores|doendo|doí|lesão|lesao|machuc|cansad|exaust|triste|ansios|desanimad|sem energia)/i.test(String(message || ''))) return 'apoio';
+  if (/\?\s*$/.test(String(reply || '').trim())) return 'curioso';
+  return 'feliz';
+}

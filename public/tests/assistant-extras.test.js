@@ -111,3 +111,12 @@ describe('assistente: busca de alimentos por nome (Worker)', () => {
     expect(await searchFoodsOnline('a', fetchImpl)).toEqual({ encontrado: false, produtos: [] });
   });
 });
+
+describe('pet no chat', async () => {
+  const { chatPetState } = await import('../js/utils/pet.js');
+  it('escolhe apoio, curioso ou feliz', () => {
+    expect(chatPetState('Estou com dor no joelho', 'Procure um profissional.')).toBe('apoio');
+    expect(chatPetState('Monta meu treino', 'Você treina em casa ou na academia?')).toBe('curioso');
+    expect(chatPetState('Quanto de proteína tem o ovo?', 'Cerca de 13 g por 100 g.')).toBe('feliz');
+  });
+});

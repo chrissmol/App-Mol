@@ -347,7 +347,10 @@ const ROWS = [
   ['Tudo bem ter semanas assim. A próxima é nova.', "It's okay to have weeks like this. Next one is new.", 'Está bien tener semanas así. La próxima es nueva.'],
   ['Meta da semana cumprida.', 'Weekly goal met.', 'Meta de la semana cumplida.'],
   ['Semana com treinos registrados.', 'Week with logged workouts.', 'Semana con entrenamientos registrados.'],
-  ['Nenhum treino nesta semana.', 'No workouts this week.', 'Ningún entrenamiento esta semana.']
+  ['Nenhum treino nesta semana.', 'No workouts this week.', 'Ningún entrenamiento esta semana.'],
+  ['Primeiro copo do dia. Boa!', 'First glass of the day. Nice!', 'Primer vaso del día. ¡Bien!'],
+  ['Alteração salva.', 'Change saved.', 'Cambio guardado.'],
+  ['Toque numa refeição e use "Nome, horário e dias" para escolher quando ela aparece.', 'Tap a meal and use "Name, time and days" to choose when it shows.', 'Toca una comida y usa "Nombre, horario y días" para elegir cuándo aparece.']
 ];
 
 /** Frases com números ou nomes. Cada linha: [regex, inglês, espanhol] com $1, $2… */

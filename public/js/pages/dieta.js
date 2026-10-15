@@ -9,7 +9,7 @@ import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { plural } from '../utils/plural.js';
-import { getPet, showPetMoment } from '../utils/pet.js';
+import { getPet, petAvatarHTML, showPetMoment } from '../utils/pet.js';
 import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl } from '../modules/food-diary.js';
 import { recentWeightTrend } from '../modules/dashboard-analytics.js';
 import { createAssistantButton } from '../utils/assistant-chat.js';
@@ -197,7 +197,9 @@ function renderDiaryExtras() {
   $('diet-water').querySelectorAll('[data-water]').forEach(button => button.onclick = async () => {
     const before = diary.aguaMl;
     const next = changeWater(diary, Number(button.dataset.water) * DIARY_LIMITS.waterStep);
-    if (await saveDiary(next) && before < waterGoal && next.aguaMl >= waterGoal) showPetMoment({ state: 'conquista-dieta', message: getPet().lines.waterGoal });
+    if (!await saveDiary(next)) return;
+    if (before < waterGoal && next.aguaMl >= waterGoal) showPetMoment({ state: 'conquista-dieta', message: getPet().lines.waterGoal });
+    else if (before === 0 && next.aguaMl > 0) showPetMoment({ state: 'hidratacao', message: 'Primeiro copo do dia. Boa!' });
   });
 }
 
@@ -227,7 +229,7 @@ function render() {
     const outsideWindow = mealIsOutsideFastingWindow(meal, fasting) ? ' · fora da janela' : '';
     const macroLine = [['P', total.protein], ['C', total.carbs], ['G', total.fat]].map(([label, value]) => `<span class="rounded-xl bg-white/5 px-2 py-1">${label} ${rounded(value)}g</span>`).join('');
     return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${plural(mealFoods(meal).length, 'alimento', 'alimentos')} · ${rounded(total.kcal)} kcal${outsideWindow}</p><div class="mt-3 flex flex-wrap gap-1.5 text-[10px] font-bold text-gray-300">${macroLine}</div>${meal.observacao ? `<p class="mt-3 line-clamp-2 rounded-2xl bg-white/5 p-3 text-xs text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}</div><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-gray-400"><i data-lucide="chevron-right" class="h-5 w-5"></i></span></div></button>${consumedView && mealFoods(meal).length ? (logged => `<button type="button" data-log-meal="${escapeHTML(meal.id)}" aria-pressed="${logged}" aria-label="Comi: ${escapeHTML(meal.nome)}" class="diary-log mt-4"><i data-lucide="${logged ? 'check-circle-2' : 'circle'}" aria-hidden="true"></i><span>Comi</span></button>`)(mealLogged(diary, meal.id)) : ''}</article>`;
-  }).join('') : '<div class="mol-state"><p class="mol-state-title">Nenhuma refeição neste dia</p><p class="mol-state-copy">Use a edição para escolher em quais dias cada refeição aparece.</p><button type="button" data-empty-add class="mol-state-action mt-5">Adicionar refeição</button></div>';
+  }).join('') : `<div class="mol-state">${getPet().id === 'nenhum' ? '' : petAvatarHTML(getPet(), { size: 96, state: 'plano', className: 'mx-auto mb-3' })}<p class="mol-state-title">Nenhuma refeição neste dia</p><p class="mol-state-copy">Toque numa refeição e use "Nome, horário e dias" para escolher quando ela aparece.</p><button type="button" data-empty-add class="mol-state-action mt-5">Adicionar refeição</button></div>`;
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelectorAll('[data-log-meal]').forEach(button => button.onclick = () => {
     const meal = meals.find(item => item.id === button.dataset.logMeal);

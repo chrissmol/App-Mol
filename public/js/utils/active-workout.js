@@ -2,6 +2,7 @@
 // O rascunho da sessão já fica no aparelho (mol-workout-draft-{uid}); a barra só lê e leva de volta.
 import { renderIcons } from './icons.js';
 import { getLocalItem } from './storage.js';
+import { getPet, petAvatarHTML } from './pet.js';
 
 const STALE_MS = 12 * 60 * 60 * 1000; // sessão parada há mais de 12 h não é "em andamento"
 
@@ -39,7 +40,8 @@ export async function setupActiveWorkoutBar() {
     bar.id = 'mol-active-workout';
     bar.className = 'mol-active-workout';
     bar.href = `${inPages ? './' : './pages/'}treino.html?retomar=1`;
-    bar.innerHTML = `<i data-lucide="dumbbell" aria-hidden="true"></i><span class="min-w-0 flex-1"><strong>Treino em andamento</strong><span class="block truncate"></span></span><span class="mol-active-workout__time" aria-hidden="true"></span><span class="mol-active-workout__go">Voltar</span>`;
+    const pet = getPet();
+    bar.innerHTML = `${pet.id === 'nenhum' ? '<i data-lucide="dumbbell" aria-hidden="true"></i>' : petAvatarHTML(pet, { size: 40, state: 'treinando' })}<span class="min-w-0 flex-1"><strong>Treino em andamento</strong><span class="block truncate"></span></span><span class="mol-active-workout__time" aria-hidden="true"></span><span class="mol-active-workout__go">Voltar</span>`;
     bar.querySelector('.block').textContent = active.name;
     const time = bar.querySelector('.mol-active-workout__time');
     const tick = () => { time.textContent = formatElapsed((Date.now() - active.startedAt) / 1000); };
