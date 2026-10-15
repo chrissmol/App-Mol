@@ -5,8 +5,26 @@ import { app } from './firebase-config.js';
 
 // Flash-Lite: no teste real de 2026-10-10 respondeu em 2-8 s e acertou ferramentas e
 // escopo; o 3.8 Flash levou 20-35 s e esgotou a cota gratuita mais rápido.
-// shortcut: nome do modelo fixo no código; mover para o Remote Config quando o Google aposentar este modelo.
+// Padrão quando o Remote Config não tem o parâmetro `assistant_model` ou não responde.
 export const ASSISTANT_MODEL = 'gemini-3.5-flash-lite';
+
+/**
+ * Nome do modelo: parâmetro `assistant_model` do Remote Config (troca de modelo sem deploy,
+ * no console do Firebase), com cache de 6 h. Qualquer falha cai no padrão acima.
+ */
+export async function assistantModelName() {
+  try {
+    const { getRemoteConfig, fetchAndActivate, getString } = await import('firebase/remote-config');
+    const config = getRemoteConfig(app);
+    config.settings.minimumFetchIntervalMillis = 6 * 60 * 60 * 1000;
+    config.defaultConfig = { assistant_model: ASSISTANT_MODEL };
+    await Promise.race([fetchAndActivate(config), new Promise(resolve => setTimeout(resolve, 3000))]);
+    return getString(config, 'assistant_model').trim() || ASSISTANT_MODEL;
+  } catch (error) {
+    console.warn('[Mol] Remote Config indisponível; usando o modelo padrão:', error?.message);
+    return ASSISTANT_MODEL;
+  }
+}
 
 /** Mensagem para a pessoa quando a chamada à IA falha. */
 export function describeAssistantError(error) {
@@ -18,12 +36,12 @@ export function describeAssistantError(error) {
 }
 
 /** Abre uma conversa e devolve `send(parts) -> { text, functionCalls }`. */
-export async function createGeminiSend({ systemInstruction, toolDeclarations, modelName = ASSISTANT_MODEL }) {
-  const { getAI, getGenerativeModel, GoogleAIBackend, ThinkingLevel } = await import('firebase/ai');
+export async function createGeminiSend({ systemInstruction, toolDeclarations, modelName }) {
+  const [{ getAI, getGenerativeModel, GoogleAIBackend, ThinkingLevel }, chosenModel] = await Promise.all([import('firebase/ai'), modelName || assistantModelName()]);
   // Tokens App Check de uso único: exigidos pelos modelos atuais (proteção contra replay).
   const ai = getAI(app, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
   const model = getGenerativeModel(ai, {
-    model: modelName,
+    model: chosenModel,
     systemInstruction,
     tools: [{ functionDeclarations: toolDeclarations }],
     // Respostas curtas economizam a cota gratuita e combinam com a tela do celular.
