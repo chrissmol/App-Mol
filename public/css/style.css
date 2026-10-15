@@ -3779,7 +3779,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .mol-undo-toast span { min-width: 0; }
 .mol-undo-toast button { min-height: 44px; flex-shrink: 0; padding: 0 1rem; border-radius: .75rem; font-weight: 800; color: var(--mol-brand-text); }
 @keyframes mol-undo-in { from { opacity: 0; transform: translate(-50%, .5rem); } }
-@media (prefers-reduced-motion: reduce) { .mol-undo-toast, .pet-moment { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mol-undo-toast, .pet-moment, .pet-avatar--celebra, .pet-avatar--chega { animation: none; } }
 /* Desktop com barra lateral: a marca já está na lateral, então sai do topo da página. */
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   body.has-app-nav main .mol-brand { display: none; }
@@ -3856,3 +3856,14 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .weekly-review__stats > div { padding: .75rem; border-radius: 1rem; background: var(--mol-surface-soft); }
 .weekly-review__stats dt { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mol-muted); }
 .weekly-review__stats dd { margin-top: .2rem; font-size: 1.05rem; font-weight: 800; color: var(--mol-text); }
+
+/* Pets: entrada curta (documento dos pets: conquista 400–600 ms, transição 200–300 ms, nada em loop). */
+.pet-avatar--chega { animation: pet-chega .22s ease-out both; }
+.pet-avatar--celebra { animation: pet-celebra .5s cubic-bezier(.2, .9, .3, 1.35) both; }
+@keyframes pet-chega { from { opacity: 0; transform: translateY(4px); } }
+@keyframes pet-celebra {
+  0% { opacity: 0; transform: scale(.85) translateY(6px); filter: drop-shadow(0 0 0 transparent); }
+  60% { opacity: 1; transform: scale(1.06) translateY(-2px); filter: drop-shadow(0 0 14px color-mix(in srgb, var(--mol-brand-text) 70%, transparent)); }
+  100% { transform: none; filter: drop-shadow(0 0 0 transparent); }
+}
+html[data-reduce-motion="true"] .pet-avatar--celebra, html[data-reduce-motion="true"] .pet-avatar--chega { animation: none; }

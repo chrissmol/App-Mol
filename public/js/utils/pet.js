@@ -38,7 +38,9 @@ export const petAvatarSrc = pet => petImageSrc(pet, 'feliz', { small: true });
 /** Decorativo por padrão (o nome costuma estar escrito ao lado); `label` só quando a imagem está sozinha. */
 export function petAvatarHTML(pet, { size = 40, className = '', label = false, state = 'feliz' } = {}) {
   const src = petImageSrc(pet, state, { small: size <= 96 });
-  return `<img class="pet-avatar ${className}" src="${src}" width="${size}" height="${size}" alt="${label && pet.id !== 'nenhum' ? pet.name : ''}" decoding="async">`;
+  // Entrada curta: comemoração com mola e brilho; o resto só aparece suave. Nada fica em loop.
+  const motion = ['conquista', 'conquista-dieta', 'animado'].includes(state) ? 'pet-avatar--celebra' : 'pet-avatar--chega';
+  return `<img class="pet-avatar ${motion} ${className}" src="${src}" width="${size}" height="${size}" alt="${label && pet.id !== 'nenhum' ? pet.name : ''}" decoding="async">`;
 }
 
 /** Bloco de persona para a instrução do sistema. As regras de escopo continuam acima dele. */
