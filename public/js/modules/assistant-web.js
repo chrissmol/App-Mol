@@ -1,8 +1,9 @@
 // Pesquisa na internet sem conta e sem chave: Wikipedia (pt, com o inglês de reserva) e Open Food Facts.
 // Código de barras vai direto (a API libera CORS); a busca por nome passa pelo Worker
 // mol-alimentos (workers/alimentos), porque essa API do Open Food Facts não libera CORS.
+import brand from '@brand';
 const TIMEOUT_MS = 8000;
-export const FOOD_SEARCH_URL = 'https://mol-alimentos.chrisouzamol.workers.dev/buscar';
+export const FOOD_SEARCH_URL = brand.foodSearchUrl;
 const cut = (value, max) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 async function getJson(url, fetchImpl) {

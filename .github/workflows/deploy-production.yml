@@ -7,6 +7,11 @@ on:
         description: Type DEPLOY-V2 to publish the current main build
         required: true
         type: string
+      brand:
+        description: Marca a publicar (arquivo public/brands/<marca>.json)
+        required: true
+        default: mol
+        type: string
 
 permissions:
   contents: read
@@ -19,7 +24,9 @@ jobs:
   deploy:
     if: inputs.confirm == 'DEPLOY-V2'
     runs-on: ubuntu-latest
-    environment: production
+    # Cada cliente white label tem seu GitHub Environment (nome = marca) com
+    # FIREBASE_PROJECT_ID e FIREBASE_TOKEN do projeto Firebase dele.
+    environment: ${{ inputs.brand == 'mol' && 'production' || inputs.brand }}
     # 15min cancelava o job no meio do test:e2e (4 projetos), com tudo
     # passando -- mesmo ajuste feito no quality gate (ver seu histórico).
     timeout-minutes: 35
@@ -40,4 +47,8 @@ jobs:
       # e2e so em desktop + android: os 4 perfis levavam ~15min no runner.
       # Suite completa (4 perfis): npm run test:e2e.
       - run: npx playwright test --project=desktop --project=android
+      # Testes acima rodam com a marca padrão; aqui o build final sai com a marca escolhida.
+      - run: npm run build && node scripts/apply-brand.mjs
+        env:
+          BRAND: ${{ inputs.brand }}
       - run: npx firebase-tools deploy --only firestore:rules,hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }}

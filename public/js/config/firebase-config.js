@@ -15,18 +15,12 @@ import {
   initializeAuth,
 } from 'firebase/auth';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
+import brand from '@brand';
 
-// SUAS CHAVES REAIS DO PROJETO "APP MOL"
-const firebaseConfig = {
-  apiKey: "AIzaSyAZqEpfSjqpnZiWG7qw0uolu5d5DgQMoJ4",
-  // Mantém o helper OAuth na mesma origem do app. Isso é necessário para
-  // signInWithRedirect em Safari/iOS e navegadores com storage particionado.
-  authDomain: "app-mol-5f3dc.web.app",
-  projectId: "app-mol-5f3dc",
-  storageBucket: "app-mol-5f3dc.firebasestorage.app",
-  messagingSenderId: "906902254628",
-  appId: "1:906902254628:web:33dde790cc6da9a3ee54b1"
-};
+// Config do projeto Firebase da marca (brands/<marca>.json, escolhida por BRAND no build).
+// authDomain fica na mesma origem do app: necessário para signInWithRedirect em
+// Safari/iOS e navegadores com storage particionado.
+const firebaseConfig = brand.firebase;
 
 // Inicializa o app Firebase
 export const app = initializeApp(firebaseConfig);
@@ -48,7 +42,7 @@ function initAppCheckDeferred() {
       /** @type {any} */ (self).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
     return initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider('6LeHhMAtAAAAAKY5kHpN5K79KWr_oXElJ2lYgndW'),
+      provider: new ReCaptchaEnterpriseProvider(brand.appCheckSiteKey),
       isTokenAutoRefreshEnabled: true
     });
   } catch (error) {

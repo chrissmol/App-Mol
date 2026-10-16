@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": []
+    "types": [],
+    "paths": { "@brand": ["./brands/mol.json"] }
   },
   "include": ["js/**/*.js", "js/types/global.d.ts", "js/types/vite-assets.d.ts"],
   "exclude": ["node_modules", "dist", "vendor", "e2e", "tests"]

@@ -1,9 +1,10 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { addDoc, collection, doc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, getDb } from '../config/firebase-config.js';
+import brand from '@brand';
 const db = await getDb();
 
-const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
+const ADMIN_EMAIL = brand.adminEmail.toLowerCase();
 const presenceRef = uid => doc(db, 'presence', uid);
 let currentUser = null;
 let heartbeat = 0;
