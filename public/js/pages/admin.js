@@ -1,11 +1,12 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, deleteDoc, doc, limit, onSnapshot, query } from 'firebase/firestore';
 import { auth, getDb } from '../config/firebase-config.js';
+import brand from '@brand';
 const db = await getDb();
 import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML } from '../utils/ui.js';
 
-const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
+const ADMIN_EMAIL = brand.adminEmail.toLowerCase();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
 const $ = id => /** @type {any} */ (document.getElementById(id));
 setupAppShell();

@@ -1,0 +1,15 @@
+{
+  "id": "mol",
+  "name": "Mol",
+  "adminEmail": "chrisouzamol@gmail.com",
+  "foodSearchUrl": "https://mol-alimentos.chrisouzamol.workers.dev/buscar",
+  "appCheckSiteKey": "6LeHhMAtAAAAAKY5kHpN5K79KWr_oXElJ2lYgndW",
+  "firebase": {
+    "apiKey": "AIzaSyAZqEpfSjqpnZiWG7qw0uolu5d5DgQMoJ4",
+    "authDomain": "app-mol-5f3dc.web.app",
+    "projectId": "app-mol-5f3dc",
+    "storageBucket": "app-mol-5f3dc.firebasestorage.app",
+    "messagingSenderId": "906902254628",
+    "appId": "1:906902254628:web:33dde790cc6da9a3ee54b1"
+  }
+}

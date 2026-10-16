@@ -1,12 +1,25 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
+import { loadBrand } from './scripts/brand.mjs';
+
+// White label: BRAND=<marca> escolhe brands/<marca>.json (padrão: mol).
+const { file: brandFile, brand } = loadBrand(process.env.BRAND);
+const jsDir = resolve(import.meta.dirname, 'js').replaceAll('\\', '/');
+// shortcut: troca a palavra "Mol" pelo nome da marca no build (HTML e strings do js/), em vez de
+// placeholders em ~90 textos; rever se algum texto usar "Mol" fora do sentido de marca.
+const brandName = text => brand.name === 'Mol' ? text : text.replace(/\bMol\b/g, () => brand.name);
+const brandPlugin = {
+  name: 'mol-brand',
+  transformIndexHtml: brandName,
+  transform: (code, id) => (id.replaceAll('\\', '/').startsWith(jsDir) ? brandName(code) : null),
+};
 
 const firebaseBrowserMock = resolve(import.meta.dirname, 'e2e/firebase-browser-mock.js');
 
 export default defineConfig({
   publicDir: 'pwa',
   resolve: {
-    alias: process.env.MOL_E2E === '1'
+    alias: [{ find: '@brand', replacement: brandFile }].concat(process.env.MOL_E2E === '1'
       ? [
           { find: 'firebase/app', replacement: firebaseBrowserMock },
           { find: 'firebase/app-check', replacement: firebaseBrowserMock },
@@ -15,9 +28,9 @@ export default defineConfig({
           { find: 'firebase/ai', replacement: resolve(import.meta.dirname, 'e2e/firebase-ai-mock.js') },
           { find: 'firebase/remote-config', replacement: resolve(import.meta.dirname, 'e2e/firebase-remote-config-mock.js') },
         ]
-      : [],
+      : []),
   },
-  plugins: [],
+  plugins: [brandPlugin],
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 550,

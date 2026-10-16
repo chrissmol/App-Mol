@@ -1,4 +1,5 @@
 import { getDb } from '../config/firebase-config.js';
+import brand from '@brand';
 const db = await getDb();
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
@@ -50,7 +51,7 @@ const withTimeout = (promise, label, timeout = 12000) => Promise.race([promise, 
 const dashboardCacheKey = uid => `mol-dashboard-data-${uid}`;
 const profileCacheKey = uid => `mol-profile-dashboard-${uid}`;
 const mealCacheKey = uid => `mol-meal-dashboard-${uid}`;
-const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
+const ADMIN_EMAIL = brand.adminEmail.toLowerCase();
 const VALID_AVATAR_FRAMES = ['plastic', 'wood', 'bronze', 'silver', 'gold', 'diamond', 'boss'];
 const cacheFresh = value => value?.savedAt && Date.now() - value.savedAt < 1000 * 60 * 60 * 6;
 const writeDashboardDataCache = (uid, patch) => {

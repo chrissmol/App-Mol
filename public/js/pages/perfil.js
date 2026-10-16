@@ -1,4 +1,5 @@
 import { getDb } from '../config/firebase-config.js';
+import brand from '@brand';
 const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
@@ -14,7 +15,7 @@ setupAppShell();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
 const $ = id => /** @type {any} */ (document.getElementById(id));
 const renderIcons = () => window.lucide?.createIcons();
-const ADMIN_EMAIL = 'chrisouzamol@gmail.com';
+const ADMIN_EMAIL = brand.adminEmail.toLowerCase();
 const profileCacheKey = uid => `mol-profile-cache-${uid}`;
 const FRAME_OPTIONS = [
   { id: 'plastic', label: 'Base', required: 0 },
