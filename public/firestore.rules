@@ -92,7 +92,7 @@ service cloud.firestore {
         'preferenciasAcessibilidade', 'dashboardCards', 'dashboardCardsUpdatedAt',
         'exerciseLibraryPreferences', 'medidasHistorico', 'fotosProgresso',
         'unidadePeso', 'perfilPrivado', 'compartilharEstatisticas', 'appModules',
-        'avatarFrame', 'sexo', 'nascimento', 'nivelAtividade', 'assistentePet', 'onboardingConcluido'
+        'avatarFrame', 'sexo', 'nascimento', 'nivelAtividade', 'assistentePet', 'onboardingConcluido', 'assistenteMemoria'
       ];
     }
 
@@ -168,6 +168,7 @@ service cloud.firestore {
         && (!('nivelAtividade' in request.resource.data) || request.resource.data.nivelAtividade in ['', 'sedentario', 'leve', 'moderado', 'alto', 'muito-alto'])
         && (!('assistentePet' in request.resource.data) || request.resource.data.assistentePet in ['moldrian', 'marlo', 'nenhum'])
         && (!('onboardingConcluido' in request.resource.data) || request.resource.data.onboardingConcluido is bool)
+        && (!('assistenteMemoria' in request.resource.data) || (request.resource.data.assistenteMemoria is list && request.resource.data.assistenteMemoria.size() <= 15))
         && (!('medidasHistorico' in request.resource.data) || (request.resource.data.medidasHistorico is list && request.resource.data.medidasHistorico.size() <= 50))
         && (!('fotosProgresso' in request.resource.data) || (request.resource.data.fotosProgresso is list && request.resource.data.fotosProgresso.size() <= 5));
     }

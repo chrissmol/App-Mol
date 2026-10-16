@@ -15,6 +15,16 @@ describe('assistente: pesquisa na internet', () => {
     expect(fetchImpl.mock.calls[1][0]).toContain('Supino_(exerc');
   });
 
+  it('cai para a Wikipedia em inglês quando não há artigo em português', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(json({ query: { search: [] } }))
+      .mockResolvedValueOnce(json({ query: { search: [{ title: 'Nordic hamstring curl' }] } }))
+      .mockResolvedValueOnce(json({ title: 'Nordic hamstring curl', extract: 'An exercise.' }));
+    const result = await searchWikipedia('nordic curl', fetchImpl);
+    expect(result).toMatchObject({ encontrado: true, fonte: 'Wikipedia (inglês)', url: 'https://en.wikipedia.org/wiki/Nordic%20hamstring%20curl' });
+    expect(fetchImpl.mock.calls[1][0]).toContain('https://en.wikipedia.org/');
+  });
+
   it('não encontra artigo', async () => {
     expect(await searchWikipedia('zzzz', vi.fn().mockResolvedValue(json({ query: { search: [] } })))).toEqual({ encontrado: false });
   });

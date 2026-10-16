@@ -54,6 +54,8 @@ describe('regras do Firestore', () => {
     await assertFails(setDoc(reference, { name: 'A', nascimento: '11/10/1996' }));
     await assertFails(setDoc(reference, { name: 'A', nivelAtividade: 'extremo' }));
     await assertFails(setDoc(reference, { name: 'A', assistentePet: 'gato' }));
+    await assertSucceeds(setDoc(reference, { assistenteMemoria: ['Não come carne'] }, { merge: true }));
+    await assertFails(setDoc(reference, { assistenteMemoria: Array.from({ length: 16 }, (_, index) => `p${index}`) }, { merge: true }));
     await assertFails(setDoc(reference, { name: 'A', onboardingConcluido: 'sim' }));
   });
 

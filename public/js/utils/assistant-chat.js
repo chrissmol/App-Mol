@@ -3,7 +3,7 @@
 // quando a pessoa toca em "Confirmar" no cartão da proposta.
 import { auth, getDb } from '../config/firebase-config.js';
 import { createGeminiSend, describeAssistantError } from '../config/assistant-gemini.js';
-import { ASSISTANT_SYSTEM_INSTRUCTION, ASSISTANT_TOOL_DECLARATIONS, MAX_MESSAGE_CHARS, createAssistantTools, runAssistantTurn, summarizeProposal } from '../modules/assistant.js';
+import { ASSISTANT_SYSTEM_INSTRUCTION, ASSISTANT_TOOL_DECLARATIONS, MAX_MESSAGE_CHARS, createAssistantTools, memoryInstruction, runAssistantTurn, summarizeProposal } from '../modules/assistant.js';
 import { ASSISTANT_FILE_ACCEPT, fileToPart, readExcelInBrowser } from '../modules/assistant-files.js';
 import { activateDialog, escapeHTML, showToast } from './ui.js';
 import { renderIcons } from './icons.js';
@@ -93,9 +93,13 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
   }
 
   function getSend() {
-    const base = ASSISTANT_SYSTEM_INSTRUCTION + personaInstruction(pet);
-    const systemInstruction = context ? `${base}\n\nCONTEXTO DA TELA: ${context}` : base;
-    sendPromise ||= createGeminiSend({ systemInstruction, toolDeclarations: ASSISTANT_TOOL_DECLARATIONS }).catch(error => { sendPromise = null; throw error; });
+    sendPromise ||= (async () => {
+      // Preferências guardadas entram na instrução; sem elas a conversa segue normal.
+      const memory = await getStore().then(store => store.loadMemory()).catch(() => []);
+      const base = ASSISTANT_SYSTEM_INSTRUCTION + personaInstruction(pet) + memoryInstruction(memory);
+      const systemInstruction = context ? `${base}\n\nCONTEXTO DA TELA: ${context}` : base;
+      return createGeminiSend({ systemInstruction, toolDeclarations: ASSISTANT_TOOL_DECLARATIONS });
+    })().catch(error => { sendPromise = null; throw error; });
     return sendPromise;
   }
 
@@ -181,7 +185,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     setPetState('focado');
     try {
       const [send, store] = await Promise.all([getSend(), getStore()]);
-      const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines, loadDiary: store.loadDiary });
+      const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines, loadDiary: store.loadDiary, loadMemory: store.loadMemory });
       const attachments = sentAttachment ? [await fileToPart(sentAttachment.file, { readExcel: readExcelInBrowser })] : [];
       const result = await runAssistantTurn({ send, executors, message, attachments });
       const links = sources.length ? `<p class="assistant-sources">Fontes: ${sources.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.titulo || source.fonte)}</a>`).join(' · ')}</p>` : '';

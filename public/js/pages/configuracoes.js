@@ -3,7 +3,7 @@ import { auth, getDb, googleProvider } from '../config/firebase-config.js';
 const db = await getDb();
 import { EmailAuthProvider, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, signOut } from 'firebase/auth';
 import { clearIndexedDbPersistence, collection, doc, getDoc, getDocs, query, setDoc, terminate, waitForPendingWrites, where, writeBatch } from 'firebase/firestore';
-import { activateDialog, confirmAction, setButtonLoading, showToast } from '../utils/ui.js';
+import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
 import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessibilityPreferences, syncAccessibilityForUser } from '../utils/accessibility.js';
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
 import { clearUserCaches, removeLocalItemsWithPrefix } from '../utils/storage.js';
@@ -492,7 +492,23 @@ function renderPetChoice(user) {
   getDoc(doc(db, 'users', user.uid)).then(snapshot => {
     const saved = snapshot.data()?.assistentePet;
     if (saved && saved !== getPet().id) { rememberPet(saved); box.innerHTML = petPickerHTML('pet', petId(saved)); }
+    renderAssistantMemory(user, snapshot.data()?.assistenteMemoria);
   }).catch(() => {});
+}
+
+// O que a pessoa pediu para o assistente lembrar, com opção de apagar tudo.
+function renderAssistantMemory(user, items) {
+  const box = $('assistant-memory');
+  const list = Array.isArray(items) ? items.filter(item => typeof item === 'string') : [];
+  box.hidden = !list.length;
+  if (!list.length) return;
+  box.innerHTML = `<p class="text-sm font-bold">O que o assistente lembra</p>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-500">${list.map(item => `<li>${escapeHTML(item)}</li>`).join('')}</ul>
+    <button type="button" id="assistant-memory-clear" class="mol-btn mol-btn-secondary mt-3">Apagar memória</button>`;
+  $('assistant-memory-clear').onclick = async () => {
+    try { await setDoc(doc(db, 'users', user.uid), { assistenteMemoria: [] }, { merge: true }); renderAssistantMemory(user, []); showToast('Memória do assistente apagada.', 'success'); }
+    catch (error) { console.warn('Memória não apagada:', error.message); showToast('Não foi possível apagar agora.'); }
+  };
 }
 
 watchProtectedPage(async user => {

@@ -1,10 +1,11 @@
 // Leitura e gravação dos dados que o assistente usa. A gravação só acontece
 // depois que a pessoa confirma uma proposta, e devolve `undo` para desfazer.
 // Usa as mesmas coleções e formatos das telas, então passa pelas mesmas
-// regras do Firestore (validDiet, validRoutine, validWeight, validDiary).
+// regras do Firestore (validDiet, validRoutine, validWeight, validDiary e o perfil).
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { normalizeDietMeals, normalizeFastingSettings } from './nutrition.js';
 import { addFood, dayKey, diaryDocId, normalizeDiary } from './food-diary.js';
+import { buildMemoryProposal, normalizeMemory } from './assistant.js';
 
 export function createAssistantStore(db, uid) {
   const dietRef = doc(db, 'dietas', uid);
@@ -72,14 +73,30 @@ export function createAssistantStore(db, uid) {
     return async () => deleteDoc(doc(db, 'pesos', created.id));
   }
 
+  const userRef = doc(db, 'users', uid);
+
+  async function loadMemory() {
+    const snapshot = await getDoc(userRef);
+    return normalizeMemory(snapshot.data()?.assistenteMemoria);
+  }
+
+  async function applyMemory(proposal) {
+    const previous = await loadMemory();
+    const result = buildMemoryProposal(proposal, previous);
+    if (result.error) throw new Error(result.error);
+    await setDoc(userRef, { assistenteMemoria: result.memoria }, { merge: true });
+    return async () => setDoc(userRef, { assistenteMemoria: previous }, { merge: true });
+  }
+
   /** Grava a proposta confirmada e devolve uma função que desfaz a mudança. */
   async function applyProposal(proposal) {
     if (proposal?.tipo === 'dieta') return applyDiet(proposal);
     if (proposal?.tipo === 'rotina') return applyRoutine(proposal);
     if (proposal?.tipo === 'peso') return applyWeight(proposal);
     if (proposal?.tipo === 'diario') return applyDiary(proposal);
+    if (proposal?.tipo === 'memoria') return applyMemory(proposal);
     throw new Error('Proposta desconhecida.');
   }
 
-  return { loadDiet, loadRoutines, loadDiary, applyProposal };
+  return { loadDiet, loadRoutines, loadDiary, loadMemory, applyProposal };
 }
