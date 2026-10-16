@@ -13,6 +13,9 @@ test('inicio destaca uma prioridade sem duplicar o card equivalente', async ({ p
   // Sem treino concluído, a semana vazia dá lugar aos primeiros passos.
   await expect(page.locator('#first-steps-card')).toBeVisible();
   await expect(page.locator('#weekly-card')).toBeHidden();
+  // Jejum desativado no mock: o card não pode ficar preso em "Carregando jejum…".
+  await expect(page.locator('#next-meal-card')).toBeVisible();
+  await expect(page.locator('#fasting-card')).toBeHidden();
 });
 
 test('resumo semanal com o pet na segunda-feira', async ({ page }) => {

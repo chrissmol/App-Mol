@@ -14,6 +14,7 @@ async function openDiet(page) {
   await page.goto('/pages/dieta.html');
   await expect(page.getByRole('heading', { name: 'Dieta', exact: true })).toBeVisible();
   await expect(page.locator('#diet-content')).toBeVisible();
+  await expect(page.locator('#diet-status')).toBeHidden();
 }
 
 test('tocar na refeição abre ela já editável, sem modo separado', async ({ page }) => {
