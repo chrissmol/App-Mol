@@ -1,6 +1,12 @@
 {
   "id": "mol",
   "name": "Mol",
+  "colors": {
+    "green": "#1e7349",
+    "mint": "#57d493",
+    "forest": "#0f5f3a",
+    "soft": "#278a59"
+  },
   "adminEmail": "chrisouzamol@gmail.com",
   "foodSearchUrl": "https://mol-alimentos.chrisouzamol.workers.dev/buscar",
   "appCheckSiteKey": "6LeHhMAtAAAAAKY5kHpN5K79KWr_oXElJ2lYgndW",

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { loadBrand } from '../scripts/brand.mjs';
+import { brandReplacer, loadBrand } from '../scripts/brand.mjs';
 import { applyBrand } from '../scripts/apply-brand.mjs';
 
 const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -25,5 +25,15 @@ describe('white label', () => {
   it('para a própria marca Mol não muda nada', () => {
     const rules = read('firestore.rules'), hosting = read('firebase.json');
     expect(applyBrand(rules, hosting, loadBrand('mol').brand)).toEqual({ rules, hosting });
+  });
+
+  it('troca nome e cores do Mol numa passada, sem tocar em classes nem em outras cores', () => {
+    const mol = loadBrand('mol').brand;
+    const fit = { name: 'FitPro', colors: { green: '#AA0000', mint: '#1e7349', forest: '#0f5f3a', soft: '#278a59' } };
+    const swap = brandReplacer(fit, mol);
+    expect(swap('<a class="mol-brand">Mol</a> Moldrian')).toBe('<a class="mol-brand">FitPro</a> Moldrian');
+    expect(swap('color:#1E7349;fill:#57d493')).toBe('color:#AA0000;fill:#1e7349');
+    expect(swap('rgba(30, 115, 73, .4) rgba(30,115,73,.4) rgba(130, 115, 73)')).toBe('rgba(170, 0, 0, .4) rgba(170, 0, 0,.4) rgba(130, 115, 73)');
+    expect(brandReplacer(mol, mol)('Mol #1e7349')).toBe('Mol #1e7349');
   });
 });
