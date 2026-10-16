@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   FOOD_CATALOG,
+  dietPlanText,
   fastingPhase,
   fastingStatus,
   foodNutrients,
@@ -102,5 +103,27 @@ describe('nutrição', () => {
     expect(fastingPhase(21).title).toBe('Jejum prolongado');
     expect(mealIsOutsideFastingWindow({ hora: '08:00' }, settings)).toBe(true);
     expect(mealIsOutsideFastingWindow({ hora: '13:00' }, settings)).toBe(false);
+  });
+
+  it('monta o plano do dia em texto para compartilhar', () => {
+    const meals = normalizeDietMeals([
+      { id: 'b', nome: 'Almoço', hora: '12:00', alimentos: [{ nome: 'Arroz', gramas: 150, kcal100: 130, carbo100: 28 }], observacao: 'Sem sal' },
+      { id: 'a', nome: 'Café', hora: '07:00', alimentos: [{ nome: 'Ovo', gramas: 100, kcal100: 150, proteina100: 13 }],
+        gruposOpcoes: [{ nome: 'Fruta', opcoes: [{ nome: 'Banana', alimentos: [{ nome: 'Banana', gramas: 80, kcal100: 90 }] }] }] }
+    ]);
+    expect(dietPlanText(meals, 'Dieta Mol · Seg')).toBe([
+      'Dieta Mol · Seg',
+      'Total: 417 kcal · P 13 g · C 42 g · G 0 g',
+      '',
+      '07:00 Café (222 kcal)',
+      '- Ovo: 100 g',
+      'Fruta (escolha uma):',
+      '* Banana',
+      '  - Banana: 80 g',
+      '',
+      '12:00 Almoço (195 kcal)',
+      '- Arroz: 150 g',
+      'Obs.: Sem sal'
+    ].join('\n'));
   });
 });

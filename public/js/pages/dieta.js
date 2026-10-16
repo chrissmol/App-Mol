@@ -4,7 +4,7 @@ import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { DIET_PLANS } from '../data/diet-plans.js';
-import { FASTING_PROTOCOLS, FOOD_CATALOG, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
+import { FASTING_PROTOCOLS, FOOD_CATALOG, dietPlanText, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
@@ -551,6 +551,18 @@ $('add-meal').onclick = () => openMealForm(); $('food-search').onclick = () => (
 $('edit-add-meal').onclick = () => openMealForm();
 $('import-diet-plan').onclick = openDietPlanImport;
 $('import-plan-inline').onclick = openDietPlanImport;
+$('share-plan').onclick = async () => {
+  const dayMeals = mealsForDay(meals, selectedDay);
+  if (!dayMeals.length) return showToast('Nenhuma refeição neste dia para compartilhar.');
+  const text = dietPlanText(dayMeals, `Minha dieta no Mol · ${DAY_LABELS[selectedDay]}`);
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Minha dieta no Mol', text }); return; }
+    await navigator.clipboard.writeText(text);
+    showToast('Dieta copiada para a área de transferência.', 'success');
+  } catch (error) {
+    if (error?.name !== 'AbortError') showToast('Não foi possível compartilhar a dieta.');
+  }
+};
 $('diet-mode-view').onclick = () => setDietMode('view');
 $('diet-mode-edit').onclick = () => setDietMode('edit');
 watchProtectedPage(account => { user = account; void load(); });

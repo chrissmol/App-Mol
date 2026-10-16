@@ -237,3 +237,19 @@ export function searchFoodCatalog(query, catalog = FOOD_CATALOG, limit = 50) {
     return { food, score };
   }).filter(item => item.score >= 0).sort((a, b) => b.score - a.score || String(a.food.nome).localeCompare(String(b.food.nome), 'pt-BR')).slice(0, Math.max(1, Number(limit) || 50)).map(item => item.food);
 }
+// Plano do dia em texto simples, para compartilhar ou colar em outro lugar.
+export function dietPlanText(meals, title) {
+  const n = value => Math.round(value).toLocaleString('pt-BR');
+  const foods = list => list.map(food => `- ${food.nome}: ${n(food.gramas)} g`);
+  const total = nutritionTotals(meals);
+  const lines = [title, `Total: ${n(total.kcal)} kcal · P ${n(total.protein)} g · C ${n(total.carbs)} g · G ${n(total.fat)} g`];
+  [...meals].sort((a, b) => String(a.hora).localeCompare(String(b.hora))).forEach(meal => {
+    lines.push('', `${meal.hora} ${meal.nome} (${n(nutritionTotals([meal]).kcal)} kcal)`, ...foods(meal.alimentos || []));
+    mealOptionGroups(meal).forEach(group => {
+      lines.push(`${group.nome} (${group.modo === 'somar' ? 'some todas' : 'escolha uma'}):`);
+      group.opcoes.forEach(option => lines.push(`* ${option.nome}`, ...foods(option.alimentos).map(line => `  ${line}`)));
+    });
+    if (meal.observacao) lines.push(`Obs.: ${meal.observacao}`);
+  });
+  return lines.join('\n');
+}
