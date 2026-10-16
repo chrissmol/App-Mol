@@ -3,6 +3,12 @@
 // Nomes de alimentos e exercícios do catálogo são conteúdo e ficam em português.
 
 const ROWS = [
+  // Compartilhar dieta
+  ['Compartilhar dieta do dia', "Share the day's diet", 'Compartir la dieta del día'],
+  ['Nenhuma refeição neste dia para compartilhar.', 'No meals on this day to share.', 'No hay comidas en este día para compartir.'],
+  ['Dieta copiada para a área de transferência.', 'Diet copied to the clipboard.', 'Dieta copiada al portapapeles.'],
+  ['Não foi possível compartilhar a dieta.', "Couldn't share the diet.", 'No se pudo compartir la dieta.'],
+
   // Apple Saúde (Evolução)
   ['Importar do Apple Saúde', 'Import from Apple Health', 'Importar de Apple Salud'],
   ['Arquivo exportado do app Saúde', 'File exported from the Health app', 'Archivo exportado de la app Salud'],
