@@ -1,17 +1,31 @@
+import { cpSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import { loadBrand } from './scripts/brand.mjs';
+import { brandReplacer, loadBrand } from './scripts/brand.mjs';
 
 // White label: BRAND=<marca> escolhe brands/<marca>.json (padrão: mol).
 const { file: brandFile, brand } = loadBrand(process.env.BRAND);
 const jsDir = resolve(import.meta.dirname, 'js').replaceAll('\\', '/');
-// shortcut: troca a palavra "Mol" pelo nome da marca no build (HTML e strings do js/), em vez de
-// placeholders em ~90 textos; rever se algum texto usar "Mol" fora do sentido de marca.
-const brandName = text => brand.name === 'Mol' ? text : text.replace(/\bMol\b/g, () => brand.name);
+const cssDir = resolve(import.meta.dirname, 'css').replaceAll('\\', '/');
+const brandText = brandReplacer(brand, loadBrand('mol').brand);
+// Logo da marca (brands/<marca>/logo.svg) no lugar de assets/mol-mark.svg; sem ela fica a do Mol.
+const brandLogo = resolve(import.meta.dirname, 'brands', brand.id, 'logo.svg');
+const hasBrandLogo = existsSync(brandLogo);
 const brandPlugin = {
   name: 'mol-brand',
-  transformIndexHtml: brandName,
-  transform: (code, id) => (id.replaceAll('\\', '/').startsWith(jsDir) ? brandName(code) : null),
+  transformIndexHtml: {
+    order: 'pre',
+    // No HTML o Vite processa a logo como asset, então o caminho aponta direto para o arquivo da marca.
+    handler: html => brandText(hasBrandLogo ? html.replace(/(?:\.{1,2}\/)*assets\/mol-mark\.svg/g, `/brands/${brand.id}/logo.svg`) : html),
+  },
+  transform(code, id) {
+    const file = id.replaceAll('\\', '/').split('?')[0];
+    return file.startsWith(jsDir) || file.startsWith(cssDir) ? brandText(code) : null;
+  },
+  // Cópia estática (pwa/assets) usada pelos caminhos fixos em JS, favicon e service worker.
+  writeBundle({ dir }) {
+    if (hasBrandLogo) cpSync(brandLogo, resolve(dir, 'assets/mol-mark.svg'));
+  },
 };
 
 const firebaseBrowserMock = resolve(import.meta.dirname, 'e2e/firebase-browser-mock.js');
@@ -19,7 +33,9 @@ const firebaseBrowserMock = resolve(import.meta.dirname, 'e2e/firebase-browser-m
 export default defineConfig({
   publicDir: 'pwa',
   resolve: {
-    alias: [{ find: '@brand', replacement: brandFile }].concat(process.env.MOL_E2E === '1'
+    alias: [
+      { find: '@brand', replacement: brandFile },
+    ].concat(process.env.MOL_E2E === '1'
       ? [
           { find: 'firebase/app', replacement: firebaseBrowserMock },
           { find: 'firebase/app-check', replacement: firebaseBrowserMock },

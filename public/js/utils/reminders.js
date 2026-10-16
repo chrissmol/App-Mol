@@ -1,6 +1,7 @@
 import { getPet, petImageSrc } from './pet.js';
 const KEY = 'mol-reminders';
-const notificationIcon = new URL('../../assets/mol-mark.svg', import.meta.url).href;
+// Mesmo caminho fixo da logo nas páginas, para a marca poder trocá-la (brands/<marca>/public).
+const notificationIcon = '/assets/mol-mark.svg';
 const defaults = { enabled: false, workoutTime: '18:00', mealTime: '12:00' };
 const sentInMemory = new Map();
 
