@@ -3786,6 +3786,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 }
 /* Esqueleto de carregamento: blocos no formato do conteúdo, pulsando devagar (parado com movimento reduzido). */
 .mol-skeleton-list { display: grid; gap: .75rem; }
+.mol-skeleton-list.hidden { display: none; }
 .mol-skeleton { display: block; border-radius: 1.5rem; background: linear-gradient(90deg, var(--mol-surface-soft) 25%, color-mix(in srgb, var(--mol-text) 9%, transparent) 50%, var(--mol-surface-soft) 75%); background-size: 200% 100%; animation: mol-skeleton 1.4s ease-in-out infinite; }
 .mol-skeleton--card { height: 7.5rem; }
 .mol-skeleton--row { height: 4rem; border-radius: 1rem; }
@@ -3806,7 +3807,7 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .evo-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .25rem; padding: .25rem; border-radius: 1rem; background: var(--mol-surface-soft); }
 .evo-tabs [role="tab"] { min-height: 44px; border-radius: .75rem; font-size: .8rem; font-weight: 800; color: var(--mol-muted); transition: background-color .2s, color .2s; }
 .evo-tabs [role="tab"][aria-selected="true"] { background: var(--mol-brand-green); color: #fff; }
-.evo-panel { display: grid; gap: .75rem; margin-top: 1rem; }
+.evo-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; margin-top: 1rem; }
 .evo-panel[hidden] { display: none; }
 @media (min-width: 900px) { .evo-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
 @media (prefers-reduced-motion: reduce) { .evo-tabs [role="tab"] { transition: none; } }

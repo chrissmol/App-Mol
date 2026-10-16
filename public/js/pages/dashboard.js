@@ -323,9 +323,9 @@ function setFastingCard(settings) {
   const card = $('fasting-card');
   if (!card) return;
   const fasting = normalizeFastingSettings(settings);
-  if (!fasting.ativo) { card.classList.add('hidden'); return; }
-  const status = fastingStatus(fasting);
-  if (!status.active) { card.classList.add('hidden'); return; }
+  const status = fasting.ativo ? fastingStatus(fasting) : null;
+  if (!status?.active) { card.dataset.available = 'false'; card.classList.add('hidden'); return; }
+  card.dataset.available = 'true';
   card.classList.remove('hidden');
   $('fasting-eyebrow').textContent = status.active ? (status.eating ? 'Janela alimentar aberta' : `Em jejum há ${Math.floor(status.elapsedFastMinutes / 60)}h`) : (status.offDay ? 'Jejum programado' : 'Jejum pausado hoje');
   $('fasting-title').textContent = status.active ? (status.eating ? `Jejum começa às ${fasting.fimJanela}` : status.phase.title) : (status.offDay ? `Próximo jejum às ${fasting.fimJanela}` : 'Hoje sem cobrança');
@@ -464,7 +464,7 @@ function setupDashboardCards() {
     insertAfterOrAppend(document.getElementById('today-card'), card, grid);
   }
   if (!document.getElementById('fasting-card')) {
-    const card = document.createElement('section'); card.id = 'fasting-card'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
+    const card = document.createElement('section'); card.id = 'fasting-card'; card.dataset.available = 'false'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
     card.innerHTML = '<div class="flex items-start justify-between gap-4"><div class="min-w-0"><p id="fasting-eyebrow" class="text-xs font-semibold uppercase tracking-wider text-neon">Jejum</p><h2 id="fasting-title" class="mt-1 text-lg font-extrabold">Carregando jejum…</h2><p id="fasting-meta" class="mt-1 text-sm text-gray-400"></p></div><div id="fasting-actions" class="flex shrink-0 flex-col items-end gap-2"><a href="./pages/dieta.html" class="min-h-9 rounded-xl bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">Configurar</a></div></div>';
     insertAfterOrAppend(document.getElementById('next-meal-card'), card, grid);
   }
@@ -491,7 +491,7 @@ function setupDashboardCards() {
 function applyDashboardCards() {
   dashboardCards.forEach(card => {
     const element = document.getElementById(card.id);
-    const hiddenByData = (card.id === 'next-meal-card' && element?.dataset.available === 'false') || (firstStepsActive() && FIRST_STEPS_HIDES.includes(card.id));
+    const hiddenByData = (['next-meal-card', 'fasting-card'].includes(card.id) && element?.dataset.available === 'false') || (firstStepsActive() && FIRST_STEPS_HIDES.includes(card.id));
     if (element) element.classList.toggle('hidden', !card.visible || !cardAllowed(card.id, appModules) || hiddenByData || card.id === spotlightCardId);
   });
   const grid = document.getElementById('dashboard-card-grid') || document.querySelector('main');
