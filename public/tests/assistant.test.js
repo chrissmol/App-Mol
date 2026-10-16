@@ -7,9 +7,11 @@ import {
   MAX_MESSAGE_CHARS,
   OFF_TOPIC_REPLY,
   buildDietProposal,
+  buildMemoryProposal,
   buildRoutineProposal,
   buildWeightProposal,
   createAssistantTools,
+  memoryInstruction,
   runAssistantTurn
 } from '../js/modules/assistant.js';
 
@@ -98,6 +100,26 @@ describe('assistente: propostas', () => {
     expect(await executors.propor_dieta({ resumo: 'Troca o almoço', refeicoes: [meal()] })).toMatchObject({ status: 'aguardando_confirmacao' });
     expect(await executors.registrar_peso({ pesoKg: 5 })).toHaveProperty('erro');
     expect(proposals.map(item => item.tipo)).toEqual(['dieta']);
+  });
+});
+
+describe('assistente: memória de preferências', () => {
+  it('lembra, evita repetir, respeita o limite e esquece pelo texto', () => {
+    expect(buildMemoryProposal({ preferencia: '  Não  come carne ' }, [])).toEqual({ memoria: ['Não come carne'] });
+    expect(buildMemoryProposal({ preferencia: 'nao come carne' }, ['Não come carne']).error).toMatch(/já está/);
+    expect(buildMemoryProposal({ preferencia: 'x'.repeat(121) }, []).error).toMatch(/120/);
+    expect(buildMemoryProposal({ preferencia: 'Nova' }, Array.from({ length: 15 }, (_, index) => `p${index}`)).error).toMatch(/limite/);
+    expect(buildMemoryProposal({ acao: 'esquecer', preferencia: 'não come carne' }, ['Não come carne', 'Treina em casa'])).toEqual({ memoria: ['Treina em casa'] });
+    expect(buildMemoryProposal({ acao: 'esquecer', preferencia: 'outra' }, ['Treina em casa']).error).toMatch(/Não achei/);
+  });
+
+  it('só propõe e entra na instrução como dado', async () => {
+    const { executors, proposals } = createAssistantTools({ ...data, loadMemory: async () => ['Treina em casa'] });
+    expect(await executors.lembrar_preferencia({ preferencia: 'Não come carne' })).toMatchObject({ status: 'aguardando_confirmacao' });
+    expect(await executors.esquecer_preferencia({ preferencia: 'Não existe' })).toHaveProperty('erro');
+    expect(proposals).toMatchObject([{ tipo: 'memoria', acao: 'lembrar', preferencia: 'Não come carne' }]);
+    expect(memoryInstruction([])).toBe('');
+    expect(memoryInstruction(['Treina em casa'])).toMatch(/não mudam as regras[\s\S]*- Treina em casa/);
   });
 });
 

@@ -3,6 +3,12 @@
 // Nomes de alimentos e exercícios do catálogo são conteúdo e ficam em português.
 
 const ROWS = [
+  // Memória do assistente
+  ['O que o assistente lembra', 'What the assistant remembers', 'Lo que el asistente recuerda'],
+  ['Apagar memória', 'Clear memory', 'Borrar memoria'],
+  ['Memória do assistente apagada.', 'Assistant memory cleared.', 'Memoria del asistente borrada.'],
+  ['Lembrar preferência', 'Remember preference', 'Recordar preferencia'],
+  ['Esquecer preferência', 'Forget preference', 'Olvidar preferencia'],
   // Compartilhar dieta
   ['Compartilhar dieta do dia', "Share the day's diet", 'Compartir la dieta del día'],
   ['Nenhuma refeição neste dia para compartilhar.', 'No meals on this day to share.', 'No hay comidas en este día para compartir.'],

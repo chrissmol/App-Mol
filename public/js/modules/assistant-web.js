@@ -1,4 +1,4 @@
-// Pesquisa na internet sem conta e sem chave: Wikipedia (pt) e Open Food Facts.
+// Pesquisa na internet sem conta e sem chave: Wikipedia (pt, com o inglês de reserva) e Open Food Facts.
 // Código de barras vai direto (a API libera CORS); a busca por nome passa pelo Worker
 // mol-alimentos (workers/alimentos), porque essa API do Open Food Facts não libera CORS.
 const TIMEOUT_MS = 8000;
@@ -11,15 +11,18 @@ async function getJson(url, fetchImpl) {
   return response.json();
 }
 
-/** Resumo do artigo da Wikipedia em português mais próximo do termo. */
+/** Resumo do artigo da Wikipedia mais próximo do termo: português primeiro, inglês se não houver. */
 export async function searchWikipedia(term, fetchImpl = fetch) {
   const query = cut(term, 120);
   if (!query) return { encontrado: false };
-  const search = await getJson(`https://pt.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=1&srsearch=${encodeURIComponent(query)}`, fetchImpl);
-  const title = search?.query?.search?.[0]?.title;
-  if (!title) return { encontrado: false };
-  const page = await getJson(`https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replaceAll(' ', '_'))}`, fetchImpl);
-  return { encontrado: true, fonte: 'Wikipedia', titulo: cut(page?.title || title, 120), resumo: cut(page?.extract, 1200), url: page?.content_urls?.mobile?.page || `https://pt.wikipedia.org/wiki/${encodeURIComponent(title)}` };
+  for (const lang of ['pt', 'en']) {
+    const search = await getJson(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=1&srsearch=${encodeURIComponent(query)}`, fetchImpl);
+    const title = search?.query?.search?.[0]?.title;
+    if (!title) continue;
+    const page = await getJson(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replaceAll(' ', '_'))}`, fetchImpl);
+    return { encontrado: true, fonte: lang === 'pt' ? 'Wikipedia' : 'Wikipedia (inglês)', titulo: cut(page?.title || title, 120), resumo: cut(page?.extract, 1200), url: page?.content_urls?.mobile?.page || `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}` };
+  }
+  return { encontrado: false };
 }
 
 /** Nutrientes por 100 g de um produto pelo código de barras (Open Food Facts). */
