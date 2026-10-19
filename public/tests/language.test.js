@@ -69,3 +69,40 @@ describe('idioma do aplicativo', () => {
     dom.window.close();
   });
 });
+
+describe('cobertura das telas em inglês e espanhol', () => {
+  it('traduz todo texto fixo das páginas HTML', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const root = new URL('../', import.meta.url);
+    const files = ['index.html', ...readdirSync(new URL('pages/', root)).map(name => `pages/${name}`)];
+    // Marcas, unidades e números iguais em qualquer idioma não precisam de tradução.
+    const sameEverywhere = /^(.|Mol|kg|cm|kcal|0 kcal|kg volume|Volume|\+30 s|Meta: [\d.]+ kcal)$/;
+    const missing = {};
+    for (const code of ['en-US', 'es-ES']) {
+      vi.stubGlobal('navigator', { languages: [code], language: code });
+      for (const file of files) {
+        const dom = new JSDOM(readFileSync(new URL(file, root), 'utf8'), { url: 'http://localhost/' });
+        vi.stubGlobal('window', dom.window);
+        vi.stubGlobal('document', dom.window.document);
+        vi.stubGlobal('localStorage', dom.window.localStorage);
+        vi.stubGlobal('CustomEvent', dom.window.CustomEvent);
+        const originals = new Map();
+        const walker = dom.window.document.createTreeWalker(dom.window.document.body, 4);
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          const clean = node.nodeValue.replace(/\s+/g, ' ').trim();
+          if (!clean || ['SCRIPT', 'STYLE', 'OPTION'].includes(node.parentElement.tagName) || !/[A-Za-zÀ-ÿ]/.test(clean) || sameEverywhere.test(clean)) continue;
+          originals.set(node, clean);
+        }
+        applyLanguage({ mode: 'system', value: 'pt-BR' });
+        for (const [node, clean] of originals) {
+          // Palavra igual nos dois idiomas (ex.: "Perfil", "Meta") conta se existir no dicionário.
+          if (node.nodeValue.replace(/\s+/g, ' ').trim() === clean && t(clean, null, code) === null) (missing[`${code} ${file}`] ||= []).push(clean);
+        }
+        dom.window.close();
+      }
+      vi.unstubAllGlobals();
+    }
+    expect(missing).toEqual({});
+  });
+});
