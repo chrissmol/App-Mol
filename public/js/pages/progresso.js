@@ -3,7 +3,7 @@ const db = await getDb();
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { withTimeout } from '../utils/timeout.js';
-import { exerciseTrends, personalRecords, trainingBalance, volumeByGroup, volumeByMuscleZone } from '../modules/workout-analytics.js';
+import { exerciseProgress, exerciseTrends, personalRecords, trainingBalance, volumeByGroup, volumeByMuscleZone } from '../modules/workout-analytics.js';
 import { muscleMapLegendEntries, renderMuscleMap } from '../modules/muscle-map.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML, showToast } from '../utils/ui.js';
@@ -79,6 +79,16 @@ function renderInsight(volume) {
   $('balance-insight').innerHTML = `<div class="flex items-start gap-3"><span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl mol-soft ${tones[insight.state] || 'text-neon'}"><i data-lucide="sparkles" class="h-4 w-4"></i></span><div><h3 class="text-sm font-bold">${escapeHTML(insight.title)}</h3><p class="mt-1 text-xs leading-relaxed text-gray-500">${escapeHTML(insight.message)}</p></div></div>`;
 }
 
+// Barras do melhor 1RM estimado por treino (últimos 12), como no gráfico de exercício da Evolução.
+function trendChart(name) {
+  const points = exerciseProgress(sessions, name).filter(point => point.oneRM).slice(-12);
+  if (points.length < 2) return '';
+  const values = points.map(point => point.oneRM);
+  const min = Math.min(...values); const max = Math.max(...values);
+  const kg = value => `${value.toLocaleString('pt-BR')} kg`;
+  return `<div class="mt-3 flex h-24 items-end gap-1" role="img" aria-label="1RM estimado de ${escapeHTML(name)}: de ${kg(values[0])} para ${kg(values.at(-1))} em ${values.length} treinos">${points.map((point, index) => `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${max === min ? 55 : 22 + ((values[index] - min) / (max - min)) * 78}%" title="${point.date.toLocaleDateString('pt-BR')}: ${kg(point.oneRM)}"></span>`).join('')}</div><p class="mt-2 flex justify-between text-xs text-gray-500"><span>${points[0].date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><span>${points.at(-1).date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span></p>`;
+}
+
 function renderTrends(trends) {
   if (!trends.length) {
     $('trends').innerHTML = '<div class="mol-state"><p class="mol-state-title">Precisamos de duas sessões</p><p class="mol-state-copy">Repita um exercício com carga registrada para calcular uma tendência.</p></div>';
@@ -88,7 +98,7 @@ function renderTrends(trends) {
   $('trends').innerHTML = trends.slice(0, 8).map(trend => {
     const [label, tone, icon] = labels[trend.state];
     const change = `${trend.deltaPercent > 0 ? '+' : ''}${trend.deltaPercent.toLocaleString('pt-BR')}%`;
-    return `<article class="flex items-center justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(trend.name)}</h3><p class="mt-1 text-xs text-gray-500">${trend.sessions} sessões · e1RM recente ${trend.recentE1rm.toLocaleString('pt-BR')} kg</p></div><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}</span></article>`;
+    return `<details class="progress-fold border-b border-white/5 pb-3 last:border-0 last:pb-0"><summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3"><span class="min-w-0"><span class="block truncate text-sm font-semibold">${escapeHTML(trend.name)}</span><span class="mt-1 block text-xs text-gray-500">${trend.sessions} sessões · e1RM recente ${trend.recentE1rm.toLocaleString('pt-BR')} kg</span></span><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}<i data-lucide="chevron-down" class="progress-fold__chevron h-4 w-4 text-gray-400"></i></span></summary>${trendChart(trend.name)}</details>`;
   }).join('');
 }
 function renderProgress() {
