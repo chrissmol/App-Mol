@@ -3688,7 +3688,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .pet-option:has(input:checked) { border-color: var(--mol-brand-green); background: color-mix(in srgb, var(--mol-brand-green) 16%, var(--mol-surface-soft)); }
 .pet-option:has(input:focus-visible) { outline: 2px solid var(--mol-brand-text); outline-offset: 2px; }
 .pet-option__name { font-weight: 800; font-size: .95rem; color: var(--mol-text); }
-.pet-option__hint { font-size: .72rem; line-height: 1.3; color: var(--mol-muted, #8b9a91); }
+.pet-option__hint { font-size: .75rem; line-height: 1.3; color: var(--mol-muted, #8b9a91); }
 @media (prefers-reduced-motion: reduce) { .pet-option { transition: none; } .pet-option:active { transform: none; } }
 
 /* Boas-vindas (pages/boas-vindas.html): um passo por tela, pet no topo, ação principal fixa embaixo. */
@@ -3722,7 +3722,11 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .onboarding__stepper output { min-width: 2.5rem; text-align: center; font-size: 1.5rem; font-weight: 900; }
 .onboarding__round { width: 44px; height: 44px; border-radius: 1rem; background: var(--mol-surface); border: 1px solid var(--mol-border); font-size: 1.25rem; font-weight: 800; color: var(--mol-text); }
 .onboarding__actions { position: sticky; bottom: 0; display: flex; gap: .6rem; margin-inline: -1.25rem; margin-top: 1.5rem; padding: 1rem 1.25rem max(1rem, env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--mol-bg, #070a08) 70%, transparent); }
-.onboarding__back { min-height: 52px; padding-inline: 1.25rem; border-radius: 1rem; font-weight: 700; color: var(--mol-muted); }
+.onboarding__back { display: inline-flex; align-items: center; gap: .4rem; min-height: 52px; padding-inline: 1rem; border-radius: 1rem; font-weight: 700; color: var(--mol-muted); }
+.onboarding__back svg { width: 1.25rem; height: 1.25rem; }
+/* Escolha marcada tem ✓ além da cor (o estado não pode depender só do verde). */
+.onboarding-choice, .onboarding-pill, .pet-option { position: relative; }
+.onboarding-choice:has(input:checked)::after, .onboarding-pill:has(input:checked)::after, .pet-option:has(input:checked)::after { content: '✓'; position: absolute; top: .5rem; right: .75rem; font-size: .9rem; font-weight: 800; color: var(--mol-brand-text); }
 .onboarding__next { flex: 1; min-height: 52px; border-radius: 1rem; font-size: 1rem; }
 [data-plan-actions] .mol-btn { min-height: 52px; border-radius: 1rem; }
 @media (prefers-reduced-motion: reduce) { .onboarding__progress::-webkit-progress-value, .onboarding-choice, .onboarding-pill { transition: none; } .onboarding-choice:active, .onboarding-pill:active { transform: none; } }
