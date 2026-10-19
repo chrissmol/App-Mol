@@ -9,6 +9,7 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, showToast } from '../utils/ui.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
+import { formatWeight } from '../utils/units.js';
 
 setupAppShell();
 
@@ -145,8 +146,8 @@ function renderStats(profile = {}, latestWeight = null) {
   const number = value => Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
   $('stat-workouts').textContent = Number.isFinite(completedWorkouts) ? number(completedWorkouts) : '—';
   $('stat-goal').textContent = Number(profile.metaSemanal) > 0 ? `${profile.metaSemanal}×/sem` : '—';
-  const goal = Number(profile.metaPesoKg) > 0 ? ` → ${number(profile.metaPesoKg)}` : '';
-  $('stat-weight').textContent = latestWeight ? `${number(latestWeight)} kg${goal}` : '—';
+  const goal = Number(profile.metaPesoKg) > 0 ? ` → ${formatWeight(profile.metaPesoKg)}` : '';
+  $('stat-weight').textContent = latestWeight ? `${formatWeight(latestWeight)}${goal}` : '—';
 }
 
 async function loadProfile(account) {

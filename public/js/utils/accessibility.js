@@ -5,7 +5,7 @@ import { withTimeout } from './timeout.js';
 const STORAGE_KEY = 'mol-accessibility';
 const PROFILE_FIELD = 'preferenciasAcessibilidade';
 const languageDefaults = { mode: 'system', value: 'pt-BR' };
-const defaults = { theme: 'system', visualStyle: 'classic', density: 'comfortable', cardStyle: 'elevated', dashboardLayout: 'automatic', sound: true, vibration: true, animations: true, contrast: false, largeText: false, reduceMotion: false, language: languageDefaults };
+const defaults = { theme: 'system', visualStyle: 'classic', density: 'comfortable', cardStyle: 'elevated', dashboardLayout: 'automatic', sound: true, vibration: true, animations: true, contrast: false, largeText: false, reduceMotion: false, language: languageDefaults, units: 'metric' };
 
 function normalizeLanguage(value = {}) {
   const source = value && typeof value === 'object' ? value : {};
@@ -28,7 +28,8 @@ export function normalizeAccessibility(value = {}) {
     contrast: value.contrast === true,
     largeText: value.largeText === true,
     reduceMotion: value.reduceMotion === true,
-    language: normalizeLanguage(value.language)
+    language: normalizeLanguage(value.language),
+    units: value.units === 'imperial' ? 'imperial' : 'metric'
   };
 }
 

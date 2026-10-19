@@ -19,7 +19,7 @@
 <body class="app-surface personal-page min-h-screen text-white">
   <main class="mx-auto max-w-md px-5 pb-10 pt-6">
     <a id="back" href="./perfil.html" class="app-page-back text-sm font-bold text-gray-400" aria-label="Voltar para o perfil"><i data-lucide="arrow-left" class="h-4 w-4"></i><span>Perfil</span></a>
-    <header class="app-page-header"><p class="app-page-header__eyebrow">Seu perfil</p><h1 class="app-page-header__title">Dados e metas</h1><p class="app-page-header__copy">Mantenha suas referências pessoais e objetivos atualizados.</p></header>
+    <header class="app-page-header"><p class="app-page-header__eyebrow">Seu perfil</p><h1 class="app-page-header__title">Dados pessoais</h1><p class="app-page-header__copy">Mantenha suas referências pessoais e objetivos atualizados.</p></header>
     <p id="page-status" class="glass-card mt-6 rounded-2xl p-4 text-sm text-gray-500" role="status">Carregando seus dados…</p>
 
     <div id="personal-content" class="hidden">
@@ -27,15 +27,16 @@
         <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neon/10 text-neon"><i data-lucide="target" class="h-5 w-5"></i></span><div><p class="app-page-header__eyebrow">Referências</p><h2 id="goals-title" class="mt-1 text-lg font-extrabold">Corpo e objetivos</h2></div></div>
         <div class="mt-5 grid grid-cols-2 gap-3">
           <label class="text-xs font-bold text-gray-400">Sexo<select id="sex" class="mt-2 w-full rounded-xl mol-field p-3 text-white"><option value="">Selecione</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option></select></label>
-          <label class="text-xs font-bold text-gray-400">Nascimento<input id="birth" type="date" min="1920-01-01" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="bday"></label>
-          <label class="text-xs font-bold text-gray-400">Altura (cm)<input id="height" type="number" min="100" max="250" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 175"></label>
-          <label class="text-xs font-bold text-gray-400">Peso atual (kg)<input id="current-weight" type="number" min="20" max="400" step="0.1" inputmode="decimal" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 80"></label>
+          <label class="text-xs font-bold text-gray-400">Nascimento<input id="birth" type="date" min="1920-01-01" class="mt-2 w-full rounded-xl mol-field p-3 text-sm text-white" autocomplete="bday"></label>
+          <label class="text-xs font-bold text-gray-400">Altura (<span data-length-unit>cm</span>)<input id="height" type="number" step="any" inputmode="numeric" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 175"></label>
+          <label class="text-xs font-bold text-gray-400">Peso atual (<span data-weight-unit>kg</span>)<input id="current-weight" type="number" step="any" inputmode="decimal" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 80"></label>
         </div>
-        <label class="mt-4 block text-xs font-bold text-gray-400">Meta de peso (kg)<input id="goal-weight" type="number" min="20" max="400" step="0.1" inputmode="decimal" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 75,5"></label>
+        <label class="mt-4 block text-xs font-bold text-gray-400">Meta de peso (<span data-weight-unit>kg</span>)<input id="goal-weight" type="number" step="any" inputmode="decimal" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="Ex.: 75,5"></label>
         <label class="mt-4 block text-xs font-bold text-gray-400">Objetivo<select id="goal" class="mt-2 w-full rounded-xl mol-field p-3 text-white"><option value="">Selecione</option><option>Hipertrofia</option><option>Força</option><option>Emagrecimento</option><option>Saúde</option></select></label>
+        <label id="pace-field" class="mt-4 block text-xs font-bold text-gray-400">Ritmo da meta<select id="pace" class="mt-2 w-full rounded-xl mol-field p-3 text-white"><option value="">Automático, pelo objetivo</option><option value="0.25">Leve: 0,25 kg por semana</option><option value="0.5">Moderado: 0,5 kg por semana</option></select><span class="mt-1 block font-medium text-gray-500">Ajusta a meta diária. O resultado depende de cada corpo.</span></label>
         <label class="mt-4 block text-xs font-bold text-gray-400">Rotina no dia a dia<select id="activity" class="mt-2 w-full rounded-xl mol-field p-3 text-white"><option value="">Selecione</option></select></label>
         <label class="mt-4 block text-xs font-bold text-gray-400">Meta semanal de treinos<input id="weekly" type="number" min="1" max="7" step="1" inputmode="numeric" class="mt-2 w-full rounded-xl mol-field p-3 text-white" autocomplete="off" placeholder="De 1 a 7"></label>
-        <button id="save" type="button" class="mt-6 min-h-12 w-full rounded-2xl bg-neon font-bold text-black">Salvar dados</button>
+        <button id="save" type="button" class="mt-6 min-h-[52px] w-full rounded-2xl bg-neon font-bold text-black">Salvar dados</button>
       </section>
 
       <section id="goal-result" class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="goal-result-title" aria-live="polite">

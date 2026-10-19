@@ -10,8 +10,10 @@ import { dateFrom, monthCalendar, sevenDayAverage, workoutStats } from '../modul
 import { exerciseNames, exerciseProgress } from '../modules/workout-analytics.js';
 import { profileAchievements } from '../modules/profile-analytics.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
+import { applyUnitLabels, formatLength, formatWeight, fromDisplayLength, fromDisplayWeight, toDisplayLength, toDisplayWeight, weightUnit } from '../utils/units.js';
 
 setupAppShell();
+applyUnitLabels();
 
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
 const $ = id => /** @type {any} */ (document.getElementById(id));
@@ -76,7 +78,7 @@ function renderGoal(stats) {
 
 function renderVolume(stats) {
   const weeks = stats.weeklyVolume;
-  const kg = value => `${value.toLocaleString('pt-BR')} kg`;
+  const kg = value => `${formatWeight(value)}`;
   const max = Math.max(...weeks.map(week => week.kg));
   const previous = weeks.slice(0, -1).filter(week => week.kg > 0);
   const average = previous.length ? Math.round(previous.reduce((sum, week) => sum + week.kg, 0) / previous.length) : 0;
@@ -107,7 +109,7 @@ function renderCalendarSummary() {
   const daySessions = sessions.filter(session => { const value = dateFrom(session.concluidoEm); return value && value.getFullYear() === date.getFullYear() && value.getMonth() === date.getMonth() && value.getDate() === date.getDate(); });
   const series = daySessions.reduce((total, session) => total + (session.exercicios || []).reduce((sum, exercise) => sum + (exercise.series || []).filter(set => set.concluida === true).length, 0), 0);
   const volume = daySessions.reduce((total, session) => total + (Number(session.volumeTotal) || 0), 0);
-  summary.textContent = `${selectedCalendarDay} de ${date.toLocaleDateString('pt-BR', { month: 'long' })} · ${daySessions.length} ${daySessions.length === 1 ? 'treino' : 'treinos'} · ${series} séries · ${Math.round(volume).toLocaleString('pt-BR')} kg`;
+  summary.textContent = `${selectedCalendarDay} de ${date.toLocaleDateString('pt-BR', { month: 'long' })} · ${daySessions.length} ${daySessions.length === 1 ? 'treino' : 'treinos'} · ${series} séries · ${formatWeight(Math.round(volume))}`;
 }
 
 function renderBadges(stats) {
@@ -129,11 +131,11 @@ function sortedWeights() {
 function renderWeight() {
   const ordered = sortedWeights();
   const last = ordered.at(-1);
-  $('last-weight').textContent = last ? `${Number(last.pesoKg).toLocaleString('pt-BR')} kg` : '— kg';
-  $('weight-change').textContent = ordered.length > 1 ? `${(Number(last.pesoKg) - Number(ordered[0].pesoKg)).toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} kg desde o primeiro registro.` : 'Registre o primeiro peso para acompanhar.';
+  $('last-weight').textContent = last ? `${formatWeight(Number(last.pesoKg))}` : `— ${weightUnit()}`;
+  $('weight-change').textContent = ordered.length > 1 ? `${formatWeight((Number(last.pesoKg) - Number(ordered[0].pesoKg)), { signDisplay: 'always', maximumFractionDigits: 1 })} desde o primeiro registro.` : 'Registre o primeiro peso para acompanhar.';
   const trend = $('weight-trend');
   if (trend) {
-    const kg = value => `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`;
+    const kg = value => `${formatWeight(value, { maximumFractionDigits: 1 })}`;
     const points = ordered.map(item => ({ date: dateFrom(item.registradoEm), kg: Number(item.pesoKg) }));
     const averages = sevenDayAverage(points).slice(-12);
     const values = points.slice(-12).map(point => point.kg);
@@ -161,7 +163,7 @@ function renderWeight() {
     $('history').innerHTML = '<p class="text-sm text-gray-500">Sem registros.</p>';
     return;
   }
-  $('history').innerHTML = ordered.reverse().map(item => `<article class="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3"><div><strong class="text-sm">${Number(item.pesoKg).toLocaleString('pt-BR')} kg</strong><p class="mt-1 text-xs text-gray-500">${dateFrom(item.registradoEm)?.toLocaleDateString('pt-BR') || 'agora'}</p></div><div class="flex gap-1"><button type="button" data-edit-weight="${escapeHTML(item.id)}" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5" aria-label="Editar peso"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weight="${escapeHTML(item.id)}" class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-300" aria-label="Excluir peso"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('');
+  $('history').innerHTML = ordered.reverse().map(item => `<article class="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3"><div><strong class="text-sm">${formatWeight(Number(item.pesoKg))}</strong><p class="mt-1 text-xs text-gray-500">${dateFrom(item.registradoEm)?.toLocaleDateString('pt-BR') || 'agora'}</p></div><div class="flex gap-1"><button type="button" data-edit-weight="${escapeHTML(item.id)}" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5" aria-label="Editar peso"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weight="${escapeHTML(item.id)}" class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-300" aria-label="Excluir peso"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('');
   window.lucide?.createIcons();
 }
 
@@ -170,9 +172,9 @@ function renderBodyComparison() {
   const start = Number(ordered[0]?.pesoKg);
   const current = Number(ordered.at(-1)?.pesoKg);
   const target = Number(latestProfile.metaPesoKg);
-  $('body-start').textContent = Number.isFinite(start) ? `${start.toLocaleString('pt-BR')} kg` : '—';
-  $('body-current').textContent = Number.isFinite(current) ? `${current.toLocaleString('pt-BR')} kg` : '—';
-  $('body-target').textContent = Number.isFinite(target) && target > 0 ? `${target.toLocaleString('pt-BR')} kg` : '—';
+  $('body-start').textContent = Number.isFinite(start) ? `${formatWeight(start)}` : '—';
+  $('body-current').textContent = Number.isFinite(current) ? `${formatWeight(current)}` : '—';
+  $('body-target').textContent = Number.isFinite(target) && target > 0 ? `${formatWeight(target)}` : '—';
   if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) {
     $('body-status').textContent = 'Sem meta';
     $('body-summary').textContent = 'Registre o peso e uma meta no perfil para ver sua trajetória.';
@@ -180,10 +182,10 @@ function renderBodyComparison() {
   }
   const difference = target - current;
   const reached = Math.abs(difference) < 0.1;
-  $('body-status').textContent = reached ? 'Meta atingida' : `${Math.abs(difference).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`;
+  $('body-status').textContent = reached ? 'Meta atingida' : `${formatWeight(Math.abs(difference), { maximumFractionDigits: 1 })}`;
   const height = Number(latestProfile.alturaCm);
   const bmi = height > 0 ? current / ((height / 100) ** 2) : null;
-  $('body-summary').textContent = reached ? 'Você atingiu a meta de peso registrada.' : `${difference > 0 ? 'Faltam' : 'Você está'} ${Math.abs(difference).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg ${difference > 0 ? 'para chegar à meta.' : 'além da meta.'}${bmi ? ` IMC atual: ${bmi.toFixed(1)}.` : ''}`;
+  $('body-summary').textContent = reached ? 'Você atingiu a meta de peso registrada.' : `${difference > 0 ? 'Faltam' : 'Você está'} ${formatWeight(Math.abs(difference), { maximumFractionDigits: 1 })} ${difference > 0 ? 'para chegar à meta.' : 'além da meta.'}${bmi ? ` IMC atual: ${bmi.toFixed(1)}.` : ''}`;
 }
 
 function measureValue(value) {
@@ -210,18 +212,18 @@ function lastMeasure(history, key) {
 function renderMeasurements() {
   const history = measurementHistory();
   const fields = [['waist', 'measure-waist', 'Cintura'], ['chest', 'measure-chest', 'Peito'], ['arm', 'measure-arm', 'Braço'], ['hip', 'measure-hip', 'Quadril']];
-  fields.forEach(([key, input]) => { $(input).value = lastMeasure(history, key) ?? ''; });
+  fields.forEach(([key, input]) => { $(input).value = toDisplayLength(lastMeasure(history, key) ?? ''); });
   const changes = fields.map(([key, , label]) => {
     const first = history.map(item => measureValue(item[key])).find(value => value !== null);
     const last = lastMeasure(history, key);
     if (first === undefined || last === null) return null;
     const delta = Number(last) - Number(first);
-    return `${label}: ${delta.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} cm`;
+    return `${label}: ${formatLength(delta, { signDisplay: 'always' })}`;
   }).filter(Boolean);
   $('measurement-summary').textContent = changes.length ? `Desde a primeira medição — ${changes.join(' · ')}.` : 'Registre uma primeira medida para acompanhar as mudanças.';
   const recent = history.slice(-5).reverse();
   $('measure-history').innerHTML = recent.length ? `<p class="text-xs font-bold text-gray-400">Últimos registros</p>${recent.map(record => {
-    const values = fields.map(([key, , label]) => { const value = measureValue(record[key]); return value !== null ? `${label} ${value.toLocaleString('pt-BR')} cm` : null; }).filter(Boolean);
+    const values = fields.map(([key, , label]) => { const value = measureValue(record[key]); return value !== null ? `${label} ${formatLength(value)}` : null; }).filter(Boolean);
     const date = dateFrom(record.registradoEm)?.toLocaleDateString('pt-BR') || 'Data não informada';
     return `<div class="rounded-xl bg-white/5 p-3"><p class="text-xs font-semibold">${date}</p><p class="mt-1 text-xs text-gray-500">${values.join(' · ')}</p></div>`;
   }).join('')}` : '';
@@ -236,18 +238,18 @@ function renderExercise() {
   const points = chosen ? exerciseProgress(sessions, chosen) : [];
   if (chosen) select.value = chosen;
   const last = points.at(-1);
-  const unit = value => value ? `${value.toLocaleString('pt-BR')} kg` : '—';
+  const unit = value => value ? `${formatWeight(value)}` : '—';
   $('exercise-kg').textContent = unit(Math.max(0, ...points.map(point => point.kg)));
   $('exercise-1rm').textContent = unit(Math.max(0, ...points.map(point => point.oneRM)));
   $('exercise-count').textContent = points.length;
   const shown = points.slice(-12);
   const values = shown.map(point => point.oneRM || point.kg);
   const min = Math.min(...values); const max = Math.max(...values);
-  $('exercise-trend').setAttribute('aria-label', shown.length > 1 ? `1RM estimado: de ${values[0].toLocaleString('pt-BR')} kg para ${values.at(-1).toLocaleString('pt-BR')} kg em ${values.length} treinos` : 'Evolução do 1RM estimado');
+  $('exercise-trend').setAttribute('aria-label', shown.length > 1 ? `1RM estimado: de ${formatWeight(values[0])} para ${formatWeight(values.at(-1))} em ${values.length} treinos` : 'Evolução do 1RM estimado');
   $('exercise-trend').innerHTML = shown.length > 1
     ? shown.map((point, index) => `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${max === min ? 55 : 22 + ((values[index] - min) / (max - min)) * 78}%" title="${point.date.toLocaleDateString('pt-BR')}: ${unit(point.kg)}, 1RM ${unit(point.oneRM)}"></span>`).join('')
     : '<p class="self-center text-xs text-gray-500">O gráfico aparece após 2 treinos deste exercício.</p>';
-  $('exercise-summary').textContent = points.length > 1 ? `Último treino: ${unit(last.kg)}, ${(last.oneRM - points[0].oneRM).toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} kg de 1RM desde o primeiro.` : '';
+  $('exercise-summary').textContent = points.length > 1 ? `Último treino: ${unit(last.kg)}, ${formatWeight((last.oneRM - points[0].oneRM), { signDisplay: 'always', maximumFractionDigits: 1 })} de 1RM desde o primeiro.` : '';
 }
 
 function renderAll() {
@@ -314,7 +316,7 @@ function requestWeight(title, initial = '') {
     modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('aria-labelledby', 'weight-dialog-title');
     modal.setAttribute('aria-describedby', 'weight-dialog-description');
-    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe um valor entre 20 e 400 kg.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl mol-field px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
+    modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6"><h2 id="weight-dialog-title" class="text-lg font-bold">${title}</h2><p id="weight-dialog-description" class="mt-2 text-sm text-gray-400">Informe o peso em ${weightUnit()}.</p><input data-value inputmode="decimal" class="mt-5 min-h-12 w-full rounded-xl mol-field px-4 text-white" aria-label="Peso em quilogramas"><div class="mt-5 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-neon py-3 text-sm font-bold text-black">Salvar</button></div></section>`;
     document.body.appendChild(modal);
     const input = modal.querySelector('[data-value]');
     input.value = initial;
@@ -365,7 +367,7 @@ $('health-file').onchange = async event => {
 
 $('save').onclick = async () => {
   if (!currentUser) return showToast('Aguarde o carregamento da conta.');
-  const value = Number(String($('weight').value).replace(',', '.'));
+  const value = Number(fromDisplayWeight($('weight').value));
   if (!Number.isFinite(value) || value < 20 || value > 400) return showToast('Informe um peso entre 20 e 400 kg.');
   const button = $('save');
   setButtonLoading(button, true);
@@ -384,9 +386,9 @@ $('history').onclick = async event => {
   const deleteId = event.target.closest('[data-delete-weight]')?.dataset.deleteWeight;
   if (editId) {
     const item = weights.find(weight => weight.id === editId);
-    const response = await requestWeight('Editar peso', item?.pesoKg ?? '');
+    const response = await requestWeight('Editar peso', toDisplayWeight(item?.pesoKg ?? ''));
     if (response === null) return;
-    const value = Number(String(response).replace(',', '.'));
+    const value = Number(fromDisplayWeight(response));
     if (!Number.isFinite(value) || value < 20 || value > 400) return showToast('Informe um peso entre 20 e 400 kg.');
     try { await updateDoc(doc(db, 'pesos', editId), { pesoKg: value }); await load(); showToast('Peso atualizado.', 'success'); }
     catch { showToast('Não foi possível atualizar o peso.'); }
@@ -406,7 +408,7 @@ $('save-measures').onclick = async () => {
   if (!entered.length) return showToast('Preencha pelo menos uma medida.');
   const record = { registradoEm: new Date().toISOString() };
   for (const [key, id] of entered) {
-    const value = measureValue($(id).value);
+    const value = measureValue(fromDisplayLength($(id).value));
     if (value === null) return showToast('As medidas devem estar entre 20 e 250 cm.');
     record[key] = value;
   }

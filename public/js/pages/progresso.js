@@ -8,6 +8,7 @@ import { muscleMapLegendEntries, renderMuscleMap } from '../modules/muscle-map.j
 import { setupAppShell } from '../utils/app-shell.js';
 import { escapeHTML, showToast } from '../utils/ui.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
+import { formatWeight } from '../utils/units.js';
 
 setupAppShell();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
@@ -52,7 +53,7 @@ function renderVolume(volume) {
 
 function recordCard(record) {
   const evolution = record.improvement == null ? '<span class="text-gray-500">Primeira marca calculável</span>' : `<span class="text-neon">+${record.improvement.toLocaleString('pt-BR')}% sobre a marca anterior</span>`;
-  return `<article class="border-b border-white/5 pb-4 last:border-0 last:pb-0"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(record.name)}</h3><p class="mt-1 text-xs text-gray-500">${record.weight.toLocaleString('pt-BR')} kg × ${record.reps.toLocaleString('pt-BR')} rep. · ${formatDate(record.date)}</p></div><div class="shrink-0 text-right"><strong class="text-sm text-neon">${record.e1rm.toLocaleString('pt-BR')} kg</strong><small class="block text-xs text-gray-500">1RM estimado</small></div></div><p class="mt-2 text-xs font-semibold">${evolution}</p></article>`;
+  return `<article class="border-b border-white/5 pb-4 last:border-0 last:pb-0"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(record.name)}</h3><p class="mt-1 text-xs text-gray-500">${formatWeight(record.weight)} × ${record.reps.toLocaleString('pt-BR')} rep. · ${formatDate(record.date)}</p></div><div class="shrink-0 text-right"><strong class="text-sm text-neon">${formatWeight(record.e1rm)}</strong><small class="block text-xs text-gray-500">1RM estimado</small></div></div><p class="mt-2 text-xs font-semibold">${evolution}</p></article>`;
 }
 
 function renderRecords(records) {
@@ -85,7 +86,7 @@ function trendChart(name) {
   if (points.length < 2) return '';
   const values = points.map(point => point.oneRM);
   const min = Math.min(...values); const max = Math.max(...values);
-  const kg = value => `${value.toLocaleString('pt-BR')} kg`;
+  const kg = value => `${formatWeight(value)}`;
   return `<div class="mt-3 flex h-24 items-end gap-1" role="img" aria-label="1RM estimado de ${escapeHTML(name)}: de ${kg(values[0])} para ${kg(values.at(-1))} em ${values.length} treinos">${points.map((point, index) => `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${max === min ? 55 : 22 + ((values[index] - min) / (max - min)) * 78}%" title="${point.date.toLocaleDateString('pt-BR')}: ${kg(point.oneRM)}"></span>`).join('')}</div><p class="mt-2 flex justify-between text-xs text-gray-500"><span>${points[0].date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><span>${points.at(-1).date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span></p>`;
 }
 
@@ -98,7 +99,7 @@ function renderTrends(trends) {
   $('trends').innerHTML = trends.slice(0, 8).map(trend => {
     const [label, tone, icon] = labels[trend.state];
     const change = `${trend.deltaPercent > 0 ? '+' : ''}${trend.deltaPercent.toLocaleString('pt-BR')}%`;
-    return `<details class="progress-fold border-b border-white/5 pb-3 last:border-0 last:pb-0"><summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3"><span class="min-w-0"><span class="block truncate text-sm font-semibold">${escapeHTML(trend.name)}</span><span class="mt-1 block text-xs text-gray-500">${trend.sessions} sessões · e1RM recente ${trend.recentE1rm.toLocaleString('pt-BR')} kg</span></span><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}<i data-lucide="chevron-down" class="progress-fold__chevron h-4 w-4 text-gray-400"></i></span></summary>${trendChart(trend.name)}</details>`;
+    return `<details class="progress-fold border-b border-white/5 pb-3 last:border-0 last:pb-0"><summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3"><span class="min-w-0"><span class="block truncate text-sm font-semibold">${escapeHTML(trend.name)}</span><span class="mt-1 block text-xs text-gray-500">${trend.sessions} sessões · e1RM recente ${formatWeight(trend.recentE1rm)}</span></span><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}<i data-lucide="chevron-down" class="progress-fold__chevron h-4 w-4 text-gray-400"></i></span></summary>${trendChart(trend.name)}</details>`;
   }).join('');
 }
 function renderProgress() {
@@ -122,7 +123,7 @@ async function shareProgress() {
   const records = personalRecords(sessions);
   const series = Object.values(volume).reduce((sum, value) => sum + value, 0);
   const totalVolume = sessions.reduce((sum, session) => sum + (Number(session.volumeTotal) || 0), 0);
-  const text = `Meu resumo Mol · últimos ${selectedDays} dias\n${series} séries · ${Math.round(totalVolume).toLocaleString('pt-BR')} kg de volume · ${records.length} exercícios monitorados`;
+  const text = `Meu resumo Mol · últimos ${selectedDays} dias\n${series} séries · ${formatWeight(Math.round(totalVolume))} de volume · ${records.length} exercícios monitorados`;
   try {
     if (navigator.share) { await navigator.share({ title: 'Meu progresso no Mol', text }); return; }
     await navigator.clipboard.writeText(text);

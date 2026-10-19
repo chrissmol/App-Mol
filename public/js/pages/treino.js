@@ -84,6 +84,7 @@ import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
 import { exercisePoseFrames, exercisePoseLabel } from '../modules/exercise-poses.js';
 import { plural } from '../utils/plural.js';
 import { getPet, petAvatarHTML, showPetMoment } from '../utils/pet.js';
+import { formatWeight, fromDisplayWeight, toDisplayWeight, weightUnit } from '../utils/units.js';
 let favoritosExercicios = [];
 let recentesExercicios = [];
 let exerciciosPersonalizados = [];
@@ -487,7 +488,7 @@ function contextoDescanso(indexExercicio, indexSerie) {
     seconds: descansoSugerido(exercicio, serie),
     title: exercicio?.nome || 'Descanso',
     nextTitle: next
-      ? `Proxima: serie ${next.indexSerie + 1} de ${next.exercicio.series.length}${nextKg || nextReps ? ` - ${nextKg || '-'} kg - ${nextReps || '-'} reps` : ''}`
+      ? `Proxima: serie ${next.indexSerie + 1} de ${next.exercicio.series.length}${nextKg || nextReps ? ` - ${formatWeight(nextKg || '-')} - ${nextReps || '-'} reps` : ''}`
       : 'Ultima serie registrada. Voce pode finalizar o treino.',
     hint: serie?.tipo === 'W'
       ? 'Aquecimento: mantenha o ritmo'
@@ -595,7 +596,8 @@ document.addEventListener('input', (event) => {
   const [, campo, exIndex, serieIndex] = match;
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina?.exercicios?.[exIndex]?.series?.[serieIndex]) return;
-  rotina.exercicios[exIndex].series[serieIndex][campo] = event.target.value;
+  const { value } = /** @type {HTMLInputElement} */ (event.target);
+  rotina.exercicios[exIndex].series[serieIndex][campo] = campo === 'kg' ? fromDisplayWeight(value) : value;
   salvarRascunho({ force: true });
 });
 
@@ -734,9 +736,9 @@ function proximaSerieTexto(exercicio, conselho) {
   const ultimo = ultimaPerformance.get(exercicio.nome);
   const latest = ultimo?.sets?.find(item => Number(item.kg) >= 0 && Number(item.reps) > 0);
   if (!latest) return ''; // sem histórico, a mensagem do conselho ("Primeira referência") já orienta
-  if (conselho?.state === 'increase' && conselho.suggestedWeight) return `Próxima: ${conselho.suggestedWeight.toLocaleString('pt-BR')} kg tentando ${exercicio.repsMin || 8}+ reps.`;
-  if (conselho?.state === 'reduce' && conselho.suggestedWeight) return `Próxima: reduza para ${conselho.suggestedWeight.toLocaleString('pt-BR')} kg e recupere a execução.`;
-  return `Próxima: ${latest.kg} kg buscando ${Number(latest.reps) + 1} reps ou mesmo RIR.`;
+  if (conselho?.state === 'increase' && conselho.suggestedWeight) return `Próxima: ${formatWeight(conselho.suggestedWeight)} tentando ${exercicio.repsMin || 8}+ reps.`;
+  if (conselho?.state === 'reduce' && conselho.suggestedWeight) return `Próxima: reduza para ${formatWeight(conselho.suggestedWeight)} e recupere a execução.`;
+  return `Próxima: ${formatWeight(latest.kg)} buscando ${Number(latest.reps) + 1} reps ou mesmo RIR.`;
 }
 
 async function compartilharResumoTreino(summary) {
@@ -751,7 +753,7 @@ async function compartilharResumoTreino(summary) {
   context.fillStyle = '#57d493'; context.font = '700 34px Inter, sans-serif'; context.fillText('MOL', 72, 100);
   context.fillStyle = '#f8fafc'; context.font = '800 62px Inter, sans-serif'; context.fillText('Treino concluído', 72, 205);
   context.fillStyle = '#8b9a91'; context.font = '400 30px Inter, sans-serif'; context.fillText('Seu esforço de hoje ficou registrado.', 72, 255);
-  const cards = [['SÉRIES', summary.series], ['VOLUME', `${Math.round(summary.volume).toLocaleString('pt-BR')} kg`], ['DURAÇÃO', `${summary.minutos} min`], ['EXERCÍCIOS', summary.exercicios], ['NOVOS RECORDES', summary.records]];
+  const cards = [['SÉRIES', summary.series], ['VOLUME', `${formatWeight(Math.round(summary.volume))}`], ['DURAÇÃO', `${summary.minutos} min`], ['EXERCÍCIOS', summary.exercicios], ['NOVOS RECORDES', summary.records]];
   cards.forEach(([label, value], index) => { const x = 72 + (index % 2) * 480; const y = 350 + Math.floor(index / 2) * 190; context.fillStyle = '#142219'; fillCard(x, y, 420, 140); context.fillStyle = '#8b9a91'; context.font = '700 22px Inter, sans-serif'; context.fillText(label, x + 28, y + 42); context.fillStyle = index === 1 || index === 4 ? '#57d493' : '#f8fafc'; context.font = '800 42px Inter, sans-serif'; context.fillText(String(value), x + 28, y + 98); });
   context.fillStyle = '#1d3b28'; fillCard(72, 890, 936, 190);
   context.fillStyle = '#57d493'; context.font = '700 24px Inter, sans-serif'; context.fillText('COMPARAÇÃO MOL', 104, 945);
@@ -773,7 +775,7 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDe
   const records = novosRecordesDaSessao(exerciciosDetalhados);
   const comparison = resumoComparativo(volume);
   const destaque = destaqueDaSessao(exerciciosDetalhados);
-  const destaqueHTML = destaque ? `<p class="mt-3 rounded-2xl mol-soft p-3 text-xs leading-relaxed text-gray-300"><strong class="text-neon">Destaque:</strong> ${escapeHTML(destaque.nome)} com ${Math.round(destaque.volume).toLocaleString('pt-BR')} kg de volume${destaque.best ? ` · e1RM ${destaque.best.toLocaleString('pt-BR')} kg` : ''}.</p>` : '';
+  const destaqueHTML = destaque ? `<p class="mt-3 rounded-2xl mol-soft p-3 text-xs leading-relaxed text-gray-300"><strong class="text-neon">Destaque:</strong> ${escapeHTML(destaque.nome)} com ${formatWeight(Math.round(destaque.volume))} de volume${destaque.best ? ` · e1RM ${formatWeight(destaque.best)}` : ''}.</p>` : '';
   const musculosDaSessao = muscleZoneScores(completedSets({ exercicios: exerciciosDetalhados }));
   const legendaMusculos = muscleMapLegendEntries(musculosDaSessao);
   const mapaMuscularHTML = legendaMusculos.length ? `<div class="mt-4 rounded-2xl mol-soft p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Músculos trabalhados</p><div class="mt-2 mx-auto max-w-[11rem]">${renderMuscleMap(musculosDaSessao)}</div><div class="mol-muscle-legend mt-2">${legendaMusculos.map(item => `<span class="mol-muscle-legend-item">${escapeHTML(item.label)}</span>`).join('')}</div></div>` : '';
@@ -783,7 +785,7 @@ function mostrarResumoTreino({ series, volume, exercicios, duracao, exerciciosDe
   modal.className = 'fixed inset-0 z-[200] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
   modal.setAttribute('aria-labelledby', 'workout-summary-title');
   modal.setAttribute('aria-describedby', 'workout-summary-description');
-  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up">${pet.id === 'nenhum' ? '<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div>' : petAvatarHTML(pet, { size: 112, state: 'conquista', className: 'mx-auto' })}<p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">${escapeHTML(pet.lines.workoutDone)}</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">KG</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${plural(exercicios, 'exercício registrado', 'exercícios registrados')} no seu histórico.</p>${destaqueHTML}${mapaMuscularHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
+  modal.innerHTML = `<section class="w-full max-w-sm rounded-3xl mol-dialog-surface border-neon/30 p-6 text-center animate-slide-up">${pet.id === 'nenhum' ? '<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neon text-black"><i data-lucide="trophy" class="h-7 w-7"></i></div>' : petAvatarHTML(pet, { size: 112, state: 'conquista', className: 'mx-auto' })}<p class="mt-4 text-xs font-bold uppercase tracking-[.16em] text-neon">Sessão concluída</p><h2 id="workout-summary-title" class="mt-1 text-2xl font-extrabold">${escapeHTML(pet.lines.workoutDone)}</h2><div class="mt-6 grid grid-cols-2 gap-2"><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${series}</strong><span class="text-[10px] text-gray-400">SÉRIES</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${Math.round(volume).toLocaleString('pt-BR')}</strong><span class="text-[10px] text-gray-400">${weightUnit().toUpperCase()}</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg">${minutos}m</strong><span class="text-[10px] text-gray-400">DURAÇÃO</span></div><div class="rounded-2xl mol-soft p-3"><strong class="block text-lg text-neon">${records}</strong><span class="text-[10px] text-gray-400">NOVOS RECORDES</span></div></div><p id="workout-summary-description" class="mt-4 text-sm text-gray-400">${plural(exercicios, 'exercício registrado', 'exercícios registrados')} no seu histórico.</p>${destaqueHTML}${mapaMuscularHTML}<p class="mt-3 rounded-2xl bg-neon/10 p-3 text-xs leading-relaxed text-neon">${comparison}</p><div class="mt-5 grid grid-cols-2 gap-2"><button type="button" data-share class="min-h-12 rounded-2xl mol-soft text-sm font-bold"><i data-lucide="share-2" class="mr-1 inline h-4 w-4"></i>Compartilhar</button><button type="button" data-close class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black active:scale-[.98]">Concluído</button></div></section>`;
   document.body.appendChild(modal);
   if (records > 0) celebrate({ count: 32 });
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
@@ -797,7 +799,7 @@ window.mostrarInfoTreino = (tipo) => {
   const infos = {
     serie: ['Série', 'Uma tentativa do exercício. W é aquecimento; números são séries de trabalho; F indica falha e D, drop set.'],
     anterior: ['Anterior', 'Mostra a última carga e repetições registradas para esta série. Toque no valor para copiar.'],
-    kg: ['KG', 'A carga usada na série, em quilogramas.'],
+    kg: [weightUnit().toUpperCase(), `A carga usada na série, em ${weightUnit() === 'lb' ? 'libras' : 'quilogramas'}.`],
     reps: ['Repetições', 'Quantas repetições você fez com a carga informada.'],
     rir: ['RIR — repetições em reserva', 'Quantas repetições você ainda conseguiria fazer antes da falha. RIR 2 significa que sobrariam cerca de duas reps.'],
     check: ['Concluir série', 'Toque quando peso e repetições estiverem registrados. O descanso inicia automaticamente.']
@@ -1148,7 +1150,7 @@ window.abrirDetalheExercicio = (nome) => {
   document.getElementById('exercise-detail')?.remove();
   const modal = document.createElement('div'); modal.id = 'exercise-detail'; modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-4 backdrop-blur-sm';
   modal.setAttribute('aria-labelledby', 'exercise-detail-title');
-  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div id="exercise-detail-media" class="mt-5 h-40 w-full rounded-2xl mol-soft p-2" aria-label="${escapeHTML(poseLabel)}">${frames[0]}</div><p class="mt-3 text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p>${historico.length ? `<section class="mt-5 rounded-2xl mol-soft p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${melhor.toFixed(1)} kg</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${item.kg} kg × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
+  modal.innerHTML = `<section class="mx-auto w-full max-w-md rounded-3xl mol-dialog-surface p-6"><div class="mx-auto h-1.5 w-11 rounded-full bg-white/20"></div><div id="exercise-detail-media" class="mt-5 h-40 w-full rounded-2xl mol-soft p-2" aria-label="${escapeHTML(poseLabel)}">${frames[0]}</div><p class="mt-3 text-xs font-bold uppercase tracking-wider text-neon">${escapeHTML(grupo)}</p><h2 id="exercise-detail-title" class="mt-1 text-xl font-extrabold">${escapeHTML(nome)}</h2><p class="mt-1 text-sm text-gray-400">${equipamento}</p>${historico.length ? `<section class="mt-5 rounded-2xl mol-soft p-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Evolução recente</p><p class="mt-1 text-sm font-bold text-neon">e1RM estimado: ${formatWeight(melhor.toFixed(1))}</p><svg viewBox="0 0 100 44" class="mt-3 h-16 w-full"><polyline points="${pontos}" fill="none" stroke="#1E7349" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="text-xs text-gray-500">${historico.map(item => `${formatWeight(item.kg)} × ${item.reps}`).join(' · ')}</p></section>` : ''}<div class="mt-6 space-y-4 text-sm"><div><strong>Execução</strong><p class="mt-1 text-gray-400">${orientacao.execucao}</p></div><div><strong>Erros para evitar</strong><p class="mt-1 text-gray-400">${orientacao.erros}</p></div><div><strong>Substituições</strong><p class="mt-1 text-gray-400">${substitutos.map(item => escapeHTML(item.nome)).join(' · ') || 'Sem substituições cadastradas.'}</p></div></div><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft font-bold text-gray-300">Fechar</button><button type="button" data-add class="min-h-12 rounded-2xl bg-neon font-bold text-black">Adicionar</button></div></section>`;
   document.body.appendChild(modal);
   const mediaContainer = modal.querySelector('#exercise-detail-media');
   let frameIndex = 0;
@@ -1197,7 +1199,7 @@ function renderizarBiblioteca(filtro = '') {
             </div>
           </div>
           <div class="mt-3 flex items-center justify-between gap-3">
-            ${ultimaPerformance.has(ex.nome) ? `<p class="min-w-0 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="min-w-0 text-xs text-gray-600">Sem histórico ainda</p>'}
+            ${ultimaPerformance.has(ex.nome) ? `<p class="min-w-0 text-xs font-semibold text-neon">Último: ${formatWeight(ultimaPerformance.get(ex.nome).kg)} × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="min-w-0 text-xs text-gray-600">Sem histórico ainda</p>'}
             <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neon px-3 text-xs font-extrabold text-black active:scale-[.98]"><i data-lucide="plus" class="h-4 w-4"></i><span>Adicionar</span></button>
           </div>
         </div>
@@ -1354,7 +1356,7 @@ function abrirRotina(id) {
       </div>
       <div class="border-x border-white/10">
         <p class="text-[10px] text-gray-400 font-semibold uppercase">Volume</p>
-        <p class="text-sm font-bold text-neon mt-0.5">${volumeTotal} kg</p>
+        <p class="text-sm font-bold text-neon mt-0.5">${formatWeight(volumeTotal)}</p>
       </div>
       <div>
         <p class="text-[10px] text-gray-400 font-semibold uppercase">Séries</p>
@@ -1410,7 +1412,7 @@ function abrirRotina(id) {
         <div class="workout-set-header flex items-center gap-1 mb-2 px-1"><div class="workout-set-grid grid flex-1 grid-cols-[1.2fr_2.4fr_1.7fr_1.7fr_1.2fr_1.2fr] gap-1 text-[10px] text-gray-500 font-semibold text-center tracking-wider items-center">
           <button type="button" data-workout-action="show-workout-info" data-info="serie" class="min-h-8 rounded-md active:bg-white/10">SÉRIE</button>
           <button type="button" data-workout-action="show-workout-info" data-info="anterior" class="min-h-8 rounded-md active:bg-white/10">ANTERIOR</button>
-          <button type="button" data-workout-action="show-workout-info" data-info="kg" class="min-h-8 rounded-md active:bg-white/10">KG</button>
+          <button type="button" data-workout-action="show-workout-info" data-info="kg" class="min-h-8 rounded-md active:bg-white/10">${weightUnit().toUpperCase()}</button>
           <button type="button" data-workout-action="show-workout-info" data-info="reps" class="min-h-8 rounded-md active:bg-white/10">REPS</button>
           <button type="button" data-workout-action="show-workout-info" data-info="rir" class="min-h-8 rounded-md active:bg-white/10">RIR</button>
           <button type="button" data-workout-action="show-workout-info" data-info="check" aria-label="O que é concluir série" class="min-h-8 rounded-md active:bg-white/10"><i data-lucide="check" class="w-3 h-3 mx-auto"></i></button>
@@ -1458,7 +1460,7 @@ function abrirRotina(id) {
 
             const anteriorSerie = valorAnteriorDaSerie(ex, indexSerie);
             const temAnterior = anteriorSerie?.kg != null && Number(anteriorSerie.reps) > 0;
-            const textoAnterior = temAnterior ? `${anteriorSerie.kg}kg x ${anteriorSerie.reps}` : '-';
+            const textoAnterior = temAnterior ? `${formatWeight(anteriorSerie.kg)} x ${anteriorSerie.reps}` : '-';
 
             const bgLinha = serie.concluida ? 'bg-neon/10' : 'mol-soft';
             const bgBotaoCheck = serie.concluida ? 'bg-neon text-black' : 'mol-field border border-white/10 text-transparent';
@@ -1477,7 +1479,7 @@ function abrirRotina(id) {
                   <span>${textoAnterior}</span>
                 </button>
 
-                <input type="number" min="0" max="2000" step="0.25" inputmode="decimal" aria-label="Carga em quilogramas da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.kg ?? '-'}" value="${serie.kg ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
+                <input type="number" min="0" step="any" inputmode="decimal" aria-label="Carga em ${weightUnit()} da série ${label}" id="kg-${indexEx}-${indexSerie}" placeholder="${toDisplayWeight(anteriorSerie?.kg ?? '-')}" value="${toDisplayWeight(serie.kg ?? '')}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 <input type="number" min="1" max="1000" step="1" inputmode="numeric" aria-label="Repetições da série ${label}" id="reps-${indexEx}-${indexSerie}" placeholder="${anteriorSerie?.reps ?? '-'}" value="${serie.reps ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
                 <input type="number" min="0" max="10" step="1" inputmode="numeric" aria-label="RIR da série ${label}" id="rir-${indexEx}-${indexSerie}" placeholder="-" value="${serie.rir ?? ''}" class="${bgInput} w-full text-center py-1.5 rounded text-sm font-semibold outline-none focus:border-neon border border-transparent transition-colors">
 
@@ -1553,7 +1555,7 @@ window.copiarAnterior = (indexEx, indexSerie) => {
   if (!anterior) return showToast('Ainda não há carga anterior para copiar.');
   const kg = document.getElementById(`kg-${indexEx}-${indexSerie}`);
   const reps = document.getElementById(`reps-${indexEx}-${indexSerie}`);
-  kg.value = anterior.kg; reps.value = anterior.reps;
+  kg.value = toDisplayWeight(anterior.kg); reps.value = anterior.reps;
   kg.dispatchEvent(new Event('input', { bubbles: true })); reps.dispatchEvent(new Event('input', { bubbles: true }));
   showToast('Carga anterior copiada.', 'success');
 };
@@ -1587,7 +1589,7 @@ window.concluirSerie = async (indexEx, indexSerie) => {
     return;
   }
 
-  const inputKg = document.getElementById(`kg-${indexEx}-${indexSerie}`).value.trim();
+  const inputKg = String(fromDisplayWeight(document.getElementById(`kg-${indexEx}-${indexSerie}`).value));
   const inputReps = document.getElementById(`reps-${indexEx}-${indexSerie}`).value.trim();
   const inputRir = document.getElementById(`rir-${indexEx}-${indexSerie}`).value.trim();
 
@@ -1888,11 +1890,11 @@ window.mudarMetodoSerie = async (method) => {
 };
 
 function numberField(name, label, value, attrs = '') {
-  return `<label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">${label}<input name="${name}" value="${value ?? ''}" type="number" inputmode="decimal" ${attrs} class="mt-1 min-h-12 w-full rounded-xl mol-field px-3 text-sm font-bold text-white outline-none focus:border-neon"></label>`;
+  return `<label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">${label}<input name="${name}" value="${/kg$/i.test(name) ? toDisplayWeight(value ?? '') : value ?? ''}" type="number" inputmode="decimal" ${attrs} class="mt-1 min-h-12 w-full rounded-xl mol-field px-3 text-sm font-bold text-white outline-none focus:border-neon"></label>`;
 }
 
 function valuesFromForm(form, names) {
-  return Object.fromEntries(names.map(name => [name, form.elements[name]?.value?.trim() ?? '']));
+  return Object.fromEntries(names.map(name => { const value = form.elements[name]?.value?.trim() ?? ''; return [name, /kg$/i.test(name) ? String(fromDisplayWeight(value)) : value]; }));
 }
 
 window.abrirEditorMetodoSerie = (indexEx, indexSerie) => {
@@ -1908,10 +1910,10 @@ window.abrirEditorMetodoSerie = (indexEx, indexSerie) => {
   modal.className = 'fixed inset-0 z-[210] flex items-end bg-black/70 p-0';
   modal.innerHTML = `<form role="dialog" aria-modal="true" aria-labelledby="method-editor-title" class="mx-auto w-full max-w-md rounded-t-3xl mol-dialog-surface p-6 animate-slide-up" data-method-form><div class="mx-auto mb-5 h-1.5 w-11 rounded-full bg-white/20"></div><p class="text-xs font-bold uppercase tracking-wider text-neon">${meta.label}</p><h2 id="method-editor-title" class="mt-1 text-xl font-extrabold">${escapeHTML(exercicio.nome)}</h2><div data-method-fields class="mt-5 space-y-4"></div><label class="mt-4 block text-[10px] font-bold uppercase tracking-wider text-gray-500">Observação<textarea name="note" maxlength="240" class="mt-1 min-h-20 w-full rounded-xl mol-field p-3 text-sm text-white outline-none focus:border-neon">${escapeHTML(details.note || '')}</textarea></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-close class="min-h-12 rounded-2xl mol-soft text-sm font-bold text-gray-300">Fechar</button><button type="submit" class="min-h-12 rounded-2xl bg-neon text-sm font-bold text-black">Salvar</button></div></form>`;
   const fields = modal.querySelector('[data-method-fields]');
-  if (method === SET_METHODS.DROP_SET) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série principal</p><div class="grid grid-cols-2 gap-2">${numberField('primaryKg', 'Carga inicial', details.primary?.kg, 'min="0" max="2000" step="0.25"')}${numberField('primaryReps', 'Reps', details.primary?.reps, 'min="1" max="1000" step="1"')}</div></section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Drops</p><div class="space-y-2">${[0,1,2].map(i => `<div class="grid grid-cols-2 gap-2">${numberField(`dropKg${i}`, `Drop ${i + 1} kg`, details.drops?.[i]?.kg, 'min="0" max="2000" step="0.25"')}${numberField(`dropReps${i}`, 'Reps', details.drops?.[i]?.reps, 'min="1" max="1000" step="1"')}</div>`).join('')}</div>${numberField('restSeconds', 'Descanso entre drops (s)', details.restSeconds ?? 0, 'min="0" max="3600" step="5"')}</section>`;
-  if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-2 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</div><p class="mb-2 mt-4 text-xs font-bold uppercase tracking-wider text-neon">Blocos</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`block${i}`, `${i + 1}`, details.blocks?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
-  if (method === SET_METHODS.MYO_REPS) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série de ativação</p><div class="grid grid-cols-2 gap-2">${numberField('activationKg', 'Carga', details.activation?.kg, 'min="0" max="2000" step="0.25"')}${numberField('activationReps', 'Reps', details.activation?.reps, 'min="1" max="1000" step="1"')}</div>${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Mini-séries</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`mini${i}`, `+${i + 1}`, details.miniSets?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
-  if (method === SET_METHODS.ISOMETRIC) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-3 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" max="2000" step="0.25"')}${numberField('reps', 'Reps', details.reps, 'min="1" max="1000" step="1"')}${numberField('holdSeconds', 'Isometria (s)', details.holdSeconds, 'min="1" max="3600" step="1"')}</div></section>`;
+  if (method === SET_METHODS.DROP_SET) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série principal</p><div class="grid grid-cols-2 gap-2">${numberField('primaryKg', 'Carga inicial', details.primary?.kg, 'min="0" step="any"')}${numberField('primaryReps', 'Reps', details.primary?.reps, 'min="1" max="1000" step="1"')}</div></section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Drops</p><div class="space-y-2">${[0,1,2].map(i => `<div class="grid grid-cols-2 gap-2">${numberField(`dropKg${i}`, `Drop ${i + 1} (${weightUnit()})`, details.drops?.[i]?.kg, 'min="0" step="any"')}${numberField(`dropReps${i}`, 'Reps', details.drops?.[i]?.reps, 'min="1" max="1000" step="1"')}</div>`).join('')}</div>${numberField('restSeconds', 'Descanso entre drops (s)', details.restSeconds ?? 0, 'min="0" max="3600" step="5"')}</section>`;
+  if (method === SET_METHODS.REST_PAUSE || method === SET_METHODS.CLUSTER) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-2 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" step="any"')}${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</div><p class="mb-2 mt-4 text-xs font-bold uppercase tracking-wider text-neon">Blocos</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`block${i}`, `${i + 1}`, details.blocks?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
+  if (method === SET_METHODS.MYO_REPS) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Série de ativação</p><div class="grid grid-cols-2 gap-2">${numberField('activationKg', 'Carga', details.activation?.kg, 'min="0" step="any"')}${numberField('activationReps', 'Reps', details.activation?.reps, 'min="1" max="1000" step="1"')}</div>${numberField('restSeconds', 'Descanso (s)', details.restSeconds, 'min="0" max="3600" step="5"')}</section><section class="rounded-2xl mol-soft p-4"><p class="mb-3 text-xs font-bold uppercase tracking-wider text-neon">Mini-séries</p><div class="grid grid-cols-4 gap-2">${[0,1,2,3,4,5].map(i => numberField(`mini${i}`, `+${i + 1}`, details.miniSets?.[i], 'min="1" max="1000" step="1"')).join('')}</div></section>`;
+  if (method === SET_METHODS.ISOMETRIC) fields.innerHTML = `<section class="rounded-2xl mol-soft p-4"><div class="grid grid-cols-3 gap-2">${numberField('kg', 'Carga', details.kg, 'min="0" step="any"')}${numberField('reps', 'Reps', details.reps, 'min="1" max="1000" step="1"')}${numberField('holdSeconds', 'Isometria (s)', details.holdSeconds, 'min="1" max="3600" step="1"')}</div></section>`;
   document.body.appendChild(modal);
   modal.querySelector('[data-close]').onclick = () => modal.remove();
   modal.addEventListener('click', event => { if (event.target === modal) modal.remove(); });

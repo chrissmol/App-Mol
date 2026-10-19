@@ -19,6 +19,11 @@ const GOAL_RULES = {
   '': { adjust: 0, protein: 1.6, text: 'para manter o peso' }
 };
 
+// Ritmo escolhido (kg por semana) troca o ajuste percentual: 1 kg ≈ 7.700 kcal.
+export const GOAL_PACES = [0.25, 0.5];
+const PACE_SIGN = { Emagrecimento: -1, Hipertrofia: 1, 'Força': 1 };
+export const paceApplies = objetivo => objetivo in PACE_SIGN;
+
 /** Idade em anos completos numa data ("AAAA-MM-DD"). */
 export function ageFrom(birthDate, today = new Date()) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(birthDate || ''));
@@ -30,7 +35,7 @@ export function ageFrom(birthDate, today = new Date()) {
 }
 
 /**
- * @typedef {{ sexo?: string, nascimento?: string, alturaCm?: number, pesoKg?: number, nivelAtividade?: string, objetivo?: string }} GoalInputs
+ * @typedef {{ sexo?: string, nascimento?: string, alturaCm?: number, pesoKg?: number, nivelAtividade?: string, objetivo?: string, ritmoMetaKg?: number | null }} GoalInputs
  */
 
 /** O que falta para calcular; lista vazia = dá para calcular. @param {GoalInputs} [inputs] */
@@ -59,11 +64,14 @@ export function calculateNutritionGoals(input = {}, today = new Date()) {
   const rule = GOAL_RULES[input.objetivo] || GOAL_RULES[''];
   const gasto = Math.round(base * level.factor / 10) * 10;
   const floor = input.sexo === 'masculino' ? 1500 : 1200;
-  const kcal = Math.max(floor, Math.round(gasto * (1 + rule.adjust) / 10) * 10);
+  const pace = paceApplies(input.objetivo) && GOAL_PACES.includes(Number(input.ritmoMetaKg)) ? Number(input.ritmoMetaKg) : 0;
+  const paceKcal = pace ? PACE_SIGN[input.objetivo] * Math.round(pace * 7700 / 7 / 10) * 10 : 0;
+  const target = pace ? gasto + paceKcal : gasto * (1 + rule.adjust);
+  const kcal = Math.max(floor, Math.round(target / 10) * 10);
   const protein = Math.round(weight * rule.protein);
   const fat = Math.round(weight * 0.8);
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
-  const explicacao = `Seu gasto estimado é de ${gasto.toLocaleString('pt-BR')} kcal por dia; a meta fica ${kcal === floor && gasto * (1 + rule.adjust) < floor ? 'no mínimo seguro' : rule.text}.`;
+  const explicacao = `Seu gasto estimado é de ${gasto.toLocaleString('pt-BR')} kcal por dia; a meta fica ${kcal === floor && target < floor ? 'no mínimo seguro' : pace ? `${paceKcal < 0 ? 'menos' : 'mais'} ${Math.abs(paceKcal)} kcal por dia, para um ritmo de cerca de ${pace.toLocaleString('pt-BR')} kg por semana` : rule.text}.`;
   return { kcal, macroGoals: { protein, carbs, fat }, gasto, explicacao };
 }
 

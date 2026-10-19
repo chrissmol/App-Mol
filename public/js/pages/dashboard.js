@@ -16,6 +16,7 @@ import { plural } from '../utils/plural.js';
 import { getPet, petAvatarHTML, rememberPet } from '../utils/pet.js';
 import { dayKey, diaryDocId, diaryTotals } from '../modules/food-diary.js';
 import { showWeeklyReview, weeklyReview } from '../modules/weekly-review.js';
+import { formatWeight } from '../utils/units.js';
 const renderIcons = () => window.lucide?.createIcons();
 
 setupAppShell();
@@ -204,10 +205,10 @@ function setWeek(sessions, goal = 1) {
   const lastVolume = last ? sessionMetrics(last).volume : 0;
   const previousVolume = previous ? sessionMetrics(previous).volume : 0;
   const trend = previousVolume ? ((lastVolume - previousVolume) / previousVolume) * 100 : null;
-  $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${Math.round(lastVolume).toLocaleString('pt-BR')} kg${trend === null ? '.' : ` · ${trend.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })}% versus a sessão anterior.`}` : 'Conclua o primeiro treino para acompanhar sua evolução.';
+  $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${formatWeight(Math.round(lastVolume))}${trend === null ? '.' : ` · ${trend.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })}% versus a sessão anterior.`}` : 'Conclua o primeiro treino para acompanhar sua evolução.';
   $('progress-card-icon')?.classList.toggle('text-neon', Boolean(last));
   $('progress-card-icon')?.classList.toggle('text-gray-500', !last);
-  if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg · ${plural(sessionMetrics(last).sets, 'série', 'séries')}`; }
+  if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${formatWeight(Math.round(sessionMetrics(last).volume))} · ${plural(sessionMetrics(last).sets, 'série', 'séries')}`; }
   setCardBadgeActive('last-session-badge', Boolean(last));
 }
 
@@ -388,10 +389,10 @@ async function renderWeeklyReview(userId) {
   const review = weeklyReview({ sessions: weekData.sessions, weights: weekData.weights, mealDays, goal: profileData.metaSemanal || 3 });
   const pet = getPet();
   const line = { conquista: pet.lines.weekGood, evolucao: pet.lines.weekPartial, apoio: pet.lines.weekEmpty }[review.state];
-  const weight = review.weightChange === null ? '—' : `${review.weightChange.toLocaleString('pt-BR', { signDisplay: 'exceptZero', maximumFractionDigits: 1 })} kg`;
+  const weight = review.weightChange === null ? '—' : `${formatWeight(review.weightChange, { signDisplay: 'exceptZero', maximumFractionDigits: 1 })}`;
   const stats = [
     ['Treinos', `${review.workouts}/${review.goal}`],
-    ['Volume', `${review.volume.toLocaleString('pt-BR')} kg`],
+    ['Volume', `${formatWeight(review.volume)}`],
     review.mealDays === null ? null : ['Dias com refeição', `${review.mealDays}/7`],
     ['Peso na semana', weight]
   ].filter(Boolean);
@@ -565,8 +566,8 @@ watchProtectedPage(async user => {
     if (Array.isArray(cachedDashboard.weights)) {
       const { last, change } = recentWeightTrend(cachedDashboard.weights);
       if (last) {
-        $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
-        $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
+        $('dashboard-weight').textContent = `${formatWeight(Number(last.pesoKg))}`;
+        $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${formatWeight(change, { signDisplay: 'always', maximumFractionDigits: 2 })} nos últimos 30 dias.`;
       }
       setCardBadgeActive('weight-card-badge', Boolean(last));
     }
@@ -652,8 +653,8 @@ watchProtectedPage(async user => {
       weekData.weights = weights;
       const { last, change } = recentWeightTrend(weights);
       if (last) {
-        $('dashboard-weight').textContent = `${Number(last.pesoKg).toLocaleString('pt-BR')} kg`;
-        $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${change.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 2 })} kg nos últimos 30 dias.`;
+        $('dashboard-weight').textContent = `${formatWeight(Number(last.pesoKg))}`;
+        $('dashboard-weight-meta').textContent = change === null ? 'Primeiro registro corporal.' : `${formatWeight(change, { signDisplay: 'always', maximumFractionDigits: 2 })} nos últimos 30 dias.`;
       }
       setCardBadgeActive('weight-card-badge', Boolean(last));
     } catch(error) { console.warn('Peso não carregado:',error.message); $('dashboard-weight').textContent='Peso indisponível'; $('dashboard-weight-meta').textContent='Toque para abrir Evolução e tentar novamente.'; }

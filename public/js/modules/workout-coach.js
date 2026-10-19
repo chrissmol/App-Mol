@@ -1,3 +1,4 @@
+import { formatWeight } from '../utils/units.js';
 function finite(value) {
   if (value == null || value === '') return null;
   const number = Number(value);
@@ -28,23 +29,23 @@ export function progressionAdvice(exercise = {}, history = []) {
   const rirAllowsProgress = latest.rir == null || latest.rir >= targetRir;
   if (latest.kg > 0 && latest.reps >= max && rirAllowsProgress) {
     const suggestedWeight = roundedLoad(latest.kg + nextLoadIncrement(latest.kg));
-    return { state: 'increase', title: 'Pronto para progredir', suggestedWeight, message: `Você atingiu o topo da faixa. Próxima sessão: tente ${suggestedWeight.toLocaleString('pt-BR')} kg mantendo RIR ${targetRir}.` };
+    return { state: 'increase', title: 'Pronto para progredir', suggestedWeight, message: `Você atingiu o topo da faixa. Próxima sessão: tente ${formatWeight(suggestedWeight)} mantendo RIR ${targetRir}.` };
   }
 
   if (latest.kg > 0 && (latest.reps < min || (latest.rir != null && latest.rir < Math.max(0, targetRir - 1)))) {
     const suggestedWeight = roundedLoad(latest.kg * .95);
-    return { state: 'reduce', title: 'Priorize a execução', suggestedWeight, message: `A série ficou abaixo do alvo. Tente ${suggestedWeight.toLocaleString('pt-BR')} kg e recupere a faixa de repetições.` };
+    return { state: 'reduce', title: 'Priorize a execução', suggestedWeight, message: `A série ficou abaixo do alvo. Tente ${formatWeight(suggestedWeight)} e recupere a faixa de repetições.` };
   }
 
   if (entries.length >= 3) {
     const scores = entries.map(item => item.kg * (1 + Math.min(item.reps, 15) / 30));
     const best = Math.max(...scores); const worst = Math.min(...scores);
     if (best > 0 && (best - worst) / best < .015) {
-      return { state: 'plateau', title: 'Estável há 3 sessões', message: `Mantenha ${latest.kg.toLocaleString('pt-BR')} kg e tente acrescentar uma repetição com a mesma técnica.` };
+      return { state: 'plateau', title: 'Estável há 3 sessões', message: `Mantenha ${formatWeight(latest.kg)} e tente acrescentar uma repetição com a mesma técnica.` };
     }
   }
 
-  return { state: 'maintain', title: 'Continue consolidando', message: `Mantenha ${latest.kg.toLocaleString('pt-BR')} kg até alcançar ${max} reps com RIR ${targetRir}.` };
+  return { state: 'maintain', title: 'Continue consolidando', message: `Mantenha ${formatWeight(latest.kg)} até alcançar ${max} reps com RIR ${targetRir}.` };
 }
 
 export function classifyEquipment(name = '') {

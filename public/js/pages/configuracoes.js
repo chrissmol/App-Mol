@@ -210,7 +210,7 @@ function applyAppearance() {
   $('large-text').checked = appearance.largeText;
   $('reduce-motion').checked = appearance.reduceMotion;
   ['animations', 'sound', 'vibration'].forEach(id => { if ($(id)) $(id).checked = appearance[id]; });
-  [['density-segments', 'density'], ['card-style-segments', 'cardStyle'], ['dashboard-layout-segments', 'dashboardLayout']].forEach(([id, key]) => $(id)?.querySelectorAll('button').forEach(button => button.classList.toggle('is-active', button.dataset.value === appearance[key])));
+  [['density-segments', 'density'], ['card-style-segments', 'cardStyle'], ['dashboard-layout-segments', 'dashboardLayout'], ['units-segments', 'units']].forEach(([id, key]) => $(id)?.querySelectorAll('button').forEach(button => button.classList.toggle('is-active', button.dataset.value === appearance[key])));
   $('language-segments').querySelectorAll('button').forEach(button => {
     const selected = button.dataset.language === appearance.language.mode;
     button.classList.toggle('is-active', selected);
@@ -255,7 +255,8 @@ visualStyleChoices.forEach(([value, icon, label, description]) => {
 const preferenceSegments = [
   ['density-segments', 'density', [['comfortable', 'Confortável'], ['compact', 'Compacta']]],
   ['card-style-segments', 'cardStyle', [['discreet', 'Discreto'], ['elevated', 'Elevado'], ['neon', 'Neon']]],
-  ['dashboard-layout-segments', 'dashboardLayout', [['automatic', 'Automática'], ['custom', 'Personalizada']]]
+  ['dashboard-layout-segments', 'dashboardLayout', [['automatic', 'Automática'], ['custom', 'Personalizada']]],
+  ['units-segments', 'units', [['metric', 'kg e cm'], ['imperial', 'lb e pol']]]
 ];
 preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, label]) => {
   const button = document.createElement('button'); button.type = 'button'; button.dataset.value = value; button.className = 'theme-segment flex min-h-14 items-center justify-center rounded-2xl px-3 text-xs font-bold'; button.textContent = label;
@@ -337,12 +338,23 @@ async function persistAppModules() {
 const reminderPreferences = getReminderPreferences();
 $('trusted-device').checked = isTrustedDevice();
 $('reminders-enabled').checked = reminderPreferences.enabled;
+$('workout-time').value = reminderPreferences.workoutTime;
+$('meal-time').value = reminderPreferences.mealTime;
 
 function persistReminderControls() {
   saveReminderPreferences({
-    enabled: $('reminders-enabled').checked
+    enabled: $('reminders-enabled').checked,
+    workoutTime: $('workout-time').value,
+    mealTime: $('meal-time').value
   });
 }
+
+['workout-time', 'meal-time'].forEach(id => $(id).addEventListener('change', () => {
+  persistReminderControls();
+  const saved = getReminderPreferences();
+  $('workout-time').value = saved.workoutTime; $('meal-time').value = saved.mealTime;
+  $('device-status').textContent = `Lembretes às ${saved.workoutTime} (treino) e ${saved.mealTime} (refeição).`;
+}));
 
 $('trusted-device').onchange = async () => {
   const enabled = $('trusted-device').checked;
@@ -444,7 +456,7 @@ function requestPassword() {
     modal.className = 'fixed inset-0 z-[1000] flex items-end bg-black/70 p-4 backdrop-blur-sm sm:items-center sm:justify-center';
     modal.setAttribute('aria-labelledby', 'password-dialog-title');
     modal.setAttribute('aria-describedby', 'password-dialog-description');
-    modal.innerHTML = '<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl"><h2 id="password-dialog-title" class="text-lg font-bold">Confirme sua senha</h2><p id="password-dialog-description" class="mt-2 text-sm text-gray-400">Precisamos confirmar sua identidade antes da exclusão.</p><label class="mt-5 block text-xs font-bold text-gray-400">Senha<input data-password type="password" autocomplete="current-password" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-white"></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="rounded-xl bg-red-500 py-3 text-sm font-bold text-white">Continuar</button></div></section>';
+    modal.innerHTML = '<section class="w-full max-w-sm rounded-3xl mol-dialog-surface p-6 shadow-2xl"><h2 id="password-dialog-title" class="text-lg font-extrabold">Confirme sua senha</h2><p id="password-dialog-description" class="mt-2 text-sm text-gray-400">Precisamos confirmar sua identidade antes da exclusão.</p><label class="mt-5 block text-xs font-bold text-gray-400">Senha<input data-password type="password" autocomplete="current-password" class="mt-2 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-white"></label><div class="mt-6 grid grid-cols-2 gap-3"><button type="button" data-cancel class="min-h-11 rounded-xl mol-soft py-3 text-sm font-bold">Cancelar</button><button type="button" data-confirm class="min-h-11 rounded-xl bg-danger py-3 text-sm font-bold text-white">Continuar</button></div></section>';
     document.body.appendChild(modal);
     const input = modal.querySelector('[data-password]');
     let closeDialog;

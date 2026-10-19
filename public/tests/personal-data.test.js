@@ -3,7 +3,7 @@ import { normalizeBackup, parsePersonalData } from '../js/modules/personal-data.
 
 describe('dados pessoais', () => {
   it('converte campos vazios para null sem gravar zeros', () => {
-    expect(parsePersonalData({ height: '', goalWeight: '', weekly: '', goal: '' })).toEqual({ sexo: '', nascimento: '', nivelAtividade: '', alturaCm: null, metaPesoKg: null, objetivo: '', metaSemanal: null });
+    expect(parsePersonalData({ height: '', goalWeight: '', weekly: '', goal: '' })).toEqual({ sexo: '', nascimento: '', nivelAtividade: '', alturaCm: null, metaPesoKg: null, objetivo: '', metaSemanal: null, ritmoMetaKg: null });
   });
 
   it('valida sexo, nascimento e nível de atividade', () => {
@@ -16,6 +16,11 @@ describe('dados pessoais', () => {
   it('rejeita altura e meta semanal fora dos limites', () => {
     expect(() => parsePersonalData({ height: '90', goalWeight: '70', weekly: '3', goal: 'Saúde' })).toThrow('altura');
     expect(() => parsePersonalData({ height: '180', goalWeight: '70', weekly: '8', goal: 'Saúde' })).toThrow('meta semanal');
+  });
+
+  it('aceita só os ritmos de 0,25 e 0,5 kg por semana', () => {
+    expect(parsePersonalData({ goal: 'Emagrecimento', pace: '0.5' }).ritmoMetaKg).toBe(0.5);
+    expect(() => parsePersonalData({ goal: 'Emagrecimento', pace: '1' })).toThrow('ritmo');
   });
 });
 
