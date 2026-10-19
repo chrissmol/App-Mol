@@ -6,7 +6,7 @@ import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { recentWeightTrend } from '../modules/dashboard-analytics.js';
 import { setupAppShell } from '../utils/app-shell.js';
-import { activateDialog } from '../utils/ui.js';
+import { activateDialog, showToast } from '../utils/ui.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
 import { getSessionItem, setSessionItem } from '../utils/storage.js';
 
@@ -109,11 +109,17 @@ function openFrameModal() {
   modal.querySelector('[data-close]').onclick = close;
   modal.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => {
     const frameId = button.dataset.frame;
+    const previous = currentProfile;
     currentProfile = { ...currentProfile, avatarFrame: frameId };
     applyAvatarFrame(frameId);
     close();
     try { await setDoc(doc(db, 'users', currentAccount.uid), { avatarFrame: frameId }, { merge: true }); }
-    catch (error) { console.warn('Moldura não salva:', error.message); }
+    catch (error) {
+      console.warn('Moldura não salva:', error.message);
+      currentProfile = previous;
+      applyAvatarFrame(normalizeFrame(previous.avatarFrame));
+      showToast('Não foi possível salvar a moldura. Tente de novo.');
+    }
   });
   renderIcons();
 }
