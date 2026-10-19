@@ -7,7 +7,7 @@ import {
   LogOut, Medal, Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, Replace, Ruler, Scale,
   ScanBarcode, Search, Send, Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star,
   Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User,
-  Utensils, Weight, X
+  Utensils, Weight, Wifi, WifiOff, X
 } from 'lucide';
 
 const icons = {
@@ -18,7 +18,7 @@ const icons = {
   CalendarCheck2, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole, LogOut, Medal,
   Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, Replace, Ruler, Scale, ScanBarcode, Search, Send,
   Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
-  TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User, Utensils, Weight, X
+  TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User, Utensils, Weight, Wifi, WifiOff, X
 };
 
 const kebabCase = name => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Za-z])(\d)/g, '$1-$2').toLocaleLowerCase('en-US');

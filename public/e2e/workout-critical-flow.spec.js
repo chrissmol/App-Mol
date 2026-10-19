@@ -12,7 +12,7 @@ async function openWorkout(page) {
     }));
   });
   await page.goto('/pages/treino.html');
-  await expect(page.getByRole('heading', { name: /Treinos/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Treino', exact: true })).toBeVisible();
 }
 
 test('iniciar treino, concluir serie e voltar cancelando nao gera erro', async ({ page }) => {
