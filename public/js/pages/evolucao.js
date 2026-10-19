@@ -50,7 +50,7 @@ function setPageState(state, message = '') {
     text.textContent = message || 'Não foi possível carregar sua evolução.';
     const retry = document.createElement('button');
     retry.type = 'button';
-    retry.className = 'mt-3 block min-h-10 w-full rounded-xl bg-white/5 text-sm font-bold text-white';
+    retry.className = 'mt-3 block min-h-11 w-full rounded-xl bg-white/5 text-sm font-bold text-white';
     retry.textContent = 'Tentar novamente';
     retry.onclick = load;
     $('page-status').append(text, retry);
@@ -81,7 +81,7 @@ function renderCalendar() {
   $('next-month').disabled = isCurrent;
   $('next-month').classList.toggle('opacity-30', isCurrent);
   const blanks = Array.from({ length: calendar.leadingBlanks }, () => '<span aria-hidden="true"></span>');
-  const days = calendar.days.map(item => `<button type="button" data-calendar-day="${item.day}" ${item.trained ? '' : 'disabled'} class="flex aspect-square items-center justify-center rounded-lg text-xs ${item.trained ? 'bg-neon font-extrabold text-black' : 'bg-white/5 text-gray-400'} ${item.today && !item.trained ? 'ring-1 ring-neon' : ''} ${selectedCalendarDay === item.day ? 'ring-2 ring-white ring-offset-1 ring-offset-[#070a08]' : ''}" aria-label="${item.day}${item.trained ? ', treino concluído' : ', sem treino'}${item.today ? ', hoje' : ''}" aria-pressed="${selectedCalendarDay === item.day}">${item.day}</button>`);
+  const days = calendar.days.map(item => `<button type="button" data-calendar-day="${item.day}" ${item.trained ? '' : 'disabled'} class="flex h-11 min-w-0 items-center justify-center rounded-lg text-xs ${item.trained ? 'bg-neon font-extrabold text-black' : 'bg-white/5 text-gray-400'} ${item.today && !item.trained ? 'ring-1 ring-neon' : ''} ${selectedCalendarDay === item.day ? 'ring-2 ring-white ring-offset-1 ring-offset-[#070a08]' : ''}" aria-label="${item.day}${item.trained ? ', treino concluído' : ', sem treino'}${item.today ? ', hoje' : ''}" aria-pressed="${selectedCalendarDay === item.day}">${item.day}</button>`);
   $('calendar').innerHTML = [...blanks, ...days].join('');
   $('calendar').querySelectorAll('[data-calendar-day]').forEach(button => button.onclick = () => { selectedCalendarDay = Number(button.dataset.calendarDay); renderCalendar(); renderCalendarSummary(); });
   renderCalendarSummary();
@@ -102,7 +102,7 @@ function renderBadges(stats) {
   const badges = profileAchievements({ workouts: stats.sessions, sets: stats.series, volume: stats.volume, seconds: stats.seconds, weekly: stats.weekly, goal: currentGoal, streak: stats.streak, activeDays: stats.activeDays.size });
   const unlocked = badges.filter(badge => badge.unlocked);
   $('badges-count').textContent = `${unlocked.length} de ${badges.length} desbloqueadas`;
-  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="relative flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.icon}" class="h-4 w-4"></i>${!badge.unlocked ? '<i data-lucide="lock-keyhole" class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-black p-0.5 text-gray-300"></i>' : ''}</span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.unlocked ? 'Conquista desbloqueada.' : badge.description}</p>${!badge.unlocked ? `<p class="mt-2 text-[10px] font-semibold text-gray-500">${badge.progressLabel}</p><div class="mt-1 h-1 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon/70" style="width:${Math.round(badge.progress * 100)}%"></div></div>` : ''}</article>`).join('');
+  $('badges').innerHTML = badges.map(badge => `<article class="rounded-2xl border p-3 ${badge.unlocked ? 'border-neon/40 bg-neon/10' : 'border-white/10 bg-white/[.03] opacity-60'}"><span class="relative flex h-8 w-8 items-center justify-center rounded-xl ${badge.unlocked ? 'bg-neon text-black' : 'bg-white/10 text-gray-500'}"><i data-lucide="${badge.icon}" class="h-4 w-4"></i>${!badge.unlocked ? '<i data-lucide="lock-keyhole" class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-black p-0.5 text-gray-300"></i>' : ''}</span><strong class="mt-2 block text-sm">${badge.title}</strong><p class="mt-1 text-xs text-gray-500">${badge.unlocked ? 'Conquista desbloqueada.' : badge.description}</p>${!badge.unlocked ? `<p class="mt-2 text-xs font-semibold text-gray-500">${badge.progressLabel}</p><div class="mt-1 h-1 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon/70" style="width:${Math.round(badge.progress * 100)}%"></div></div>` : ''}</article>`).join('');
   window.lucide?.createIcons();
 }
 
@@ -125,6 +125,7 @@ function renderWeight() {
     const values = lastItems.map(item => Number(item.pesoKg));
     const min = Math.min(...values);
     const max = Math.max(...values);
+    trend.setAttribute('aria-label', lastItems.length > 1 ? `Tendência de peso: de ${values[0].toLocaleString('pt-BR')} kg para ${values.at(-1).toLocaleString('pt-BR')} kg em ${values.length} registros` : 'Tendência de peso');
     trend.innerHTML = lastItems.length > 1
       ? lastItems.map(item => {
         const value = Number(item.pesoKg);
@@ -137,7 +138,7 @@ function renderWeight() {
     $('history').innerHTML = '<p class="text-sm text-gray-500">Sem registros.</p>';
     return;
   }
-  $('history').innerHTML = ordered.reverse().map(item => `<article class="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3"><div><strong class="text-sm">${Number(item.pesoKg).toLocaleString('pt-BR')} kg</strong><p class="mt-1 text-xs text-gray-500">${dateFrom(item.registradoEm)?.toLocaleDateString('pt-BR') || 'agora'}</p></div><div class="flex gap-1"><button type="button" data-edit-weight="${escapeHTML(item.id)}" class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5" aria-label="Editar peso"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weight="${escapeHTML(item.id)}" class="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 text-red-300" aria-label="Excluir peso"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('');
+  $('history').innerHTML = ordered.reverse().map(item => `<article class="flex items-center justify-between gap-3 rounded-xl bg-white/5 p-3"><div><strong class="text-sm">${Number(item.pesoKg).toLocaleString('pt-BR')} kg</strong><p class="mt-1 text-xs text-gray-500">${dateFrom(item.registradoEm)?.toLocaleDateString('pt-BR') || 'agora'}</p></div><div class="flex gap-1"><button type="button" data-edit-weight="${escapeHTML(item.id)}" class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5" aria-label="Editar peso"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weight="${escapeHTML(item.id)}" class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-300" aria-label="Excluir peso"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('');
   window.lucide?.createIcons();
 }
 
@@ -219,6 +220,7 @@ function renderExercise() {
   const shown = points.slice(-12);
   const values = shown.map(point => point.oneRM || point.kg);
   const min = Math.min(...values); const max = Math.max(...values);
+  $('exercise-trend').setAttribute('aria-label', shown.length > 1 ? `1RM estimado: de ${values[0].toLocaleString('pt-BR')} kg para ${values.at(-1).toLocaleString('pt-BR')} kg em ${values.length} treinos` : 'Evolução do 1RM estimado');
   $('exercise-trend').innerHTML = shown.length > 1
     ? shown.map((point, index) => `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${max === min ? 55 : 22 + ((values[index] - min) / (max - min)) * 78}%" title="${point.date.toLocaleDateString('pt-BR')}: ${unit(point.kg)}, 1RM ${unit(point.oneRM)}"></span>`).join('')
     : '<p class="self-center text-xs text-gray-500">O gráfico aparece após 2 treinos deste exercício.</p>';
