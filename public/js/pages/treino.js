@@ -156,11 +156,11 @@ function completarComAnteriorSeVazio({ exercicio, indexSerie, kg, reps, rir }) {
 }
 
 const methodMeta = {
-  [SET_METHODS.DROP_SET]: { label: 'Drop Set', badge: 'DS', tone: 'text-blue-400 bg-blue-400/10' },
+  [SET_METHODS.DROP_SET]: { label: 'Drop Set', badge: 'DS', tone: 'mol-soft text-gray-300' },
   [SET_METHODS.REST_PAUSE]: { label: 'Rest-Pause', badge: 'RP', tone: 'text-neon bg-neon/10' },
   [SET_METHODS.MYO_REPS]: { label: 'Myo-Reps', badge: 'MY', tone: 'text-neon bg-neon/10' },
   [SET_METHODS.CLUSTER]: { label: 'Cluster', badge: 'CL', tone: 'text-neon bg-neon/10' },
-  [SET_METHODS.ISOMETRIC]: { label: 'Isometria', badge: 'ISO', tone: 'text-orange-400 bg-orange-400/10' }
+  [SET_METHODS.ISOMETRIC]: { label: 'Isometria', badge: 'ISO', tone: 'mol-soft text-gray-300' }
 };
 
 function isAdvancedSet(serie) { return setMethod(serie) !== SET_METHODS.NORMAL; }
@@ -1360,7 +1360,7 @@ function abrirRotina(id) {
         <p class="text-[10px] text-gray-400 font-semibold uppercase">Séries</p>
         <p class="text-sm font-bold text-white mt-0.5">${seriesFeitas}/${totalSeries}</p>
       </div>
-    </div>${miniMapaMuscularHTML}</div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão · tela ativa</p><button type="button" data-workout-action="toggle-compact" aria-pressed="${modoCompacto}" class="min-h-9 rounded-xl mol-soft px-3 text-[10px] font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
+    </div>${miniMapaMuscularHTML}</div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão · tela ativa</p><button type="button" data-workout-action="toggle-compact" aria-pressed="${modoCompacto}" class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
   ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${plural(seriesPlanejadas, 'série', 'séries')} · cerca de ${minutosEstimados} min</p></div><button type="button" data-workout-action="start-edit-workout" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
   const painelComCheckinHTML = painelMetricasHTML + checkinCardHTML();
   const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" data-workout-action="save-routine-name" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><label for="input-editar-horario-rotina" class="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">Horário do treino <span class="font-normal normal-case tracking-normal text-gray-500">(opcional)</span><input id="input-editar-horario-rotina" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-white"></label><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
@@ -1375,7 +1375,9 @@ function abrirRotina(id) {
     let exerciciosHtml = rotina.exercicios.map((ex, indexEx) => {
       let contadorNormal = 0;
       const conselho = progressionAdvice(ex, historicoPerformance.get(ex.nome) || []);
-      const conselhoTom = conselho.state === 'increase' ? 'bg-neon/10 text-neon' : conselho.state === 'reduce' ? 'bg-orange-400/10 text-orange-400' : 'mol-soft text-gray-400';
+      const conselhoTom = conselho.state === 'increase' ? 'bg-neon/10 text-neon' : conselho.state === 'reduce' ? 'mol-soft text-gray-300' : 'mol-soft text-gray-400';
+      // Estado também no ícone, não só na cor (branding book: verde é a única cor de destaque).
+      const conselhoIcone = conselho.state === 'increase' ? 'trending-up' : conselho.state === 'reduce' ? 'trending-down' : 'sparkles';
       const sugestaoProxima = proximaSerieTexto(ex, conselho);
       const currentClass = indexEx === indiceExercicioAtual ? 'is-current' : '';
       const notaExercicio = typeof ex.notas === 'string' ? ex.notas.trim() : '';
@@ -1400,7 +1402,7 @@ function abrirRotina(id) {
           <div class="flex gap-1">${toggleSupersetHTML}<button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="-1" aria-label="Mover ${escapeHTML(ex.nome)} para cima" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-up" class="w-5 h-5"></i></button><button type="button" data-workout-action="move-exercise" data-ex-index="${indexEx}" data-direction="1" aria-label="Mover ${escapeHTML(ex.nome)} para baixo" class="h-10 w-10 rounded-xl text-gray-400 active:bg-white/10"><i data-lucide="chevron-down" class="w-5 h-5"></i></button><button type="button" data-workout-action="delete-exercise" data-ex-index="${indexEx}" aria-label="Excluir ${escapeHTML(ex.nome)}" class="h-10 w-10 rounded-xl text-gray-500 active:bg-red-500/10 active:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
         </div>
         ${notaHTML}
-        <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p>${sugestaoProxima ? `<p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p>` : ''}</div></div></section>
+        <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="${conselhoIcone}" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p>${sugestaoProxima ? `<p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p>` : ''}</div></div></section>
         <button type="button" data-workout-action="replace-exercise" data-ex-index="${indexEx}" class="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
         ${editorNotaHTML}
         <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="repsMin" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="repsMax" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="rirAlvo" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="descansoSegundos" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
@@ -1423,11 +1425,11 @@ function abrirRotina(id) {
               contadorNormal++;
               label = contadorNormal;
             } else if (serie.tipo === 'W') {
-              label = 'W'; corFundo = 'text-orange-400 bg-orange-400/10';
+              label = 'W'; corFundo = 'mol-soft text-gray-300';
             } else if (serie.tipo === 'F') {
-              label = 'F'; corFundo = 'text-red-400 bg-red-400/10';
+              label = 'F'; corFundo = 'mol-soft text-gray-300';
             } else if (serie.tipo === 'D') {
-              label = 'D'; corFundo = 'text-blue-400 bg-blue-400/10';
+              label = 'D'; corFundo = 'mol-soft text-gray-300';
             }
 
             const metodo = setMethod(serie);
@@ -1448,7 +1450,7 @@ function abrirRotina(id) {
                 <button type="button" data-workout-action="complete-set" data-ex-index="${indexEx}" data-set-index="${indexSerie}" aria-label="Concluir ${meta.label}" class="flex h-auto w-11 shrink-0 items-center justify-center rounded-xl ${bgBotaoCheckMetodo} transition-colors active:scale-95">
                   <i data-lucide="check" class="w-4 h-4 ${serie.concluida ? 'text-white' : 'text-gray-600'}"></i>
                 </button>
-                <button type="button" data-workout-action="delete-set" data-ex-index="${indexEx}" data-set-index="${indexSerie}" aria-label="Excluir série" class="flex h-auto w-9 shrink-0 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
+                <button type="button" data-workout-action="delete-set" data-ex-index="${indexEx}" data-set-index="${indexSerie}" aria-label="Excluir série" class="flex h-auto w-9 shrink-0 items-center justify-center rounded-xl text-gray-400 active:bg-red-500/10 active:text-red-400">
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
               </div>`;
@@ -1471,7 +1473,7 @@ function abrirRotina(id) {
                   ${label}
                 </div>
 
-                <button type="button" data-workout-action="copy-previous" data-ex-index="${indexEx}" data-set-index="${indexSerie}" class="min-w-0 text-center text-gray-400 text-[11px] font-medium flex min-h-10 w-full items-center justify-center rounded-lg active:bg-white/10" aria-label="Copiar carga anterior">
+                <button type="button" data-workout-action="copy-previous" data-ex-index="${indexEx}" data-set-index="${indexSerie}" class="min-w-0 text-center text-gray-400 text-xs font-medium flex min-h-11 w-full items-center justify-center rounded-lg active:bg-white/10" aria-label="Copiar carga anterior">
                   <span>${textoAnterior}</span>
                 </button>
 
@@ -1485,7 +1487,7 @@ function abrirRotina(id) {
               </div>
 
 
-              <button type="button" data-workout-action="delete-set" data-ex-index="${indexEx}" data-set-index="${indexSerie}" aria-label="Excluir série" class="flex h-11 w-9 items-center justify-center rounded-xl text-gray-600 active:bg-red-500/10 active:text-red-400">
+              <button type="button" data-workout-action="delete-set" data-ex-index="${indexEx}" data-set-index="${indexSerie}" aria-label="Excluir série" class="flex h-11 w-9 items-center justify-center rounded-xl text-gray-400 active:bg-red-500/10 active:text-red-400">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
