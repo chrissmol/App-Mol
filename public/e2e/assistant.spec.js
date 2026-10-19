@@ -98,3 +98,16 @@ test('atalhos da Dieta e do Treino abrem a gaveta do assistente', async ({ page 
   await page.getByRole('button', { name: 'Fechar assistente' }).click();
   await expect(page.getByRole('dialog', { name: 'Assistente do treino' })).toBeHidden();
 });
+
+test('erro aparece com ícone e botões respeitam 44 px', async ({ page }) => {
+  await page.goto('/pages/assistente.html');
+  await page.getByRole('button', { name: 'Entendi' }).click();
+  await ask(page, 'falha-simulada');
+  const error = page.locator('.assistant-msg--error');
+  await expect(error.locator('svg')).toBeVisible();
+  await expect(error).not.toBeEmpty();
+  const send = await page.getByRole('button', { name: 'Enviar' }).boundingBox();
+  expect(send.width).toBeGreaterThanOrEqual(44);
+  const size = await page.locator('.assistant-disclaimer').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+  expect(size).toBeGreaterThanOrEqual(12);
+});

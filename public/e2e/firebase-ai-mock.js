@@ -35,6 +35,7 @@ export const getGenerativeModel = () => ({
     if (toolResult) return reply([{ text: FINAL[toolResult.functionResponse.name] || 'Pronto.' }]);
     const text = last.parts.map(part => part.text || '').join(' ').toLowerCase();
     const hasFile = last.parts.some(part => part.inlineData || /conteúdo do arquivo/i.test(part.text || ''));
+    if (text.includes('falha-simulada')) throw new Error('falha simulada');
     if (text.includes('python')) return reply([{ text: 'Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.' }]);
     if (text.includes('arroz')) return call('buscar_alimento', { nome: 'arroz branco' });
     if (text.includes('troca') || hasFile) return call('propor_dieta', DIET_SWAP);

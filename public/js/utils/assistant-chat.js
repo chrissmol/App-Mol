@@ -196,7 +196,9 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     } catch (error) {
       console.error('[Mol] Assistente falhou:', error);
       typing.classList.add('assistant-msg--error');
-      typing.textContent = error?.message?.startsWith('Entre na sua conta') || /Formato|7 MB|Excel/.test(error?.message || '') ? error.message : describeAssistantError(error);
+      const reason = error?.message?.startsWith('Entre na sua conta') || /Formato|7 MB|Excel/.test(error?.message || '') ? error.message : describeAssistantError(error);
+      typing.innerHTML = `<i data-lucide="triangle-alert" aria-hidden="true"></i><span>${escapeHTML(reason)}</span>`;
+      icons(typing);
     } finally {
       busy = false;
       $('[data-send]').disabled = false;
