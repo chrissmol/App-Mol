@@ -10,15 +10,16 @@ import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { plural } from '../utils/plural.js';
 import { getPet, petAvatarHTML, showPetMoment } from '../utils/pet.js';
-import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl } from '../modules/food-diary.js';
+import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl, workoutOnDay, logAllMeals } from '../modules/food-diary.js';
 import { recentWeightTrend } from '../modules/dashboard-analytics.js';
-import { createAssistantButton } from '../utils/assistant-chat.js';
+import { createAssistantButton, openAssistantSheet } from '../utils/assistant-chat.js';
 
 setupAppShell();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
 const $ = id => /** @type {any} */ (document.getElementById(id));
 let user = null;
 let meals = [];
+let workoutToday = '';
 let goals = { kcal: 2400, protein: 180, carbs: 250, fat: 70 };
 let fasting = normalizeFastingSettings();
 let dietMode = 'view';
@@ -153,10 +154,12 @@ function renderDaySelector() {
 async function loadDiary() {
   diaryKey = dayKey();
   try {
-    const [snapshot, weights] = await Promise.all([
+    const [snapshot, weights, sessions] = await Promise.all([
       withTimeout(getDoc(doc(db, 'diario', diaryDocId(user.uid, diaryKey))), 'O diário'),
-      withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid))), 'Os pesos').catch(() => null)
+      withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', user.uid))), 'Os pesos').catch(() => null),
+      withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', user.uid))), 'O histórico').catch(() => null)
     ]);
+    if (sessions) workoutToday = workoutOnDay(sessions.docs.map(item => item.data()), diaryKey);
     diary = normalizeDiary(snapshot.data());
     if (weights) waterGoal = waterGoalMl(recentWeightTrend(weights.docs.map(item => item.data())).last?.pesoKg);
     diaryReady = true;
@@ -218,7 +221,17 @@ function render() {
     ? `de ${goals.kcal.toLocaleString('pt-BR')} kcal · planejado ${rounded(planned.kcal).toLocaleString('pt-BR')} kcal`
     : `Meta: ${goals.kcal.toLocaleString('pt-BR')} kcal`;
   $('food-search').textContent = consumedView ? 'Registrar extra' : 'Buscar alimento';
-  $('calorie-progress').style.width = `${Math.min(100, (totals.kcal / goals.kcal) * 100)}%`;
+  const left = goals.kcal - totals.kcal;
+  $('calorie-ring').setAttribute('stroke-dasharray', `${Math.min(100, (totals.kcal / goals.kcal) * 100)} 100`);
+  $('calorie-ring').style.opacity = totals.kcal > 0 ? '1' : '0';
+  $('calorie-left').textContent = rounded(Math.abs(left)).toLocaleString('pt-BR');
+  $('calorie-left-label').textContent = left >= 0 ? 'faltam' : 'acima';
+  // Dia de treino: proteína vira a meta em destaque (ninguém mais junta treino e dieta).
+  const proteinLeft = Math.max(0, goals.protein - totals.protein);
+  const focus = consumedView && workoutToday ? `<i data-lucide="dumbbell" class="h-4 w-4 shrink-0 text-neon" aria-hidden="true"></i><span>Você treinou ${escapeHTML(workoutToday)} hoje. ${proteinLeft ? `Faltam <strong class="text-white">${rounded(proteinLeft)} g de proteína</strong> para a recuperação.` : '<strong class="text-white">Meta de proteína batida.</strong>'}</span>` : '';
+  $('protein-focus').innerHTML = focus;
+  $('protein-focus').classList.toggle('hidden', !focus);
+  $('protein-focus').classList.toggle('flex', Boolean(focus));
   $('macro-total').innerHTML = [['Proteína', totals.protein, goals.protein], ['Carbo', totals.carbs, goals.carbs], ['Gordura', totals.fat, goals.fat]].map(([label, value, goal]) => `<div class="rounded-2xl mol-soft p-3"><strong class="block text-sm">${rounded(value)} g</strong><span class="mt-1 block text-xs text-gray-400">${label}</span><span class="block text-xs text-gray-500">de ${goal} g</span></div>`).join('');
   const next = nextMeal(dayMeals, selectedDay === new Date().getDay() ? new Date().toTimeString().slice(0, 5) : '00:00');
   $('next-meal').innerHTML = next.meal ? `<p class="text-xs font-bold uppercase tracking-wider text-neon">Próxima refeição${next.tomorrow ? ' · amanhã' : ''}</p><div class="mt-2 flex items-end justify-between gap-4"><div><h2 class="text-xl font-extrabold">${escapeHTML(next.meal.nome)}</h2><p class="mt-1 text-sm text-gray-400">${escapeHTML(next.meal.hora)} · ${mealFoods(next.meal).length} ${mealFoods(next.meal).length === 1 ? 'alimento' : 'alimentos'}</p></div><button type="button" data-open-next class="min-h-11 rounded-xl bg-neon px-3 text-xs font-bold text-black">Ver</button></div>` : '<div class="text-center"><p class="font-bold">Nenhuma refeição planejada</p><p class="mt-1 text-sm text-gray-500">Adicione sua primeira refeição do dia.</p></div>';
@@ -230,6 +243,13 @@ function render() {
     const macroLine = [['P', total.protein], ['C', total.carbs], ['G', total.fat]].map(([label, value]) => `<span class="rounded-xl bg-white/5 px-2 py-1">${label} ${rounded(value)}g</span>`).join('');
     return `<article class="glass-card rounded-3xl p-5"><button type="button" data-open-meal="${escapeHTML(meal.id)}" class="w-full text-left"><div class="flex items-start justify-between gap-4"><div class="min-w-0"><span class="text-xs font-bold text-neon">${escapeHTML(meal.hora)}</span><h3 class="mt-1 truncate text-lg font-extrabold">${escapeHTML(meal.nome)}</h3><p class="mt-2 text-xs text-gray-500">${plural(mealFoods(meal).length, 'alimento', 'alimentos')} · ${rounded(total.kcal)} kcal${outsideWindow}</p><div class="mt-3 flex flex-wrap gap-1.5 text-xs font-bold text-gray-300">${macroLine}</div>${meal.observacao ? `<p class="mt-3 line-clamp-2 rounded-2xl bg-white/5 p-3 text-xs text-gray-400">${escapeHTML(meal.observacao)}</p>` : ''}</div><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-gray-400"><i data-lucide="chevron-right" class="h-5 w-5"></i></span></div></button>${consumedView && mealFoods(meal).length ? (logged => `<button type="button" data-log-meal="${escapeHTML(meal.id)}" aria-pressed="${logged}" aria-label="Comi: ${escapeHTML(meal.nome)}" class="diary-log mt-4"><i data-lucide="${logged ? 'check-circle-2' : 'circle'}" aria-hidden="true"></i><span>Comi</span></button>`)(mealLogged(diary, meal.id)) : ''}</article>`;
   }).join('') : `<div class="mol-state">${getPet().id === 'nenhum' ? '' : petAvatarHTML(getPet(), { size: 96, state: 'plano', className: 'mx-auto mb-3' })}<p class="mol-state-title">Nenhuma refeição neste dia</p><p class="mol-state-copy">Toque numa refeição e use "Nome, horário e dias" para escolher quando ela aparece.</p><button type="button" data-empty-add class="mol-state-action mt-5">Adicionar refeição</button></div>`;
+  const pending = consumedView ? dayMeals.filter(meal => mealFoods(meal).length && !mealLogged(diary, meal.id)) : [];
+  if (pending.length > 1) $('meal-list').insertAdjacentHTML('afterbegin', `<button type="button" data-log-all class="diary-log w-full justify-center"><i data-lucide="check-circle-2" aria-hidden="true"></i><span>Comi tudo do plano hoje</span></button>`);
+  $('meal-list').querySelector('[data-log-all]')?.addEventListener('click', () => {
+    let next;
+    try { next = logAllMeals(diary, dayMeals, nowTime()); } catch (error) { return showToast(error.message); }
+    void saveDiary(next, `${plural(pending.length, 'refeição marcada', 'refeições marcadas')}.`);
+  });
   $('meal-list').querySelectorAll('[data-open-meal]').forEach(button => button.onclick = () => openMeal(button.dataset.openMeal));
   $('meal-list').querySelectorAll('[data-log-meal]').forEach(button => button.onclick = () => {
     const meal = meals.find(item => item.id === button.dataset.logMeal);
@@ -579,3 +599,16 @@ assistantEntry.append(createAssistantButton('Ajustar dieta com o assistente', {
   onDataChanged: tipo => { if (tipo === 'dieta' && user) void load(); if (tipo === 'diario' && user) void loadDiary(); }
 }));
 document.querySelector('.app-page-header')?.after(assistantEntry);
+// Foto do prato: o assistente já lê imagens e registra no diário; o botão só encurta o caminho.
+const photoButton = document.createElement('button');
+photoButton.type = 'button';
+photoButton.dataset.requiresModule = 'assistente';
+photoButton.className = 'mol-btn mol-btn-secondary min-h-11 rounded-xl px-3 text-xs';
+photoButton.innerHTML = '<i data-lucide="camera" class="h-4 w-4" aria-hidden="true"></i><span>Foto do prato</span>';
+photoButton.addEventListener('click', () => openAssistantSheet({
+  title: 'Foto do prato',
+  context: 'A pessoa mandou foto do prato pela tela de Dieta. Estime alimentos e gramas, mostre as calorias e macros e proponha registrar_refeicao no diário de hoje.',
+  pickFile: 'Estime as calorias deste prato e registre no meu diário de hoje.',
+  onDataChanged: tipo => { if (tipo === 'diario' && user) void loadDiary(); }
+}));
+$('food-search').after(photoButton);

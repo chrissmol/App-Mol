@@ -39,7 +39,7 @@ const listHTML = lines => `<ul>${lines.map(line => `<li>${escapeHTML(line)}</li>
  * @param {HTMLElement} container
  * @param {{ context?: string, intro?: string, suggestions?: string[], onDataChanged?: (tipo: string) => void, autofocus?: boolean }} [options]
  */
-export function mountAssistantChat(container, { context = '', intro = '', suggestions = [], onDataChanged, autofocus = false } = {}) {
+export function mountAssistantChat(container, { context = '', intro = '', suggestions = [], onDataChanged, autofocus = false, pickFile = '' } = {}) {
   const id = `assistant-${++chatCount}`;
   const pet = getPet();
   container.classList.add('assistant-chat');
@@ -219,6 +219,8 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     input.focus();
   });
   icons(container);
+  // pickFile: abre o seletor já no clique (o navegador só deixa dentro do gesto) e deixa o pedido escrito.
+  if (pickFile) { input.value = pickFile; fileInput.click(); }
   if (autofocus) requestAnimationFrame(() => input.focus());
   return { submit };
 }

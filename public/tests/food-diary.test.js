@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl } from '../js/modules/food-diary.js';
+import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl, workoutOnDay, logAllMeals } from '../js/modules/food-diary.js';
 
 const meal = { id: 'almoco', nome: 'Almoço', alimentos: [
   { nome: 'Arroz', gramas: 200, kcal100: 128, proteina100: 2.5, carbo100: 28, gordura100: 0.2 },
@@ -37,5 +37,24 @@ describe('diário de refeições', () => {
   it('calcula a meta de água pelo peso', () => {
     expect(waterGoalMl(80)).toBe(2750);
     expect(waterGoalMl(null)).toBe(2000);
+  });
+});
+
+describe('atalhos do diário', () => {
+  it('acha o treino concluído no dia', () => {
+    const sessions = [{ nomeRotina: 'Perna', concluidoEm: new Date(2026, 0, 5, 18) }, { nomeRotina: 'Peito', concluidoEm: { seconds: new Date(2026, 0, 4, 9).getTime() / 1000 } }];
+    expect(workoutOnDay(sessions, '2026-01-05')).toBe('Perna');
+    expect(workoutOnDay(sessions, '2026-01-04')).toBe('Peito');
+    expect(workoutOnDay(sessions, '2026-01-06')).toBe('');
+  });
+
+  it('marca todas as refeições que faltam sem desmarcar as já comidas', () => {
+    const lanche = { id: 'lanche', nome: 'Lanche', alimentos: [meal.alimentos[0]] };
+    const vazia = { id: 'vazia', nome: 'Vazia', alimentos: [] };
+    const start = toggleMeal(normalizeDiary(), meal, '12:00');
+    const next = logAllMeals(start, [meal, lanche, vazia], '20:00');
+    expect(mealLogged(next, 'almoco')).toBe(true);
+    expect(mealLogged(next, 'lanche')).toBe(true);
+    expect(next.itens).toHaveLength(3);
   });
 });

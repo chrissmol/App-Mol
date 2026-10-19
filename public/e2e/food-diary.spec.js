@@ -95,3 +95,18 @@ test('busca de alimento mostra produtos do mercado (Open Food Facts) e preenche 
   await expect(page.locator('#food-name')).toHaveValue('Granola Tradicional · Marca Y');
   await expect(page.locator('#food-kcal')).toHaveValue('410');
 });
+
+test('dia de treino destaca a proteína e "Comi tudo" marca o plano inteiro', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('__mol_e2e_sessions', JSON.stringify([['s1', { userId: 'e2e-user', nomeRotina: 'Perna', concluidoEm: new Date().toISOString() }]])));
+  await page.goto('/pages/dieta.html');
+  await expect(page.locator('#protein-focus')).toContainText('Você treinou Perna hoje. Faltam 180 g de proteína');
+  await expect(page.locator('#calorie-left')).toHaveText('2.400');
+  await page.getByRole('button', { name: 'Comi tudo do plano hoje' }).click();
+  await expect(page.getByRole('button', { name: 'Comi: Café da manhã' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Comi: R3 - Lanche' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#diet-total')).toHaveText('279 kcal');
+  await expect(page.locator('#calorie-left')).toHaveText('2.121');
+
+  await page.getByRole('button', { name: 'Foto do prato' }).click();
+  await expect(page.getByRole('dialog', { name: 'Foto do prato' })).toBeVisible();
+});
