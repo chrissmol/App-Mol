@@ -35,7 +35,7 @@ const ROWS = [
   ['Voltar', 'Back', 'Volver'],
   ['Voltar para as rotinas', 'Back to routines', 'Volver a las rutinas'],
   ['Voltar para o perfil', 'Back to profile', 'Volver al perfil'],
-  ['Voltar para treinos', 'Back to workouts', 'Volver a entrenamientos'],
+  ['Voltar para o treino', 'Back to training', 'Volver al entrenamiento'],
   ['Continuar', 'Continue', 'Continuar'],
   ['Hoje', 'Today', 'Hoy'],
   ['Editar', 'Edit', 'Editar'],

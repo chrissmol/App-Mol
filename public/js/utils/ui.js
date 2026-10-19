@@ -70,7 +70,7 @@ export function showUndoToast(message, onUndo, { duration = 6000 } = {}) {
   return dismiss;
 }
 
-const CONFETTI_COLORS = ['#57d493', '#1e7349', '#e1b12c', '#ffffff', '#7cffbd'];
+const CONFETTI_COLORS = ['#57d493', '#1e7349', '#278a59', '#ffffff', '#7cffbd'];
 
 /**
  * Dispara uma rajada de confete (sem dependência externa) pra celebrar

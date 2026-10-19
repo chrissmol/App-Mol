@@ -9,6 +9,7 @@ import { setupAppNavigation } from './app-nav.js';
 import { applyModuleVisibility, isPageAllowed, showDisabledModuleScreen, syncAppModulesForUser } from './app-modules.js';
 import { watchAuthState } from '../modules/auth.js';
 import { registerServiceWorker } from './service-worker.js';
+import { renderIcons } from './icons.js';
 
 
 function setupSkipLink() {
@@ -43,13 +44,15 @@ function setupConnectivityIndicator() {
     const state = connectivityState(navigator.onLine);
     indicator.classList.toggle('is-offline', !state.online);
     if (!state.online) {
-      indicator.innerHTML = `<span aria-hidden="true"></span><strong>${t('offline', 'Offline')}</strong><small>${isTrustedDevice() ? t('offlineTrusted', 'Alterações aguardando sincronização') : t('offlineTemporary', 'Dados disponíveis até fechar o app')}</small>`;
+      indicator.innerHTML = `<i data-lucide="wifi-off" aria-hidden="true"></i><strong>${t('offline', 'Offline')}</strong><small>${isTrustedDevice() ? t('offlineTrusted', 'Alterações aguardando sincronização') : t('offlineTemporary', 'Dados disponíveis até fechar o app')}</small>`;
+      renderIcons(indicator);
       indicator.classList.remove('hidden');
       wasOffline = true;
       return;
     }
     if (wasOffline) {
-      indicator.innerHTML = `<span aria-hidden="true"></span><strong>${t('onlineAgain', 'Online novamente')}</strong><small>${t('syncing', 'Sincronizando alterações')}</small>`;
+      indicator.innerHTML = `<i data-lucide="wifi" aria-hidden="true"></i><strong>${t('onlineAgain', 'Online novamente')}</strong><small>${t('syncing', 'Sincronizando alterações')}</small>`;
+      renderIcons(indicator);
       indicator.classList.remove('hidden');
       hideTimer = window.setTimeout(() => indicator.classList.add('hidden'), 2800);
     } else indicator.classList.add('hidden');
