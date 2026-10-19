@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dateOf, estimatedWorkoutMinutes, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, trainingCalendar, validWorkoutDraft, weeklyStreak } from '../js/modules/dashboard-analytics.js';
+import { dateOf, estimatedWorkoutMinutes, recentWeightTrend, safeJSON, selectRoutine, sessionsInWeek, validWorkoutDraft, weeklyStreak } from '../js/modules/dashboard-analytics.js';
 
 describe('dashboard', () => {
   it('ignora JSON local corrompido', () => expect(safeJSON('{quebrado', [])).toEqual([]));
@@ -61,16 +61,5 @@ describe('dashboard', () => {
     ], new Date('2026-08-19T23:59:59'));
     expect(trend.last.pesoKg).toBe(80);
     expect(trend.change).toBe(-2);
-  });
-});
-
-describe('trainingCalendar', () => {
-  it('marca os dias treinados nas últimas 4 semanas, de segunda a domingo', () => {
-    const today = new Date(2026, 9, 19, 12); // segunda
-    const days = trainingCalendar([{ concluidoEm: new Date(2026, 9, 19, 8) }, { concluidoEm: new Date(2026, 8, 29, 9) }, { concluidoEm: new Date(2026, 8, 1) }], today);
-    expect(days).toHaveLength(28);
-    expect(days[0].date.getDate()).toBe(28);
-    expect(days.filter(day => day.trained).map(day => day.date.getDate())).toEqual([29, 19]);
-    expect(days.at(-1).future).toBe(true);
   });
 });

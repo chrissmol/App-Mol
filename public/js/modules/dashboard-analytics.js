@@ -88,15 +88,3 @@ export function recentWeightTrend(weights, now = new Date()) {
   const baseline = ordered.find(item => dateOf(item.registradoEm).getTime() >= cutoff) || ordered[0];
   return { last, change: ordered.length > 1 ? Number(last.pesoKg) - Number(baseline.pesoKg) : null };
 }
-
-/** Dias das últimas `weeks` semanas (segunda a domingo, até a semana atual) com a marca de treino. */
-export function trainingCalendar(sessions, reference = new Date(), weeks = 4) {
-  const trained = new Set((Array.isArray(sessions) ? sessions : []).map(dateOf).filter(Boolean).map(date => date.toDateString()));
-  const start = monday(reference);
-  start.setDate(start.getDate() - 7 * (weeks - 1));
-  return Array.from({ length: weeks * 7 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return { date, trained: trained.has(date.toDateString()), future: date > reference };
-  });
-}
