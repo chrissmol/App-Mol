@@ -1892,7 +1892,8 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 .rest-timer-panel.is-ending .rest-ring,
 .rest-timer-panel.is-ending #rest-progress,
 .rest-timer-panel.is-ending #rest-mini-progress {
-  --mol-neon: #f59e0b;
+  /* Fim do descanso: tom do texto (não âmbar); o pulso e o ícone avisam. */
+  --mol-neon: var(--mol-text);
 }
 
 .rest-timer-panel.is-paused .rest-ring {
