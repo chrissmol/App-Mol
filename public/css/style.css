@@ -3796,7 +3796,11 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .evo-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; margin-top: 1rem; }
 .evo-panel[hidden] { display: none; }
 @media (min-width: 900px) { .evo-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
-@media (prefers-reduced-motion: reduce) { .evo-tabs [role="tab"] { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .evo-tabs [role="tab"], .mol-reveal__icon { transition: none; } }
+.mol-reveal__toggle { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 1rem; border-radius: .75rem; background: var(--mol-surface-soft); font-size: .875rem; font-weight: 700; cursor: pointer; list-style: none; }
+.mol-reveal__toggle::-webkit-details-marker { display: none; }
+.mol-reveal__icon { transition: transform .2s; }
+.mol-reveal[open] .mol-reveal__icon { transform: rotate(180deg); }
 /* Perfil: resumo em três números e moldura num botão sobre o avatar. */
 .profile-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; width: 100%; margin-top: 1.25rem; }
 .profile-stats > div { padding: .75rem .5rem; border-radius: 1rem; background: var(--mol-surface-soft); text-align: center; }

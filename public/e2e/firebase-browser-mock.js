@@ -149,7 +149,7 @@ export const getDocs = async reference => {
   if (path.includes('dietas')) return querySnapshot([['diet-e2e', mockDiet]]);
   // __mol_e2e_sessions: sessões simuladas (para o resumo semanal e o histórico).
   if (path.includes('sessoes')) return querySnapshot(JSON.parse(localStorage.getItem('__mol_e2e_sessions') || '[]'));
-  if (path.includes('pesos')) return querySnapshot([]);
+  if (path.includes('pesos')) return querySnapshot(JSON.parse(localStorage.getItem('__mol_e2e_weights') || '[]'));
   return querySnapshot([]);
 };
 export const getCountFromServer = async reference => {
