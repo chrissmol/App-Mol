@@ -32,13 +32,13 @@
     <div class="flex-1 flex flex-col items-center justify-center text-center">
 
       <!-- Ícone da marca: pulso/batimento dentro de um anel com o verde novo -->
-      <div class="w-20 h-20 rounded-2xl mol-panel border border-neon/40 flex items-center justify-center mb-6 shadow-glow-md">
-        <img src="../assets/mol-mark.svg" alt="Mol" class="w-9 h-9">
+      <div class="w-20 h-20 rounded-2xl mol-panel border border-neon/40 flex items-center justify-center mb-6">
+        <svg class="w-9 h-9 text-neon" viewBox="0 0 64 64" role="img" aria-label="Mol"><path d="M13 34h9l5-15 10 29 6-14h8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/></svg>
       </div>
 
-      <h1 class="text-4xl font-black tracking-tight text-glow">Mol</h1>
+      <h1 class="text-4xl font-black tracking-tight">Mol</h1>
       <p class="text-sm text-gray-400 font-medium mt-2 max-w-[260px]">
-        Treinos, dieta e evolução — tudo em um só lugar.
+        Treino, dieta e evolução em um só lugar.
       </p>
     </div>
 
@@ -46,15 +46,15 @@
     <div class="w-full space-y-4 pb-2">
 
       <!-- Mensagem de erro (escondida por padrão, controlada via JS) -->
-      <p id="loginError" role="alert" aria-live="assertive" class="hidden text-danger text-xs font-medium text-center"></p>
+      <p id="loginError" role="alert" aria-live="assertive" class="hidden items-center justify-center gap-2 text-xs font-medium text-center"><svg id="loginMessageIcon" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg><span id="loginMessageText"></span></p>
 
-      <div class="glass-card rounded-3xl border border-neon/15 p-5 shadow-glow-sm">
+      <div class="glass-card rounded-3xl border border-neon/15 p-5">
 
         <!-- Botão principal: Entrar com Google -->
         <button
           type="button"
           id="googleLoginBtn"
-          class="w-full bg-white text-black font-bold text-sm rounded-2xl py-4 flex items-center justify-center gap-3 transition-fluid active:scale-[0.98] hover:shadow-glow-sm"
+          class="w-full min-h-[52px] bg-white text-black font-bold text-sm rounded-2xl border border-black/15 flex items-center justify-center gap-3 transition-fluid active:scale-[0.98]"
         >
           <!-- Logo oficial do Google em SVG (multi-cor) -->
           <svg class="w-5 h-5" viewBox="0 0 48 48">
@@ -69,7 +69,7 @@
         <!-- Divisor -->
         <div class="flex items-center gap-3 py-4">
           <span class="flex-1 h-px bg-white/10"></span>
-          <span class="text-[11px] text-gray-400 font-medium">OU COM E-MAIL</span>
+          <span class="text-xs text-gray-400 font-medium">Ou com e-mail</span>
           <span class="flex-1 h-px bg-white/10"></span>
         </div>
 
@@ -90,7 +90,7 @@
             <label for="authPassword" class="sr-only">Senha</label>
             <input id="authPassword" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Senha" class="w-full min-h-12 rounded-2xl mol-field pl-11 pr-4 text-sm text-white placeholder:text-gray-500">
           </div>
-          <button type="submit" id="emailAuthSubmit" class="w-full min-h-12 rounded-2xl bg-neon text-sm font-bold text-black transition-fluid active:scale-[0.98] hover:shadow-glow-sm">Entrar</button>
+          <button type="submit" id="emailAuthSubmit" class="w-full min-h-[52px] rounded-2xl bg-neon text-sm font-bold text-black transition-fluid active:scale-[0.98]">Entrar</button>
           <div class="flex items-center justify-between text-xs">
             <button type="button" id="toggleAuthMode" class="text-gray-400 underline underline-offset-2">Criar conta</button>
             <button type="button" id="forgotPassword" class="text-gray-400 underline underline-offset-2">Esqueci a senha</button>
@@ -99,7 +99,7 @@
       </div>
 
       <!-- Termos atualizados para Mol -->
-      <p class="text-[11px] text-gray-400 text-center leading-relaxed px-4">
+      <p class="text-xs text-gray-400 text-center leading-relaxed px-4">
         Ao continuar, você concorda com os
         <button type="button" data-legal="terms" class="text-neon underline underline-offset-2">Termos de Uso</button>
         e a
