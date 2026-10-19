@@ -687,7 +687,8 @@ html[data-theme="light"] body .bg-card-dark, html[data-theme="light"] body .bg-c
 html[data-theme="light"] body .bg-white\/5, html[data-theme="light"] body .bg-white\/10, html[data-theme="light"] body .bg-white\/\[\.03\] { background-color: var(--mol-surface-soft); }
 html[data-theme="light"] body .border-white\/5, html[data-theme="light"] body .border-white\/10 { border-color: var(--mol-border); }
 html[data-theme="light"] body .text-white, html[data-theme="light"] body .text-gray-200, html[data-theme="light"] body .text-gray-300 { color: var(--mol-text); }
-html[data-theme="light"] body .text-gray-400 { color: var(--mol-muted); }
+/* Texto suave da marca (#8b9a91 no escuro) no lugar do cinza neutro do Tailwind, em todos os temas. */
+html body .text-gray-400 { color: var(--mol-muted); }
 html[data-theme="light"] body .text-gray-500, html[data-theme="light"] body .text-gray-600 { color: var(--mol-muted); }
 html[data-theme="light"] body input, html[data-theme="light"] body select, html[data-theme="light"] body textarea { color: var(--mol-text); background-color: var(--mol-surface-2); border-color: #d3e0d7; }
 html[data-theme="light"] body .mol-brand { color: var(--mol-text); }
@@ -1177,6 +1178,8 @@ html[data-theme="light"] a:focus-visible {
 
 .dashboard-surface .text-neon { color: #57d493; }
 .dashboard-surface .bg-neon { background-color: var(--mol-brand-green); }
+/* Ação principal da tela: 52 px de altura, como pede o branding book. */
+#daily-brief-action { min-height: 52px; padding-inline: 1.25rem; }
 html[data-theme="light"] body.dashboard-surface .text-neon { color: #0f5f3a; }
 .app-surface .text-neon { color: #57d493; }
 .app-surface .text-gray-500, .app-surface .text-gray-600 { color: #8b9a91; }
