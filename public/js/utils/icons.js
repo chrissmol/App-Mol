@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, CircleHelp, Clock3,
   CalendarCheck2, ClipboardList, Compass, Copy, createIcons, Crown, Download, Dumbbell, Ellipsis, Eye, EyeOff, FilePlus2,
   Flame, Footprints, HeartPulse, Info, Languages, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole,
-  LogOut, Medal, Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, Replace, Ruler, Scale,
+  LogOut, Medal, Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, Replace, RotateCcw, Ruler, Scale,
   ScanBarcode, Search, Send, Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star,
   Sun, Target, TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User,
   Utensils, Weight, Wifi, WifiOff, X
@@ -16,7 +16,7 @@ const icons = {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, CircleHelp, ClipboardList, Clock3,
   Compass, Copy, Crown, Download, Dumbbell, Ellipsis, Eye, EyeOff, FilePlus2, Flame, Footprints, HeartPulse, Info, Languages,
   CalendarCheck2, Layers3, LayoutDashboard, LayoutTemplate, Link2, LockKeyhole, LogOut, Medal,
-  Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, Replace, Ruler, Scale, ScanBarcode, Search, Send,
+  Minus, Monitor, Moon, Palette, Paperclip, Pause, Pencil, Play, Plus, Replace, RotateCcw, Ruler, Scale, ScanBarcode, Search, Send,
   Settings2, Share2, ShieldCheck, SkipForward, SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Target,
   TimerReset, Trash2, TriangleAlert, TrendingDown, TrendingUp, Trophy, Truck, Undo2, Upload, User, Utensils, Weight, Wifi, WifiOff, X
 };

@@ -27,6 +27,7 @@ const FINAL = {
 export const ThinkingLevel = { MINIMAL: 'MINIMAL', LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' };
 export class GoogleAIBackend {}
 export const getAI = () => ({});
+let failedOnce = false;
 export const getGenerativeModel = () => ({
   async generateContent({ contents }) {
     await new Promise(resolve => setTimeout(resolve, 150));
@@ -35,6 +36,9 @@ export const getGenerativeModel = () => ({
     if (toolResult) return reply([{ text: FINAL[toolResult.functionResponse.name] || 'Pronto.' }]);
     const text = last.parts.map(part => part.text || '').join(' ').toLowerCase();
     const hasFile = last.parts.some(part => part.inlineData || /conteúdo do arquivo/i.test(part.text || ''));
+    // Primeira tentativa de "quebrar" falha; a segunda funciona (teste do botão Tentar de novo).
+    if (text.includes('quebrar') && !failedOnce) { failedOnce = true; throw new Error('falha simulada'); }
+    if (text.includes('quebrar')) return reply([{ text: 'Agora funcionou.' }]);
     if (text.includes('python')) return reply([{ text: 'Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.' }]);
     if (text.includes('arroz')) return call('buscar_alimento', { nome: 'arroz branco' });
     if (text.includes('troca') || hasFile) return call('propor_dieta', DIET_SWAP);

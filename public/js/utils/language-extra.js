@@ -208,6 +208,12 @@ const ROWS = [
   ['Meta de água concluída.', 'Water goal done.', 'Meta de agua cumplida.'],
 
   // Assistente
+  ['Nova conversa', 'New conversation', 'Nueva conversación'],
+  ['Nova conversa iniciada.', 'New conversation started.', 'Nueva conversación iniciada.'],
+  ['Tentar de novo', 'Try again', 'Intentar de nuevo'],
+  ['Copiar resposta', 'Copy reply', 'Copiar respuesta'],
+  ['Resposta copiada.', 'Reply copied.', 'Respuesta copiada.'],
+  ['Não foi possível copiar a resposta.', "Couldn't copy the reply.", 'No se pudo copiar la respuesta.'],
   ['Inteligência do Mol', 'Mol intelligence', 'Inteligencia de Mol'],
   ['Tire dúvidas de treino e dieta, ou peça para ajustar os seus dados. Nada muda sem você confirmar.', 'Ask about training and diet, or ask to adjust your data. Nothing changes without your confirmation.', 'Resuelve dudas de entrenamiento y dieta, o pide ajustar tus datos. Nada cambia sin tu confirmación.'],
   ['Como posso ajudar?', 'How can I help?', '¿Cómo puedo ayudar?'],

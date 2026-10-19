@@ -53,7 +53,8 @@ export async function createGeminiSend({ systemInstruction, toolDeclarations, mo
   // recusam (400). Aqui ele vai como "user", e a resposta do modelo volta
   // intacta (inclui a assinatura das chamadas de ferramenta).
   const history = [];
-  return async parts => {
+  let mark = 0;
+  const send = async parts => {
     const turn = { role: 'user', parts };
     const { response } = await model.generateContent({ contents: [...history, turn] });
     const reply = response.candidates?.[0]?.content;
@@ -62,4 +63,8 @@ export async function createGeminiSend({ systemInstruction, toolDeclarations, mo
     const calls = response.functionCalls?.() || [];
     return { text: calls.length ? '' : response.text(), functionCalls: calls.map(call => ({ name: call.name, args: call.args || {} })) };
   };
+  // Se a pergunta falhar no meio (ex.: depois de uma ferramenta), "Tentar de novo" volta ao ponto anterior.
+  send.mark = () => { mark = history.length; };
+  send.rewind = () => { history.length = mark; };
+  return send;
 }
