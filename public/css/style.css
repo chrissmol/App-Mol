@@ -3845,3 +3845,7 @@ body.has-active-workout main { padding-bottom: 5rem; }
   100% { transform: none; filter: drop-shadow(0 0 0 transparent); }
 }
 html[data-reduce-motion="true"] .pet-avatar--celebra, html[data-reduce-motion="true"] .pet-avatar--chega { animation: none; }
+
+.progress-fold > summary::-webkit-details-marker { display: none; }
+.progress-fold__chevron { transition: transform .2s ease; }
+.progress-fold[open] .progress-fold__chevron { transform: rotate(180deg); }

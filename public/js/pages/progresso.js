@@ -52,7 +52,7 @@ function renderVolume(volume) {
 
 function recordCard(record) {
   const evolution = record.improvement == null ? '<span class="text-gray-500">Primeira marca calculável</span>' : `<span class="text-neon">+${record.improvement.toLocaleString('pt-BR')}% sobre a marca anterior</span>`;
-  return `<article class="border-b border-white/5 pb-4 last:border-0 last:pb-0"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(record.name)}</h3><p class="mt-1 text-[11px] text-gray-500">${record.weight.toLocaleString('pt-BR')} kg × ${record.reps.toLocaleString('pt-BR')} rep. · ${formatDate(record.date)}</p></div><div class="shrink-0 text-right"><strong class="text-sm text-neon">${record.e1rm.toLocaleString('pt-BR')} kg</strong><small class="block text-[10px] text-gray-500">1RM estimado</small></div></div><p class="mt-2 text-[10px] font-semibold">${evolution}</p></article>`;
+  return `<article class="border-b border-white/5 pb-4 last:border-0 last:pb-0"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(record.name)}</h3><p class="mt-1 text-xs text-gray-500">${record.weight.toLocaleString('pt-BR')} kg × ${record.reps.toLocaleString('pt-BR')} rep. · ${formatDate(record.date)}</p></div><div class="shrink-0 text-right"><strong class="text-sm text-neon">${record.e1rm.toLocaleString('pt-BR')} kg</strong><small class="block text-xs text-gray-500">1RM estimado</small></div></div><p class="mt-2 text-xs font-semibold">${evolution}</p></article>`;
 }
 
 function renderRecords(records) {
@@ -75,7 +75,7 @@ function renderMuscleHeatmap(scores) {
 
 function renderInsight(volume) {
   const insight = trainingBalance(volume);
-  const tones = { empty: 'text-gray-400', focused: 'text-blue-400', concentrated: 'text-orange-400', distributed: 'text-neon' };
+  const tones = { empty: 'text-gray-400', focused: 'text-gray-400', concentrated: 'text-gray-400', distributed: 'text-neon' };
   $('balance-insight').innerHTML = `<div class="flex items-start gap-3"><span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl mol-soft ${tones[insight.state] || 'text-neon'}"><i data-lucide="sparkles" class="h-4 w-4"></i></span><div><h3 class="text-sm font-bold">${escapeHTML(insight.title)}</h3><p class="mt-1 text-xs leading-relaxed text-gray-500">${escapeHTML(insight.message)}</p></div></div>`;
 }
 
@@ -84,11 +84,11 @@ function renderTrends(trends) {
     $('trends').innerHTML = '<div class="mol-state"><p class="mol-state-title">Precisamos de duas sessões</p><p class="mol-state-copy">Repita um exercício com carga registrada para calcular uma tendência.</p></div>';
     return;
   }
-  const labels = { improving: ['Evoluindo', 'text-neon', 'trending-up'], stable: ['Estável', 'text-blue-400', 'minus'], declining: ['Atenção', 'text-orange-400', 'trending-down'] };
+  const labels = { improving: ['Evoluindo', 'text-neon', 'trending-up'], stable: ['Estável', 'text-gray-400', 'minus'], declining: ['Atenção', 'text-gray-400', 'trending-down'] };
   $('trends').innerHTML = trends.slice(0, 8).map(trend => {
     const [label, tone, icon] = labels[trend.state];
     const change = `${trend.deltaPercent > 0 ? '+' : ''}${trend.deltaPercent.toLocaleString('pt-BR')}%`;
-    return `<article class="flex items-center justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(trend.name)}</h3><p class="mt-1 text-[11px] text-gray-500">${trend.sessions} sessões · e1RM recente ${trend.recentE1rm.toLocaleString('pt-BR')} kg</p></div><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}</span></article>`;
+    return `<article class="flex items-center justify-between gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0"><div class="min-w-0"><h3 class="truncate text-sm font-semibold">${escapeHTML(trend.name)}</h3><p class="mt-1 text-xs text-gray-500">${trend.sessions} sessões · e1RM recente ${trend.recentE1rm.toLocaleString('pt-BR')} kg</p></div><span class="flex shrink-0 items-center gap-1 text-xs font-bold ${tone}"><i data-lucide="${icon}" class="h-4 w-4"></i>${label} ${change}</span></article>`;
   }).join('');
 }
 function renderProgress() {
@@ -100,7 +100,7 @@ function renderProgress() {
   $('summary-period').textContent = `séries em ${selectedDays} dias`;
   document.querySelectorAll('[data-period]').forEach(button => {
     const active = Number(button.dataset.period) === selectedDays;
-    button.className = `min-h-10 rounded-xl px-4 text-xs font-bold ${active ? 'bg-neon text-black' : 'bg-white/5 text-gray-400'}`;
+    button.className = `min-h-11 shrink-0 rounded-xl px-4 text-xs font-bold ${active ? 'bg-neon text-black' : 'bg-white/5 text-gray-400'}`;
     button.setAttribute('aria-pressed', String(active));
   });
   renderSummary(volume, records); renderInsight(volume); renderMuscleHeatmap(muscleScores); renderVolume(volume); renderTrends(trends); renderRecords(records);
