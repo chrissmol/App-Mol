@@ -337,12 +337,23 @@ async function persistAppModules() {
 const reminderPreferences = getReminderPreferences();
 $('trusted-device').checked = isTrustedDevice();
 $('reminders-enabled').checked = reminderPreferences.enabled;
+$('workout-time').value = reminderPreferences.workoutTime;
+$('meal-time').value = reminderPreferences.mealTime;
 
 function persistReminderControls() {
   saveReminderPreferences({
-    enabled: $('reminders-enabled').checked
+    enabled: $('reminders-enabled').checked,
+    workoutTime: $('workout-time').value,
+    mealTime: $('meal-time').value
   });
 }
+
+['workout-time', 'meal-time'].forEach(id => $(id).addEventListener('change', () => {
+  persistReminderControls();
+  const saved = getReminderPreferences();
+  $('workout-time').value = saved.workoutTime; $('meal-time').value = saved.mealTime;
+  $('device-status').textContent = `Lembretes às ${saved.workoutTime} (treino) e ${saved.mealTime} (refeição).`;
+}));
 
 $('trusted-device').onchange = async () => {
   const enabled = $('trusted-device').checked;

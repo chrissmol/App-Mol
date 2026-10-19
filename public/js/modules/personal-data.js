@@ -15,6 +15,13 @@ function optionalNumber(value, { min, max, integer = false, label }) {
   return parsed;
 }
 
+function parsePace(value) {
+  if (String(value ?? '').trim() === '') return null;
+  const pace = Number(value);
+  if (![0.25, 0.5].includes(pace)) throw new Error('Escolha um ritmo de 0,25 ou 0,5 kg por semana.');
+  return pace;
+}
+
 export function parsePersonalData(values) {
   const objetivo = String(values.goal || '');
   if (!goals.includes(objetivo)) throw new Error('Selecione um objetivo válido.');
@@ -32,7 +39,8 @@ export function parsePersonalData(values) {
     alturaCm: optionalNumber(values.height, { min: 100, max: 250, integer: true, label: 'A altura' }),
     metaPesoKg: optionalNumber(values.goalWeight, { min: 20, max: 400, label: 'A meta de peso' }),
     objetivo,
-    metaSemanal: optionalNumber(values.weekly, { min: 1, max: 7, integer: true, label: 'A meta semanal' })
+    metaSemanal: optionalNumber(values.weekly, { min: 1, max: 7, integer: true, label: 'A meta semanal' }),
+    ritmoMetaKg: parsePace(values.pace)
   };
 }
 

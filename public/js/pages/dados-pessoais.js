@@ -7,7 +7,7 @@ import { setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { parsePersonalData } from '../modules/personal-data.js';
 import { recentWeightTrend } from '../modules/dashboard-analytics.js';
-import { ACTIVITY_LEVELS, calculateNutritionGoals, goalSummaryHTML, missingGoalInputs } from '../modules/nutrition-goals.js';
+import { ACTIVITY_LEVELS, calculateNutritionGoals, goalSummaryHTML, missingGoalInputs, paceApplies } from '../modules/nutrition-goals.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
 
 setupAppShell();
@@ -44,10 +44,11 @@ function setPageState(state, message = '') {
 }
 
 function goalInputs() {
-  return { sexo: $('sex').value, nascimento: $('birth').value, alturaCm: Number($('height').value), pesoKg: Number(String($('current-weight').value).replace(',', '.')), nivelAtividade: $('activity').value, objetivo: $('goal').value };
+  return { sexo: $('sex').value, nascimento: $('birth').value, alturaCm: Number($('height').value), pesoKg: Number(String($('current-weight').value).replace(',', '.')), nivelAtividade: $('activity').value, objetivo: $('goal').value, ritmoMetaKg: Number($('pace').value) || null };
 }
 
 function renderGoal() {
+  $('pace-field').classList.toggle('hidden', !paceApplies($('goal').value));
   const inputs = goalInputs();
   $('goal-result-body').innerHTML = goalSummaryHTML(calculateNutritionGoals(inputs), missingGoalInputs(inputs));
 }
@@ -68,6 +69,7 @@ function fillProfile(profile) {
   $('height').value = Number(profile.alturaCm) > 0 ? profile.alturaCm : '';
   $('goal-weight').value = Number(profile.metaPesoKg) > 0 ? profile.metaPesoKg : '';
   $('goal').value = ['Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'].includes(profile.objetivo) ? profile.objetivo : '';
+  $('pace').value = [0.25, 0.5].includes(profile.ritmoMetaKg) ? String(profile.ritmoMetaKg) : '';
   $('weekly').value = Number(profile.metaSemanal) >= 1 && Number(profile.metaSemanal) <= 7 ? profile.metaSemanal : '';
   renderGoal();
 }
@@ -99,7 +101,7 @@ $('save').onclick = async () => {
   if (!currentUser) return showToast('Aguarde o carregamento da conta.');
   let data;
   try {
-    data = parsePersonalData({ sex: $('sex').value, birth: $('birth').value, activity: $('activity').value, height: $('height').value, goalWeight: $('goal-weight').value, goal: $('goal').value, weekly: $('weekly').value });
+    data = parsePersonalData({ sex: $('sex').value, birth: $('birth').value, activity: $('activity').value, height: $('height').value, goalWeight: $('goal-weight').value, goal: $('goal').value, weekly: $('weekly').value, pace: paceApplies($('goal').value) ? $('pace').value : '' });
   } catch (error) { return showToast(error.message); }
   const weightText = String($('current-weight').value).trim();
   const weight = Number(weightText.replace(',', '.'));
@@ -123,7 +125,7 @@ $('save').onclick = async () => {
   } finally { setButtonLoading(button, false); }
 };
 
-['sex', 'birth', 'height', 'current-weight', 'activity', 'goal'].forEach(id => $(id).addEventListener('input', renderGoal));
+['sex', 'birth', 'height', 'current-weight', 'activity', 'goal', 'pace'].forEach(id => $(id).addEventListener('input', renderGoal));
 
 watchProtectedPage(user => {
   currentUser = user;
