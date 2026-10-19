@@ -62,7 +62,7 @@ function renderCalendar() {
     const day = index + 1; const count = counts.get(day) || 0;
     const isToday = day === today.getDate() && isCurrentMonth; const active = filterByMonth && selectedDay === day;
     const label = `${day} de ${visibleMonth.toLocaleDateString('pt-BR', { month: 'long' })}${count ? `, ${count} ${count === 1 ? 'treino' : 'treinos'}` : ', nenhum treino'}${isToday ? ', hoje' : ''}`;
-    return `<button type="button" data-calendar-day="${day}" ${count ? '' : 'disabled'} class="relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-xs ${count ? 'bg-neon font-bold text-black' : 'text-gray-500'} ${isToday && !count ? 'ring-1 ring-neon' : ''} ${active ? 'ring-2 ring-white ring-offset-2 ring-offset-[#070a08]' : ''}" aria-label="${label}" aria-pressed="${active}">${day}${count > 1 ? `<span class="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-extrabold text-black">${count}</span>` : ''}</button>`;
+    return `<button type="button" data-calendar-day="${day}" ${count ? '' : 'disabled'} class="relative mx-auto flex h-11 w-full max-w-11 min-w-0 items-center justify-center rounded-full text-xs ${count ? 'bg-neon font-bold text-black' : 'text-gray-500'} ${isToday && !count ? 'ring-1 ring-neon' : ''} ${active ? 'ring-2 ring-[color:var(--mol-text)] ring-offset-2 ring-offset-[var(--mol-surface)]' : ''}" aria-label="${label}" aria-pressed="${active}">${day}${count > 1 ? `<span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-extrabold text-black">${count}</span>` : ''}</button>`;
   });
   $('calendar').innerHTML = [...blanks, ...days].join('');
   $('calendar').querySelectorAll('[data-calendar-day]').forEach(button => button.addEventListener('click', () => { selectedDay = Number(button.dataset.calendarDay); filterByMonth = true; visibleLimit = PAGE_SIZE; renderCalendar(); renderSessions(); }));
@@ -88,11 +88,11 @@ function setDetailsHTML(session) {
       const setLabel = type === 'N' ? ++normalSetNumber : escapeHTML(type);
       return `<li class="grid grid-cols-[2.25rem_1fr_auto] items-center gap-2 rounded-xl bg-white/[.04] px-3 py-2 text-xs"><span class="set-type-badge ${type === 'N' ? 'is-normal' : `is-${type.toLowerCase()}`}" aria-label="${type === 'N' ? `Série ${setLabel}` : `Série ${type}`}"${type === 'N' ? '' : ` title="Série ${type}"`}>${setLabel}</span><span class="text-gray-300">${load} × ${reps}${rir}</span><span class="${set.concluida ? 'text-neon' : 'text-gray-600'}">${set.concluida ? 'Feita' : 'Não realizada'}</span></li>`;
     }).join('');
-    return `<section><h4 class="text-sm font-bold">${escapeHTML(exercise.nome || 'Exercício')}</h4><p class="mt-1 text-[10px] uppercase text-gray-500">${escapeHTML(exercise.grupo || 'Outros')}</p><ul class="mt-2 space-y-1">${sets || '<li class="text-xs text-gray-500">Sem séries registradas.</li>'}</ul></section>`;
+    return `<section><h4 class="text-sm font-bold">${escapeHTML(exercise.nome || 'Exercício')}</h4><p class="mt-1 text-xs uppercase text-gray-500">${escapeHTML(exercise.grupo || 'Outros')}</p><ul class="mt-2 space-y-1">${sets || '<li class="text-xs text-gray-500">Sem séries registradas.</li>'}</ul></section>`;
   }).join('');
   const checkin = session.checkinPreTreino;
   const checkinHTML = checkin ? `<div class="grid grid-cols-3 gap-2 rounded-2xl bg-white/5 p-3 text-center text-xs"><span>Energia<strong class="mt-1 block text-neon">${displayScaleValue(checkin.energia, 1, 5)}</strong></span><span>Sono<strong class="mt-1 block text-neon">${displayScaleValue(checkin.sono, 1, 5)}</strong></span><span>Dor<strong class="mt-1 block text-neon">${displayScaleValue(checkin.dor, 0, 5)}</strong></span></div>` : '';
-  return `${checkinHTML}<div class="mt-4 space-y-5">${exerciseHTML || '<p class="text-sm text-gray-500">Sem exercícios registrados.</p>'}</div><button type="button" data-delete-session="${escapeHTML(session.id)}" class="mt-5 min-h-11 w-full rounded-xl border border-red-400/30 bg-red-500/10 text-xs font-bold text-red-300">Excluir esta sessão</button>`;
+  return `${checkinHTML}<div class="mt-4 space-y-5">${exerciseHTML || '<p class="text-sm text-gray-500">Sem exercícios registrados.</p>'}</div><button type="button" data-delete-session="${escapeHTML(session.id)}" class="mt-5 min-h-11 w-full rounded-xl border border-danger/40 bg-danger/10 text-xs font-bold text-danger">Excluir esta sessão</button>`;
 }
 
 function sessionCard(session) {
