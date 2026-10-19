@@ -3,8 +3,8 @@ import brand from '@brand';
 const db = await getDb();
 import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
-import { collection, doc, getCountFromServer, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { recentWeightTrend } from '../modules/dashboard-analytics.js';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { recentWeightTrend, trainingCalendar, weeklyStreak } from '../modules/dashboard-analytics.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, showToast } from '../utils/ui.js';
 import { normalizeAppModules } from '../utils/app-modules.js';
@@ -149,6 +149,20 @@ function renderStats(profile = {}, latestWeight = null) {
   $('stat-weight').textContent = latestWeight ? `${number(latestWeight)} kg${goal}` : '—';
 }
 
+/** Sequência de semanas na meta e mini calendário das últimas 4 semanas. */
+function renderConsistency(sessions, profile = {}) {
+  const goal = Number(profile.metaSemanal) > 0 ? Number(profile.metaSemanal) : 1;
+  const streak = weeklyStreak(sessions, new Date(), goal);
+  $('profile-streak').textContent = streak > 0
+    ? `${streak} ${streak === 1 ? 'semana' : 'semanas seguidas'} na meta`
+    : 'Bata a meta desta semana para começar uma sequência';
+  const days = trainingCalendar(sessions);
+  const trained = days.filter(day => day.trained).length;
+  $('profile-calendar').innerHTML = days.map(day => `<span class="profile-calendar__day${day.trained ? ' is-trained' : ''}${day.future ? ' is-future' : ''}">${day.trained ? '✓' : ''}</span>`).join('');
+  $('profile-calendar').setAttribute('aria-label', `${trained} ${trained === 1 ? 'dia treinado' : 'dias treinados'} nas últimas 4 semanas`);
+  $('profile-calendar-summary').textContent = `${trained} ${trained === 1 ? 'dia treinado' : 'dias treinados'}`;
+}
+
 async function loadProfile(account) {
   currentAccount = account;
   const cachedProfile = safeJSON(getSessionItem(profileCacheKey(account.uid)), {});
@@ -159,15 +173,17 @@ async function loadProfile(account) {
   try {
     const [snapshot, sessionsSnapshot, weightsSnapshot] = await Promise.all([
       withTimeout(getDoc(doc(db, 'users', account.uid)), 'O perfil'),
-      withTimeout(getCountFromServer(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas'),
+      withTimeout(getDocs(query(collection(db, 'sessoes'), where('userId', '==', account.uid))), 'As conquistas'),
       withTimeout(getDocs(query(collection(db, 'pesos'), where('userId', '==', account.uid))), 'Os pesos').catch(() => null)
     ]);
     const profile = snapshot.exists() ? snapshot.data() : {};
-    completedWorkouts = sessionsSnapshot.data().count;
+    const sessions = sessionsSnapshot.docs.map(item => item.data());
+    completedWorkouts = sessions.length;
     setSessionItem(profileCacheKey(account.uid), JSON.stringify(profile));
     applyProfileModules(profile);
     renderIdentity(account, profile);
     renderStats(profile, weightsSnapshot ? recentWeightTrend(weightsSnapshot.docs.map(item => item.data())).last?.pesoKg : null);
+    renderConsistency(sessions, profile);
     setPageReady();
   } catch (error) {
     console.warn('Perfil não sincronizado agora:', error.message);
