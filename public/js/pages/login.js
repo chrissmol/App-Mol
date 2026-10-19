@@ -1,4 +1,4 @@
-import { ensureUserProfile, getGoogleRedirectUser, loginWithEmail, loginWithGoogleRedirect, registerWithEmail, resetPassword, watchAuthState } from '../modules/auth.js';
+import { ensureUserProfile, finishEmailLink, getGoogleRedirectUser, isEmailLink, loginWithEmail, loginWithGoogleRedirect, registerWithEmail, resetPassword, sendEmailLink, watchAuthState } from '../modules/auth.js';
 import { authErrorMessage, LEGAL_DOCUMENTS, withTimeout } from '../modules/login-utils.js';
 import { setButtonLoading } from '../utils/ui.js';
 import { initializeAccessibility } from '../utils/accessibility.js';
@@ -123,8 +123,8 @@ document.querySelectorAll('[data-legal]').forEach(button => {
 const emailForm = document.getElementById('emailAuthForm');
 const nameField = document.getElementById('authNameField');
 const nameInput = document.getElementById('authName');
-const emailInput = document.getElementById('authEmail');
-const passwordInput = document.getElementById('authPassword');
+const emailInput = /** @type {HTMLInputElement} */ (document.getElementById('authEmail'));
+const passwordInput = /** @type {HTMLInputElement} */ (document.getElementById('authPassword'));
 const submitBtn = document.getElementById('emailAuthSubmit');
 const toggleModeBtn = document.getElementById('toggleAuthMode');
 const forgotBtn = document.getElementById('forgotPassword');
@@ -135,7 +135,7 @@ function updateEmailFormMode() {
   toggleModeBtn.textContent = isRegisterMode ? 'Já tenho conta' : 'Criar conta';
   nameField.classList.toggle('hidden', !isRegisterMode);
   nameInput.required = isRegisterMode;
-  passwordInput.autocomplete = isRegisterMode ? 'new-password' : 'current-password';
+  passwordInput.setAttribute('autocomplete', isRegisterMode ? 'new-password' : 'current-password');
 }
 
 toggleModeBtn.addEventListener('click', () => {
@@ -179,3 +179,57 @@ forgotBtn.addEventListener('click', async () => {
     showError(authErrorMessage(error));
   }
 });
+
+// Mostrar/ocultar senha
+const togglePasswordBtn = document.getElementById('togglePassword');
+togglePasswordBtn.addEventListener('click', () => {
+  const show = passwordInput.type === 'password';
+  passwordInput.type = show ? 'text' : 'password';
+  togglePasswordBtn.setAttribute('aria-pressed', String(show));
+  togglePasswordBtn.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+  document.getElementById('togglePasswordIcon').setAttribute('d', show
+    ? 'M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20'
+    : 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z');
+});
+
+// Lembrar o último e-mail neste aparelho (só o e-mail, nunca a senha)
+const LAST_EMAIL_KEY = 'mol-last-email';
+const readStore = key => { try { return localStorage.getItem(key); } catch { return null; } };
+const writeStore = (key, value) => { try { value ? localStorage.setItem(key, value) : localStorage.removeItem(key); } catch { /* armazenamento bloqueado */ } };
+const lastEmail = readStore(LAST_EMAIL_KEY);
+if (lastEmail) emailInput.value = lastEmail;
+emailInput.addEventListener('change', () => writeStore(LAST_EMAIL_KEY, emailInput.value.trim()));
+emailForm.addEventListener('submit', () => writeStore(LAST_EMAIL_KEY, emailInput.value.trim()));
+
+// Link por e-mail, sem senha
+const EMAIL_LINK_KEY = 'mol-email-link-pending';
+document.getElementById('emailLinkBtn').addEventListener('click', async () => {
+  if (isEmailLink()) return finishEmailLinkLogin();
+  const email = emailInput.value.trim();
+  if (!email) return showError('Digite seu e-mail para receber o link de acesso.');
+  hideError();
+  try {
+    await sendEmailLink(email);
+    writeStore(EMAIL_LINK_KEY, email);
+    writeStore(LAST_EMAIL_KEY, email);
+    showError('Enviamos um link de acesso para o seu e-mail. Abra-o neste aparelho.', 'success');
+  } catch (error) {
+    showError(error?.code === 'auth/operation-not-allowed' ? 'O acesso por link ainda não está disponível.' : authErrorMessage(error));
+  }
+});
+
+async function finishEmailLinkLogin() {
+  if (!isEmailLink()) return;
+  const email = emailInput.value.trim() || readStore(EMAIL_LINK_KEY);
+  if (!email) return showError('Digite o e-mail que recebeu o link e toque em "Entrar com link por e-mail".');
+  try {
+    const user = await finishEmailLink(email);
+    writeStore(EMAIL_LINK_KEY, '');
+    await withTimeout(ensureUserProfile(user), 8000).catch(profileError =>
+      console.warn('Perfil inicial será preparado novamente no próximo acesso:', profileError.message));
+    navigateHome();
+  } catch (error) {
+    showError(authErrorMessage(error));
+  }
+}
+finishEmailLinkLogin();

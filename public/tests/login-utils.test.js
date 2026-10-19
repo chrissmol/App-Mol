@@ -18,6 +18,10 @@ describe('login', () => {
     vi.useRealTimers();
   });
 
+  it('traduz link de acesso expirado', () => {
+    expect(authErrorMessage({ code: 'auth/invalid-action-code' })).toContain('expirou');
+  });
+
   it('mantém documentos jurídicos estruturados', () => {
     expect(LEGAL_DOCUMENTS.terms.sections.length).toBeGreaterThanOrEqual(8);
     expect(LEGAL_DOCUMENTS.privacy.sections.length).toBeGreaterThanOrEqual(8);

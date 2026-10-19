@@ -9,6 +9,8 @@ export function authErrorMessage(error) {
     'auth/client-rate-limited': `Muitas tentativas seguidas. Aguarde ${Math.max(1, Math.ceil(Number(error?.retryAfterSeconds || 60) / 60))} min e tente novamente.`,
     'auth/account-exists-with-different-credential': 'Já existe uma conta com este e-mail usando outra forma de acesso.',
     'auth/operation-not-allowed': 'O login com Google não está disponível no momento.',
+    'auth/invalid-action-code': 'Este link expirou ou já foi usado. Peça um novo.',
+    'auth/expired-action-code': 'Este link expirou ou já foi usado. Peça um novo.',
     'auth/invalid-email': 'Digite um e-mail válido.',
     'auth/missing-password': 'Digite sua senha.',
     'auth/weak-password': 'Use uma senha com pelo menos 6 caracteres.',
