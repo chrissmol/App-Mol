@@ -1,6 +1,7 @@
 // Diário de refeições: o que a pessoa comeu de fato no dia (o plano fica em dietas/{uid}).
 // Um documento por dia: diario/{uid}_{AAAA-MM-DD} = { userId, data, itens, aguaMl }.
 import { foodNutrients, mealFoods } from './nutrition.js';
+import { dateFrom } from './evolution-analytics.js';
 
 export const DIARY_LIMITS = { items: 80, waterMl: 10000, waterStep: 250 };
 
@@ -79,4 +80,15 @@ export function waterGoalMl(weightKg) {
   const kg = Number(weightKg);
   if (!(kg >= 20 && kg <= 400)) return 2000;
   return Math.round((kg * 35) / DIARY_LIMITS.waterStep) * DIARY_LIMITS.waterStep;
+}
+
+/** Nome do treino concluído no dia (ou ''), para puxar a meta de proteína. */
+export function workoutOnDay(sessions, key = dayKey()) {
+  const done = sessions.find(session => { const date = dateFrom(session?.concluidoEm); return date && dayKey(date) === key; });
+  return done ? String(done.nomeRotina || 'Treino') : '';
+}
+
+/** Marca como comidas todas as refeições do plano que ainda faltam. */
+export function logAllMeals(diary, meals, time = '') {
+  return meals.filter(meal => mealFoods(meal).length && !mealLogged(diary, meal.id)).reduce((current, meal) => toggleMeal(current, meal, time), normalizeDiary(diary));
 }
