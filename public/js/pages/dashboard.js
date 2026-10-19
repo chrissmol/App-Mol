@@ -95,7 +95,7 @@ function getDailyFocus() {
     subtitle: 'Seu início mostra só o essencial para abrir, executar e registrar.',
     context: 'Ative outros módulos nas Configurações quando quiser ver dieta, evolução ou progresso.',
     href: './pages/treino.html',
-    label: 'Abrir treinos',
+    label: 'Abrir treino',
     icon: 'dumbbell',
     cardId: null
   };
@@ -178,7 +178,7 @@ function setWeek(sessions, goal = 1) {
   const start = monday(); const days = Array.from({length: 7}, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const thisWeek = sessionsInWeek(sessions);
   const volume = thisWeek.reduce((sum, session) => sum + sessionMetrics(session).volume, 0);
-  $('week-days').innerHTML = days.map(d => { const done = thisWeek.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center" role="img" aria-label="${dayLabel[d.getDay()]}, ${d.toLocaleDateString('pt-BR')}${done ? ', treino concluído' : ''}"><span aria-hidden="true" class="text-[10px] font-semibold text-gray-500">${dayLabel[d.getDay()].slice(0, 1)}</span><span aria-hidden="true" class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'mol-soft text-gray-500'}">${d.getDate()}</span></div>`; }).join('');
+  $('week-days').innerHTML = days.map(d => { const done = thisWeek.some(s => dateOf(s)?.toDateString() === d.toDateString()); const today = d.toDateString() === new Date().toDateString(); return `<div class="text-center" role="img" aria-label="${dayLabel[d.getDay()]}, ${d.toLocaleDateString('pt-BR')}${done ? ', treino concluído' : ''}"><span aria-hidden="true" class="text-xs font-semibold text-gray-400">${dayLabel[d.getDay()].slice(0, 1)}</span><span aria-hidden="true" class="mx-auto mt-2 flex h-8 w-8 items-center justify-center rounded-full text-xs ${done ? 'bg-neon font-extrabold text-white' : today ? 'border border-neon text-neon' : 'mol-soft text-gray-400'}">${d.getDate()}</span></div>`; }).join('');
   $('weekly-title').textContent = `${thisWeek.length} treino${thisWeek.length === 1 ? '' : 's'} concluído${thisWeek.length === 1 ? '' : 's'}`;
   $('weekly-sessions').textContent = thisWeek.length;
   $('weekly-volume').textContent = Math.round(volume).toLocaleString('pt-BR');
@@ -266,7 +266,7 @@ function setToday(routines, user) {
       subtitle: `${plural(routine.exercicios?.length || 0, 'exercício', 'exercícios')} · ${plural(series, 'série', 'séries')} · cerca de ${estimatedWorkoutMinutes(routine)} min.`,
       context: '',
       href: card.href,
-      label: 'Iniciar',
+      label: 'Iniciar treino',
       icon: 'dumbbell'
     });
   } else {
@@ -334,7 +334,7 @@ function setFastingCard(settings) {
   const actions = $('fasting-actions');
   actions.querySelector('[data-fast-end]')?.remove();
   if (status.active && !status.eating) {
-    const button = document.createElement('button'); button.type = 'button'; button.dataset.fastEnd = 'true'; button.className = 'mol-btn mol-btn-secondary min-h-9 rounded-xl px-3 text-xs'; button.textContent = 'Encerrar jejum';
+    const button = document.createElement('button'); button.type = 'button'; button.dataset.fastEnd = 'true'; button.className = 'mol-btn mol-btn-secondary min-h-11 rounded-xl px-3 text-xs'; button.textContent = 'Encerrar jejum';
     button.onclick = async () => { button.disabled = true; button.textContent = 'Encerrando…'; try { await setDoc(doc(db, 'dietas', dashboardUser.uid), { jejum: { ...fasting, pausadoHoje: true } }, { merge: true }); setFastingCard({ ...fasting, pausadoHoje: true }); showToast('Jejum encerrado hoje.', 'success'); } catch { button.disabled = false; button.textContent = 'Encerrar jejum'; showToast('Não foi possível encerrar o jejum.'); } };
     actions.prepend(button);
   }
@@ -466,7 +466,7 @@ function setupDashboardCards() {
   }
   if (!document.getElementById('fasting-card')) {
     const card = document.createElement('section'); card.id = 'fasting-card'; card.dataset.available = 'false'; card.className = 'glass-card mb-4 rounded-3xl p-5 animate-slide-up hidden';
-    card.innerHTML = '<div class="flex items-start justify-between gap-4"><div class="min-w-0"><p id="fasting-eyebrow" class="text-xs font-semibold uppercase tracking-wider text-neon">Jejum</p><h2 id="fasting-title" class="mt-1 text-lg font-extrabold">Carregando jejum…</h2><p id="fasting-meta" class="mt-1 text-sm text-gray-400"></p></div><div id="fasting-actions" class="flex shrink-0 flex-col items-end gap-2"><a href="./pages/dieta.html" class="min-h-9 rounded-xl bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">Configurar</a></div></div>';
+    card.innerHTML = '<div class="flex items-start justify-between gap-4"><div class="min-w-0"><p id="fasting-eyebrow" class="text-xs font-semibold uppercase tracking-wider text-neon">Jejum</p><h2 id="fasting-title" class="mt-1 text-lg font-extrabold">Carregando jejum…</h2><p id="fasting-meta" class="mt-1 text-sm text-gray-400"></p></div><div id="fasting-actions" class="flex shrink-0 flex-col items-end gap-2"><a href="./pages/dieta.html" class="min-h-11 rounded-xl bg-white/5 px-3 py-2 text-xs font-bold text-gray-300">Configurar</a></div></div>';
     insertAfterOrAppend(document.getElementById('next-meal-card'), card, grid);
   }
   if (!document.getElementById('weight-card')) {
