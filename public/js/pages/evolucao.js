@@ -6,7 +6,7 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimes
 import { newDailyWeights, readHealthWeights } from '../modules/apple-health.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { activateDialog, confirmAction, escapeHTML, setButtonLoading, showToast } from '../utils/ui.js';
-import { dateFrom, monthCalendar, workoutStats } from '../modules/evolution-analytics.js';
+import { dateFrom, monthCalendar, sevenDayAverage, workoutStats } from '../modules/evolution-analytics.js';
 import { exerciseNames, exerciseProgress } from '../modules/workout-analytics.js';
 import { profileAchievements } from '../modules/profile-analytics.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
@@ -74,6 +74,18 @@ function renderGoal(stats) {
   $('goal-up').classList.toggle('opacity-30', currentGoal >= 7);
 }
 
+function renderVolume(stats) {
+  const weeks = stats.weeklyVolume;
+  const kg = value => `${value.toLocaleString('pt-BR')} kg`;
+  const max = Math.max(...weeks.map(week => week.kg));
+  const previous = weeks.slice(0, -1).filter(week => week.kg > 0);
+  const average = previous.length ? Math.round(previous.reduce((sum, week) => sum + week.kg, 0) / previous.length) : 0;
+  $('volume-summary').textContent = max ? `Esta semana: ${kg(weeks.at(-1).kg)}${average ? ` · média das semanas anteriores: ${kg(average)}` : ''}.` : 'Conclua séries com carga para ver o volume.';
+  $('volume-chart').setAttribute('aria-label', `Volume das últimas 8 semanas: ${weeks.map(week => kg(week.kg)).join(', ')}`);
+  $('volume-chart').innerHTML = weeks.map((week, index) => `<span class="rounded-t-lg ${index === weeks.length - 1 ? 'bg-neon' : 'bg-neon/40'}" style="height:${max ? Math.max(4, (week.kg / max) * 100) : 4}%" title="${kg(week.kg)}"></span>`).join('');
+  $('volume-labels').innerHTML = weeks.map(week => `<span>${week.start.getDate()}/${week.start.getMonth() + 1}</span>`).join('');
+}
+
 function renderCalendar() {
   const calendar = monthCalendar(visibleMonth, activeDays, now);
   $('calendar-title').textContent = visibleMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -121,18 +133,29 @@ function renderWeight() {
   $('weight-change').textContent = ordered.length > 1 ? `${(Number(last.pesoKg) - Number(ordered[0].pesoKg)).toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })} kg desde o primeiro registro.` : 'Registre o primeiro peso para acompanhar.';
   const trend = $('weight-trend');
   if (trend) {
-    const lastItems = ordered.slice(-12);
-    const values = lastItems.map(item => Number(item.pesoKg));
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    trend.setAttribute('aria-label', lastItems.length > 1 ? `Tendência de peso: de ${values[0].toLocaleString('pt-BR')} kg para ${values.at(-1).toLocaleString('pt-BR')} kg em ${values.length} registros` : 'Tendência de peso');
-    trend.innerHTML = lastItems.length > 1
-      ? lastItems.map(item => {
-        const value = Number(item.pesoKg);
-        const pct = max === min ? 55 : 22 + ((value - min) / (max - min)) * 78;
-        return `<span class="flex-1 rounded-t-lg bg-neon/70" style="height:${pct}%" title="${value.toLocaleString('pt-BR')} kg"></span>`;
-      }).join('')
-      : '<p class="self-center text-xs text-gray-500">A tendência aparece após mais registros.</p>';
+    const kg = value => `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`;
+    const points = ordered.map(item => ({ date: dateFrom(item.registradoEm), kg: Number(item.pesoKg) }));
+    const averages = sevenDayAverage(points).slice(-12);
+    const values = points.slice(-12).map(point => point.kg);
+    const target = Number(latestProfile.metaPesoKg);
+    const hasTarget = Number.isFinite(target) && target >= 20 && target <= 400;
+    if (values.length < 2) {
+      trend.setAttribute('aria-label', 'Tendência de peso');
+      trend.innerHTML = '<p class="text-xs text-gray-500">O gráfico aparece após 2 registros de peso.</p>';
+      $('weight-legend').textContent = '';
+    } else {
+      const scale = [...values, ...averages, ...(hasTarget ? [target] : [])];
+      const low = Math.min(...scale) - 0.5; const high = Math.max(...scale) + 0.5;
+      const y = value => 38 - ((value - low) / (high - low)) * 36;
+      const step = 100 / values.length;
+      const bars = values.map((value, index) => `<rect x="${index * step + step * 0.15}" y="${y(value)}" width="${step * 0.7}" height="${40 - y(value)}" rx="1" fill="currentColor" fill-opacity=".25"><title>${kg(value)}</title></rect>`).join('');
+      const line = averages.map((value, index) => `${index * step + step / 2},${y(value)}`).join(' ');
+      const goal = hasTarget ? `<line x1="0" x2="100" y1="${y(target)}" y2="${y(target)}" class="text-gray-500" stroke="currentColor" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>` : '';
+      trend.innerHTML = `<svg viewBox="0 0 100 40" preserveAspectRatio="none" class="h-full w-full" aria-hidden="true">${bars}${goal}<polyline points="${line}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+      const summary = `Média de 7 dias: ${kg(averages.at(-1))}${hasTarget ? ` · Meta: ${kg(target)}` : ''}`;
+      trend.setAttribute('aria-label', `Peso de ${kg(values[0])} para ${kg(values.at(-1))} em ${values.length} registros. ${summary}.`);
+      $('weight-legend').textContent = `Barras: registros. Linha cheia: média de 7 dias (${kg(averages.at(-1))}).${hasTarget ? ` Linha tracejada: meta (${kg(target)}).` : ''}`;
+    }
   }
   if (!ordered.length) {
     $('history').innerHTML = '<p class="text-sm text-gray-500">Sem registros.</p>';
@@ -234,6 +257,7 @@ function renderAll() {
   renderGoal(stats);
   renderCalendar();
   renderBadges(stats);
+  renderVolume(stats);
   renderWeight();
   renderExercise();
   renderBodyComparison();
