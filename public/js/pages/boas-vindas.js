@@ -54,6 +54,7 @@ function show(next) {
     const name = steps[next].dataset.step;
     $('[data-progress]').value = next + 1;
     $('[data-progress]').textContent = `Passo ${next + 1} de ${steps.length}`;
+    $('[data-progress]').setAttribute('aria-label', `Boas-vindas: passo ${next + 1} de ${steps.length}`);
     $('[data-back]').hidden = next === 0 || name === 'plan';
     $('[data-next]').hidden = name === 'plan';
     $('[data-skip]').hidden = name === 'plan';

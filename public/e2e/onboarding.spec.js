@@ -65,3 +65,16 @@ test('sem treino concluído, o Início mostra primeiros passos no lugar dos cart
   await expect(page.locator('#last-session-card')).toBeHidden();
   await expect(page.locator('#weight-card')).toBeHidden();
 });
+
+test('voltar tem ícone e nome acessível, e a escolha marcada mostra ✓', async ({ page }) => {
+  await setup(page, { newUser: true });
+  await page.goto('/pages/boas-vindas.html');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-label', 'Boas-vindas: passo 2 de 5');
+  await page.getByText('Emagrecer').click();
+  const mark = await page.locator('.onboarding-choice:has(input:checked)').evaluate(el => getComputedStyle(el, '::after').content);
+  expect(mark).toContain('✓');
+  const back = page.getByRole('button', { name: 'Voltar para o passo anterior' });
+  await expect(back.locator('svg')).toBeVisible();
+  expect((await back.boundingBox()).height).toBeGreaterThanOrEqual(44);
+});
