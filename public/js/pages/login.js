@@ -21,9 +21,23 @@ function navigateHome() {
   window.location.replace('/index.html');
 }
 
-function showError(message) {
-  errorEl.textContent = message;
+const MESSAGE_ICONS = {
+  error: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  success: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'
+};
+
+function showError(message, kind = 'error') {
+  document.getElementById('loginMessageText').textContent = message;
+  document.getElementById('loginMessageIcon').innerHTML = MESSAGE_ICONS[kind];
+  errorEl.classList.toggle('text-danger', kind === 'error');
+  errorEl.classList.toggle('text-neon', kind === 'success');
   errorEl.classList.remove('hidden');
+  errorEl.classList.add('flex');
+}
+
+function hideError() {
+  errorEl.classList.add('hidden');
+  errorEl.classList.remove('flex');
 }
 
 watchAuthState(async user => {
@@ -52,7 +66,7 @@ finishRedirectLogin();
 googleBtn.addEventListener('click', async () => {
   if (loginInProgress) return;
   loginInProgress = true;
-  errorEl.classList.add('hidden');
+  hideError();
   setButtonLoading(googleBtn, true, ORIGINAL_BTN_HTML);
   googleBtn.setAttribute('aria-busy', 'true');
 
@@ -121,6 +135,7 @@ function updateEmailFormMode() {
   toggleModeBtn.textContent = isRegisterMode ? 'Já tenho conta' : 'Criar conta';
   nameField.classList.toggle('hidden', !isRegisterMode);
   nameInput.required = isRegisterMode;
+  passwordInput.autocomplete = isRegisterMode ? 'new-password' : 'current-password';
 }
 
 toggleModeBtn.addEventListener('click', () => {
@@ -132,7 +147,7 @@ emailForm.addEventListener('submit', async event => {
   event.preventDefault();
   if (loginInProgress) return;
   loginInProgress = true;
-  errorEl.classList.add('hidden');
+  hideError();
   const originalHtml = submitBtn.innerHTML;
   setButtonLoading(submitBtn, true, originalHtml);
 
@@ -156,10 +171,10 @@ emailForm.addEventListener('submit', async event => {
 forgotBtn.addEventListener('click', async () => {
   const email = emailInput.value.trim();
   if (!email) return showError('Digite seu e-mail para receber o link de redefinição.');
-  errorEl.classList.add('hidden');
+  hideError();
   try {
     await resetPassword(email);
-    showError('Enviamos um link de redefinição para o seu e-mail.');
+    showError('Enviamos um link de redefinição para o seu e-mail.', 'success');
   } catch (error) {
     showError(authErrorMessage(error));
   }
