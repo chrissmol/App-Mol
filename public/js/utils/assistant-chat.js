@@ -138,18 +138,19 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       </article>`);
     icons(card);
     const actions = pick(card, '[data-actions]');
-    pick(card, '[data-discard]').onclick = () => { actions.innerHTML = '<p class="assistant-proposal__status">Descartada. Nada foi alterado.</p>'; };
+    // Os botões somem ao responder: o foco vai para o aviso que os substitui, não para o topo da página.
+    const showStatus = html => { actions.innerHTML = html; icons(actions); pick(actions, '[data-undo]')?.focus() ?? pick(actions, '.assistant-proposal__status').focus(); };
+    pick(card, '[data-discard]').onclick = () => showStatus('<p class="assistant-proposal__status" tabindex="-1">Descartada. Nada foi alterado.</p>');
     pick(card, '[data-confirm]').onclick = async event => {
       const button = /** @type {HTMLButtonElement} */ (event.currentTarget);
       button.disabled = true;
       try {
         const undo = await store.applyProposal(proposal);
         onDataChanged?.(proposal.tipo);
-        actions.innerHTML = '<p class="assistant-proposal__status assistant-proposal__status--ok"><i data-lucide="check-circle-2" aria-hidden="true"></i> Salvo.</p><button type="button" class="mol-btn mol-btn-secondary" data-undo><i data-lucide="undo-2" aria-hidden="true"></i> Desfazer</button>';
-        icons(actions);
+        showStatus('<p class="assistant-proposal__status assistant-proposal__status--ok"><i data-lucide="check-circle-2" aria-hidden="true"></i> Salvo.</p><button type="button" class="mol-btn mol-btn-secondary" data-undo><i data-lucide="undo-2" aria-hidden="true"></i> Desfazer</button>');
         showPetMoment({ state: 'animado', message: 'Alteração salva.' });
         pick(actions, '[data-undo]').onclick = async () => {
-          try { await undo(); onDataChanged?.(proposal.tipo); actions.innerHTML = '<p class="assistant-proposal__status">Desfeito. Voltou como estava.</p>'; showToast('Alteração desfeita.', 'success'); }
+          try { await undo(); onDataChanged?.(proposal.tipo); showStatus('<p class="assistant-proposal__status" tabindex="-1">Desfeito. Voltou como estava.</p>'); showToast('Alteração desfeita.', 'success'); }
           catch (error) { console.error('[Mol] Desfazer falhou:', error); showToast('Não foi possível desfazer agora.'); }
         };
       } catch (error) {
@@ -179,7 +180,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     input.value = '';
     input.style.height = '';
     setAttachment(null);
-    const typing = addMessage('assistant', `<span class="assistant-typing" aria-label="${escapeHTML(pet.name)} está escrevendo"><span></span><span></span><span></span></span>`);
+    const typing = addMessage('assistant', `<span class="assistant-typing"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span><span class="sr-only">${escapeHTML(pet.name)} está escrevendo</span></span>`);
     // O avatar ao lado da resposta muda de estado: focado escrevendo, depois apoio, curioso ou feliz.
     const setPetState = state => { if (pet.id !== 'nenhum') typing.style.setProperty('--assistant-pet', `url("${petImageSrc(pet, state, { small: true })}")`); };
     setPetState('focado');

@@ -5,7 +5,6 @@ const pages = [
   '/index.html',
   '/pages/treino.html',
   '/pages/dieta.html',
-  '/pages/marmitas.html',
   '/pages/assistente.html',
   '/pages/perfil.html',
   '/pages/historico.html',

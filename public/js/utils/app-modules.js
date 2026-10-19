@@ -74,7 +74,7 @@ export async function saveAppModules(value, user = auth.currentUser) {
 
 export function pageModule(page = location.pathname.split('/').pop() || 'index.html') {
   const normalized = page === '' ? 'index.html' : page;
-  if (['dieta.html', 'marmitas.html'].includes(normalized)) return 'dieta';
+  if (normalized === 'dieta.html') return 'dieta';
   if (['progresso.html', 'historico.html'].includes(normalized)) return 'progresso';
   if (['evolucao.html'].includes(normalized)) return 'evolucao';
   if (normalized === 'assistente.html') return 'assistente';

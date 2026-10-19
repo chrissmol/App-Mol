@@ -1,11 +1,10 @@
-const CACHE_VERSION = 'mol-app-shell-v7';
+const CACHE_VERSION = 'mol-app-shell-v8';
 const SHELL_URLS = [
   '/',
   '/index.html',
   '/pages/login.html',
   '/pages/treino.html',
   '/pages/dieta.html',
-  '/pages/marmitas.html',
   '/pages/perfil.html',
   '/pages/historico.html',
   '/pages/progresso.html',

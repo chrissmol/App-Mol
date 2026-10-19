@@ -9,7 +9,6 @@ const desktopPages = [
   '/pages/progresso.html',
   '/pages/configuracoes.html',
   '/pages/configuracoes.html#dispositivo',
-  '/pages/marmitas.html',
   '/pages/assistente.html',
   '/pages/evolucao.html',
   '/pages/dados-pessoais.html',

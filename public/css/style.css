@@ -6,40 +6,6 @@
    as páginas via <link rel="stylesheet" href="../css/style.css">
    ================================================================== */
 
-/* Meal preparation uses the shared theme and component tokens. */
-.prep-tabs, .prep-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin: 1rem 0; }
-.prep-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin: 1rem 0; }
-.prep-toolbar .prep-tabs { margin: 0; }
-.prep-toolbar .prep-refresh { background: transparent; color: var(--mol-muted); border: 1px solid var(--mol-border); }
-.prep-toolbar .prep-refresh:hover { background: var(--mol-surface-soft); color: var(--mol-text); }
-.prep-refresh svg { width: 1rem; height: 1rem; }
-.prep-refresh[aria-busy="true"] svg { animation: prep-refresh-spin 1s linear infinite; }
-@keyframes prep-refresh-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .prep-refresh[aria-busy="true"] svg { animation: none; } }
-.prep-card { margin: 1.25rem 0; padding: 1.25rem; border-radius: 1.5rem; }
-.prep-card h2 { font-size: 1.2rem; font-weight: 800; }
-.prep-card p { color: var(--mol-muted); margin: .75rem 0; line-height: 1.6; }
-.prep-card label, .prep-card summary { display: block; margin: .75rem 0 .35rem; font-weight: 600; }
-.prep-card summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; min-height: 44px; list-style: none; }
-.prep-card summary::-webkit-details-marker { display: none; }
-/* Chevron no lugar do triangulo nativo, igual ao padrao do historico. */
-.prep-card summary::after { content: ""; flex: none; width: .55rem; height: .55rem; margin-right: .25rem; border-right: 2px solid var(--mol-muted); border-bottom: 2px solid var(--mol-muted); transform: rotate(45deg); transition: transform .2s ease; }
-.prep-card details[open] > summary::after, details.prep-card[open] > summary::after { transform: rotate(-135deg); }
-@media (prefers-reduced-motion: reduce) { .prep-card summary::after { transition: none; } }
-details.prep-card > summary { margin: 0; font-size: 1.05rem; font-weight: 800; }
-details.prep-card:not([open]) { padding-block: .5rem; }
-.prep-card .mol-input { width: 100%; min-height: 44px; padding: .7rem; background: var(--mol-surface-2); color: var(--mol-text); border: 1px solid var(--mol-border); border-radius: .75rem; }
-.prep-ingredient { padding: .25rem 0 1rem; border-top: 1px solid var(--mol-border); }
-.prep-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
-.prep-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
-.prep-slots label { display: flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .85rem; margin: 0; }
-.prep-slots input { width: 20px; height: 20px; accent-color: var(--mol-brand-green); }
-.prep-list { display: grid; gap: .5rem; margin: .75rem 0; }
-.prep-list li { padding: .65rem; background: var(--mol-surface-soft); border-radius: .75rem; }
-.prep-card [hidden], .meal-prep-page [hidden] { display: none; }
-.prep-card legend { font-weight: 700; padding: .5rem 0; }
-.prep-card fieldset { min-width: 0; }
-
 /* Registradas como <angle> para o navegador poder interpolar suavemente
    quando o JS do descanso atualiza esses valores a cada segundo — sem
    isso, conic-gradient() troca de ângulo em um salto seco, sem transição. */
@@ -3574,7 +3540,7 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-sources { margin-top: .5rem; font-size: .78rem; color: var(--mol-muted); }
 .assistant-sources a { color: var(--mol-brand-text); text-decoration: underline; text-underline-offset: 2px; }
 .assistant-typing { display: inline-flex; gap: .3rem; padding: .3rem 0; }
-.assistant-typing span { width: .45rem; height: .45rem; border-radius: 999px; background: var(--mol-muted); animation: assistant-dot 1s ease-in-out infinite; }
+.assistant-typing span:not(.sr-only) { width: .45rem; height: .45rem; border-radius: 999px; background: var(--mol-muted); animation: assistant-dot 1s ease-in-out infinite; }
 .assistant-typing span:nth-child(2) { animation-delay: .15s; }
 .assistant-typing span:nth-child(3) { animation-delay: .3s; }
 @keyframes assistant-dot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
@@ -3596,8 +3562,8 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-proposal__status { flex: 1 1 100%; display: flex; align-items: center; gap: .4rem; font-size: .85rem; font-weight: 700; color: var(--mol-muted-strong); }
 .assistant-proposal__status--ok { color: var(--mol-brand-text); }
 .assistant-proposal__status svg, .assistant-proposal__actions .mol-btn svg { width: 1rem; height: 1rem; }
-.assistant-suggestions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .6rem; width: 100%; margin-top: 1.25rem; }
-/* Estado vazio: saudação centralizada empurrando a caixa para o rodapé (sem sticky, nada a cobre). */
+.assistant-suggestions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: .6rem; width: 100%; margin-top: 1.25rem; }
+/* Estado vazio: saudação centralizada logo acima da caixa de texto. */
 .assistant-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; padding-top: 1rem; }
 .assistant-empty__icon { display: inline-flex; width: 3rem; height: 3rem; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--mol-brand-green) 18%, transparent); color: var(--mol-brand-text); }
 .assistant-empty__icon svg { width: 1.5rem; height: 1.5rem; }
@@ -3606,6 +3572,12 @@ html[data-theme="light"] .assistant-msg--error { color: #b91c1c; }
 .assistant-empty__intro strong { color: var(--mol-muted-strong); }
 .assistant-chip { min-height: 3rem; border-radius: 1rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); padding: .7rem .95rem; font-size: .85rem; font-weight: 700; line-height: 1.35; color: var(--mol-muted-strong); text-align: left; transition: border-color .2s ease, color .2s ease, transform .15s ease; }
 .assistant-chip:hover { border-color: var(--mol-brand-text); color: var(--mol-text); }
+/* Celular: sugestões numa linha que rola de lado; empilhadas, empurravam a caixa de texto para baixo do dock. */
+@media (max-width: 767px) {
+  .assistant-suggestions { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: .25rem; }
+  .assistant-suggestions::-webkit-scrollbar { display: none; }
+  .assistant-chip { flex: 0 0 min(15rem, 80%); scroll-snap-align: start; }
+}
 .assistant-chip:active, .assistant-send:active, .assistant-entry:active { transform: scale(.97); }
 .assistant-composer { display: grid; gap: .45rem; border: 1px solid var(--mol-border); background: var(--mol-surface); border-radius: 1.4rem; padding: .45rem; box-shadow: 0 12px 32px rgba(0, 0, 0, .22); }
 .assistant-composer:focus-within { border-color: var(--mol-brand-text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mol-brand-text) 35%, transparent), 0 12px 32px rgba(0, 0, 0, .22); }
@@ -3630,10 +3602,16 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .assistant-page .assistant-chat:not(.assistant-chat--active) { min-height: calc(100svh - 14rem - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); }
 /* Desktop com mouse usa a barra lateral: não há dock para descontar. */
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; } }
-/* Só gruda no rodapé depois da 1ª mensagem; antes, aviso e sugestões ficam em sequência sem nada flutuando por cima. */
-.assistant-page .assistant-chat--active .assistant-composer { position: sticky; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .25rem); z-index: 5; }
+/* Sempre grudada acima do dock: com o aviso aberto ou em celular baixo, a caixa ficava embaixo do botão do dock. */
+.assistant-page .assistant-composer { position: sticky; bottom: calc(var(--assistant-dock-gap, var(--mol-app-nav-reserve, 5.5rem)) + .25rem); z-index: 5; }
 /* Ao rolar até a mensagem nova, ela para acima da caixa de texto e do dock. */
-.assistant-page .assistant-msg { scroll-margin-bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + 7rem); }
+.assistant-page .assistant-msg { scroll-margin-bottom: calc(var(--assistant-dock-gap, var(--mol-app-nav-reserve, 5.5rem)) + 7rem); }
+/* Título alinhado à coluna do chat; em telas altas a saudação fica no meio, não colada no rodapé. */
+.assistant-page .app-page-header { max-width: 48rem; margin-inline: auto; }
+@media (min-width: 768px) {
+  .assistant-page .assistant-chat:not(.assistant-chat--active) { justify-content: center; }
+  .assistant-page .assistant-chat:not(.assistant-chat--active) .assistant-empty { flex: none; }
+}
 .assistant-sheet__body .assistant-msg { scroll-margin-bottom: 6.5rem; }
 /* Botão de entrada nas outras telas. */
 .assistant-entry { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .5rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--mol-brand-text) 40%, var(--mol-border)); background: color-mix(in srgb, var(--mol-brand-green) 14%, transparent); padding: .55rem 1rem; font-size: .85rem; font-weight: 800; color: var(--mol-brand-text); transition: transform .15s ease, background-color .2s ease; }
@@ -3644,10 +3622,10 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .assistant-sheet-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
 .assistant-sheet { display: flex; flex-direction: column; width: 100%; max-width: 40rem; height: min(88svh, 52rem); border-radius: 1.6rem 1.6rem 0 0; background: var(--mol-bg); border: 1px solid var(--mol-border); border-bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); animation: assistant-sheet-in .28s cubic-bezier(.2, .9, .3, 1) both; }
 @keyframes assistant-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
-.assistant-sheet__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .9rem .9rem .5rem 1.2rem; }
+.assistant-sheet__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .9rem .9rem .6rem 1.2rem; border-bottom: 1px solid var(--mol-border); }
 .assistant-sheet__header h2 { display: flex; align-items: center; gap: .45rem; font-size: 1.05rem; font-weight: 800; color: var(--mol-text); }
 .assistant-sheet__header h2 svg { width: 1.1rem; height: 1.1rem; color: var(--mol-brand-text); }
-.assistant-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: .25rem 1rem 1rem; overscroll-behavior: contain; }
+.assistant-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: .75rem 1rem 1rem; overscroll-behavior: contain; }
 .assistant-sheet__body .assistant-chat { min-height: 100%; }
 .assistant-sheet__body .assistant-messages { flex: 1; }
 .assistant-sheet__body .assistant-chat--active .assistant-composer { position: sticky; bottom: 0; z-index: 2; }
@@ -3656,7 +3634,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
   .assistant-sheet { border-radius: 1.6rem; border-bottom: 1px solid var(--mol-border); height: min(80svh, 46rem); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .assistant-msg, .assistant-sheet, .assistant-typing span { animation: none; }
+  .assistant-msg, .assistant-sheet, .assistant-typing span:not(.sr-only) { animation: none; }
 }
 
 /* ==================================================================
@@ -3679,7 +3657,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
    colocar o campo logo acima do teclado em vez de deixá-los flutuando no meio da tela. */
 @media (pointer: coarse) {
   html.mol-typing .mol-app-nav { display: none; }
-  html.mol-typing .assistant-page .assistant-chat--active .assistant-composer { position: static; }
+  html.mol-typing .assistant-page .assistant-composer { position: static; }
 }
 
 /* Onde o body já reserva o espaço do dock (tudo menos desktop com mouse), o main não
@@ -3838,19 +3816,6 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .pet-moment { position: fixed; inset-inline: 1rem; bottom: calc(var(--mol-app-nav-reserve, 5.5rem) + .5rem); z-index: 999; display: flex; align-items: center; gap: .75rem; max-width: 26rem; margin-inline: auto; padding: .5rem 1rem .5rem .5rem; border-radius: 1.25rem; border: 1px solid color-mix(in srgb, var(--mol-brand-green) 45%, var(--mol-border)); background: var(--mol-surface); box-shadow: 0 12px 30px rgba(0, 0, 0, .45), 0 0 24px color-mix(in srgb, var(--mol-brand-green) 25%, transparent); animation: pet-moment-in .45s cubic-bezier(.2, .9, .3, 1.2) both; }
 .pet-moment p { font-size: .9rem; font-weight: 700; color: var(--mol-text); }
 @keyframes pet-moment-in { from { opacity: 0; transform: translateY(.75rem) scale(.96); } }
-/* Marmitas em passos: indicador no topo, um passo por vez. */
-.prep-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: 1rem 0; counter-reset: prep-step; list-style: none; padding: 0; }
-.prep-steps li { counter-increment: prep-step; display: flex; align-items: center; gap: .5rem; min-height: 44px; padding: .5rem .75rem; border-radius: 1rem; background: var(--mol-surface-soft); font-size: .8rem; font-weight: 800; color: var(--mol-muted); }
-.prep-steps li::before { content: counter(prep-step); display: inline-flex; width: 1.5rem; height: 1.5rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid var(--mol-border); font-size: .75rem; }
-.prep-steps li[aria-current="step"] { background: color-mix(in srgb, var(--mol-brand-green) 18%, var(--mol-surface-soft)); color: var(--mol-text); }
-.prep-steps li[aria-current="step"]::before, .prep-steps li.is-done::before { border-color: var(--mol-brand-green); background: var(--mol-brand-green); color: #fff; }
-.prep-next { width: 100%; min-height: 52px; margin-top: 1rem; }
-.prep-step-actions { display: flex; gap: .6rem; margin-top: 1rem; }
-.prep-step-actions > * { flex: 1; min-height: 52px; }
-.prep-result-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-.prep-more { margin-top: .75rem; border-radius: 1rem; background: var(--mol-surface-soft); padding: .25rem .9rem; }
-.prep-more summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
-.prep-card h2:focus { outline: none; }
 
 /* Resumo semanal no Início. */
 .weekly-review__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
