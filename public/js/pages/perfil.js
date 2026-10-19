@@ -107,7 +107,7 @@ function openFrameModal() {
   const close = activateDialog(modal, { initialFocus: modal.querySelector('[data-close]') });
   modal.onclick = event => { if (event.target === modal) close(); };
   modal.querySelector('[data-close]').onclick = close;
-  modal.querySelectorAll('[data-frame]:not(:disabled)').forEach(button => button.onclick = async () => {
+  /** @type {NodeListOf<HTMLButtonElement>} */ (modal.querySelectorAll('[data-frame]:not(:disabled)')).forEach(button => button.onclick = async () => {
     const frameId = button.dataset.frame;
     const previous = currentProfile;
     currentProfile = { ...currentProfile, avatarFrame: frameId };
