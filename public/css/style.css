@@ -960,7 +960,8 @@ html[data-large-text="true"] { font-size: 112.5%; }
 body { padding-bottom: 0; }
 html { scrollbar-gutter: stable; }
 /* Cards de treino não devem criar uma segunda rolagem horizontal no celular. */
-.workout-page main { min-width: 0; max-width: 100%; overflow-x: hidden; }
+/* clip (não hidden): hidden vira contêiner de rolagem e cortava o menu "⋯" da última rotina. */
+.workout-page main { min-width: 0; max-width: 100%; overflow-x: hidden; overflow-x: clip; }
 .workout-exercise-card { min-width: 0; max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; }
 .workout-exercise-card > * { min-width: 0; max-width: 100%; }
 
@@ -1730,6 +1731,9 @@ html[data-theme="light"] body .mol-select-option[aria-selected="true"] { backgro
 .routine-card [data-routine-action] {
   flex-shrink: 0;
 }
+
+/* Ação principal da tela: 52 px, como pede o branding book. */
+.routine-card [data-routine-action="start"] { min-height: 52px; }
 
 .exercise-library-card {
   scroll-margin-top: 1rem;

@@ -828,10 +828,10 @@ function renderRotinas() {
     return;
   }
   rotinasList.innerHTML = rotinasFiltradas.map(rotina => `
-    <article class="routine-card mol-card rounded-2xl p-5 relative">
+    <article class="routine-card mol-card rounded-3xl p-5 relative">
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
-          <h3 class="line-clamp-2 font-bold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
+          <h3 class="line-clamp-2 font-extrabold text-lg text-white">${escapeHTML(rotina.nome)}</h3>
           <p class="text-xs text-gray-500">${plural(rotina.exercicios ? rotina.exercicios.length : 0, 'exercício', 'exercícios')}${rotina.horario ? ` · ${escapeHTML(rotina.horario)}` : ''}</p>
         </div>
         <div class="routine-menu">
@@ -954,7 +954,7 @@ const WEEKDAYS = [[1, 'Segunda'], [2, 'Terça'], [3, 'Quarta'], [4, 'Quinta'], [
 
 function routineDaysEditor(days = []) {
   const selected = new Set((Array.isArray(days) ? days : []).map(Number));
-  return `<div class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Dias de treino</p><div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">${WEEKDAYS.map(([day, label]) => `<label><input class="peer sr-only" type="checkbox" value="${day}" ${selected.has(day) ? 'checked' : ''}><span class="flex min-h-10 items-center justify-center rounded-xl mol-soft px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><button type="button" data-workout-action="save-routine-days" class="mt-3 min-h-10 rounded-xl border border-white/10 px-3 text-xs font-bold text-gray-200">Salvar dias</button></div>`;
+  return `<div class="mt-4"><p class="text-xs font-bold uppercase tracking-wider text-gray-400">Dias de treino</p><div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">${WEEKDAYS.map(([day, label]) => `<label><input class="peer sr-only" type="checkbox" value="${day}" ${selected.has(day) ? 'checked' : ''}><span class="flex min-h-11 items-center justify-center rounded-xl mol-soft px-2 text-xs font-bold text-gray-400 peer-checked:bg-neon peer-checked:text-black">${label}</span></label>`).join('')}</div><button type="button" data-workout-action="save-routine-days" class="mt-3 min-h-11 rounded-xl border border-white/10 px-3 text-xs font-bold text-gray-200">Salvar dias</button></div>`;
 }
 
 window.salvarDiasRotina = async () => {
@@ -1198,7 +1198,7 @@ function renderizarBiblioteca(filtro = '') {
           </div>
           <div class="mt-3 flex items-center justify-between gap-3">
             ${ultimaPerformance.has(ex.nome) ? `<p class="min-w-0 text-xs font-semibold text-neon">Último: ${ultimaPerformance.get(ex.nome).kg} kg × ${ultimaPerformance.get(ex.nome).reps}</p>` : '<p class="min-w-0 text-xs text-gray-600">Sem histórico ainda</p>'}
-            <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neon px-3 text-xs font-extrabold text-black active:scale-[.98]"><i data-lucide="plus" class="h-4 w-4"></i><span>Adicionar</span></button>
+            <button type="button" data-exercise-action="add" data-exercise-index="${index}" aria-label="Adicionar ${escapeHTML(ex.nome)}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neon px-3 text-xs font-extrabold text-black active:scale-[.98]"><i data-lucide="plus" class="h-4 w-4"></i><span>Adicionar</span></button>
           </div>
         </div>
       </div>
@@ -1361,7 +1361,7 @@ function abrirRotina(id) {
         <p class="text-sm font-bold text-white mt-0.5">${seriesFeitas}/${totalSeries}</p>
       </div>
     </div>${miniMapaMuscularHTML}</div><div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div class="h-full rounded-full bg-neon transition-all duration-300" style="width:${totalSeries ? (seriesFeitas / totalSeries) * 100 : 0}%"></div></div><div class="mt-2 flex items-center justify-between gap-3"><p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Progresso da sessão · tela ativa</p><button type="button" data-workout-action="toggle-compact" aria-pressed="${modoCompacto}" class="min-h-9 rounded-xl mol-soft px-3 text-[10px] font-bold text-gray-300">${modoCompacto ? 'Mostrar todos' : 'Modo foco'}</button></div></div>
-  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${seriesPlanejadas} séries · cerca de ${minutosEstimados} min</p></div><button type="button" data-workout-action="start-edit-workout" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
+  ` : `<div class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 mol-soft p-4"><div><p class="text-sm font-bold">Modo edição</p><p class="mt-1 text-xs text-gray-400">${plural(seriesPlanejadas, 'série', 'séries')} · cerca de ${minutosEstimados} min</p></div><button type="button" data-workout-action="start-edit-workout" class="min-h-11 shrink-0 rounded-xl bg-neon px-3 text-xs font-bold text-black active:scale-[.98]">Iniciar</button></div>`;
   const painelComCheckinHTML = painelMetricasHTML + checkinCardHTML();
   const editorNomeHTML = treinoIniciado ? '' : `<div class="mb-4 rounded-2xl border border-white/10 mol-panel p-4"><label for="input-editar-nome-rotina" class="text-xs font-bold uppercase tracking-wider text-gray-400">Nome da rotina</label><div class="mt-2 flex gap-2"><input id="input-editar-nome-rotina" type="text" maxlength="60" class="min-w-0 flex-1 rounded-xl border border-white/10 mol-field px-3 py-3 text-sm font-bold text-white outline-none focus:border-neon"><button type="button" data-workout-action="save-routine-name" class="min-h-11 rounded-xl bg-neon px-4 text-sm font-bold text-black active:scale-[.98]">Salvar</button></div><label for="input-editar-horario-rotina" class="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">Horário do treino <span class="font-normal normal-case tracking-normal text-gray-500">(opcional)</span><input id="input-editar-horario-rotina" type="time" class="mt-2 min-h-12 w-full rounded-xl mol-field px-3 text-white"></label><div id="routine-days-editor">${routineDaysEditor(rotina.diasSemana)}</div></div>`;
 
@@ -1401,7 +1401,7 @@ function abrirRotina(id) {
         </div>
         ${notaHTML}
         <section class="coach-advice mb-3 rounded-xl ${conselhoTom} p-3"><div class="flex items-start gap-2"><i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0"></i><div><p class="text-xs font-extrabold">${escapeHTML(conselho.title)}</p><p class="mt-1 text-[11px] leading-relaxed opacity-90">${escapeHTML(conselho.message)}</p>${sugestaoProxima ? `<p class="mt-2 rounded-xl bg-black/10 px-3 py-2 text-[11px] font-bold opacity-95">${escapeHTML(sugestaoProxima)}</p>` : ''}</div></div></section>
-        <button type="button" data-workout-action="replace-exercise" data-ex-index="${indexEx}" class="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
+        <button type="button" data-workout-action="replace-exercise" data-ex-index="${indexEx}" class="mb-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-bold text-gray-400"><i data-lucide="replace" class="h-4 w-4"></i> Substituir exercício</button>
         ${editorNotaHTML}
         <details class="mb-4 rounded-xl mol-soft p-3"><summary class="cursor-pointer text-xs font-bold text-gray-400">Ajustar metas e progressão</summary><div class="workout-target-grid mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><label class="text-[10px] text-gray-500">REPS mín.<input min="1" max="1000" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="repsMin" type="number" value="${ex.repsMin || 8}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">REPS máx.<input min="1" max="1000" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="repsMax" type="number" value="${ex.repsMax || 12}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">RIR alvo<input min="0" max="10" step="1" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="rirAlvo" type="number" value="${ex.rirAlvo ?? 2}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label><label class="text-[10px] text-gray-500">DESC. (s)<input min="15" max="3600" step="5" data-workout-action="update-exercise-target" data-ex-index="${indexEx}" data-field="descansoSegundos" type="number" value="${ex.descansoSegundos || 90}" class="mt-1 w-full rounded-lg mol-field p-2 text-center text-sm text-white"></label></div></details>
 
@@ -1493,7 +1493,7 @@ function abrirRotina(id) {
         </div>
 
         <button type="button" data-workout-action="add-set" data-ex-index="${indexEx}" class="w-full text-center py-3 mt-2 text-xs font-semibold text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-1">
-          <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Série
+          <i data-lucide="plus" class="w-3 h-3"></i> Adicionar série
         </button>
       </article>
     `}).join('');

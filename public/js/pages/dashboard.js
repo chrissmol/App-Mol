@@ -207,7 +207,7 @@ function setWeek(sessions, goal = 1) {
   $('performance-summary').textContent = last ? `Último: ${last.nomeRotina} · ${Math.round(lastVolume).toLocaleString('pt-BR')} kg${trend === null ? '.' : ` · ${trend.toLocaleString('pt-BR', { signDisplay: 'always', maximumFractionDigits: 1 })}% versus a sessão anterior.`}` : 'Conclua o primeiro treino para acompanhar sua evolução.';
   $('progress-card-icon')?.classList.toggle('text-neon', Boolean(last));
   $('progress-card-icon')?.classList.toggle('text-gray-500', !last);
-  if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg · ${sessionMetrics(last).sets} séries`; }
+  if (last) { $('last-session-title').textContent = last.nomeRotina; $('last-session-meta').textContent = `${Math.round(sessionMetrics(last).volume).toLocaleString('pt-BR')} kg · ${plural(sessionMetrics(last).sets, 'série', 'séries')}`; }
   setCardBadgeActive('last-session-badge', Boolean(last));
 }
 

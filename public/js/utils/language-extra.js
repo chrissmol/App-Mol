@@ -91,7 +91,7 @@ const ROWS = [
   ['Comece com uma carga controlável para 8–12 reps e registre o RIR.', 'Start with a manageable load for 8–12 reps and log the RIR.', 'Empieza con una carga controlable para 8–12 reps y registra el RIR.'],
   ['Substituir exercício', 'Replace exercise', 'Reemplazar ejercicio'],
   ['Ajustar metas e progressão', 'Adjust targets and progression', 'Ajustar metas y progresión'],
-  ['Adicionar Série', 'Add set', 'Agregar serie'],
+  ['Adicionar série', 'Add set', 'Agregar serie'],
   ['SÉRIE', 'SET', 'SERIE'],
   ['REPS mín.', 'Min. REPS', 'REPS mín.'],
   ['REPS máx.', 'Max. REPS', 'REPS máx.'],
