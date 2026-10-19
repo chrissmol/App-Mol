@@ -157,50 +157,6 @@ describe('regras do Firestore', () => {
   });
 });
 
-describe('compartilhamento das marmitas', () => {
-  const share = (db, id, partnerId) => setDoc(doc(db, 'mealShares', id), { partnerId, name: id });
-  it('exige consentimento dos dois e revoga leitura da dieta ao desconectar', async () => {
-    const a = user('a'); const b = user('b'); const c = user('c');
-    await assertSucceeds(setDoc(doc(a, 'dietas', 'a'), { userId: 'a', refeicoes: [] }));
-    await assertSucceeds(share(b, 'b', 'a'));
-    await assertFails(getDoc(doc(b, 'dietas', 'a')));
-    await assertSucceeds(share(a, 'a', 'b'));
-    await assertSucceeds(getDoc(doc(b, 'dietas', 'a')));
-    await assertFails(getDoc(doc(c, 'dietas', 'a')));
-    await assertFails(getDoc(doc(b, 'users', 'a')));
-    await assertFails(share(c, 'a', 'c'));
-    await assertSucceeds(deleteDoc(doc(a, 'mealShares', 'a')));
-    await assertFails(getDoc(doc(b, 'dietas', 'a')));
-  });
-  it('não permite listar convites ou trocar quem aceitou', async () => {
-    const a = user('a'); const b = user('b'); const c = user('c');
-    const code = 'a'.repeat(32);
-    const reference = doc(a, 'mealInvites', code);
-    const { serverTimestamp } = await import('firebase/firestore');
-    await assertSucceeds(setDoc(reference, { ownerId: 'a', ownerName: 'A', guestId: null, createdAt: serverTimestamp() }));
-    await assertFails(getDocs(collection(b, 'mealInvites')));
-    await assertSucceeds(updateDoc(doc(b, 'mealInvites', code), { guestId: 'b' }));
-    await assertFails(updateDoc(doc(c, 'mealInvites', code), { guestId: 'c' }));
-    await assertFails(updateDoc(doc(b, 'mealInvites', code), { ownerId: 'b' }));
-  });
-  it('isola o histórico, exige vínculo para compartilhar e permite consultar por participante', async () => {
-    const a = user('a'); const b = user('b'); const c = user('c');
-    const { serverTimestamp } = await import('firebase/firestore');
-    const payload = { userId: 'a', partnerId: 'b', title: 'Lasanha', preparedOn: '2026-10-09', ingredients: [{}], preparation: { pots: [{}], batch: [{}] }, createdAt: serverTimestamp() };
-    await assertFails(setDoc(doc(a, 'mealPreparations', 'first'), payload));
-    await share(a, 'a', 'b'); await share(b, 'b', 'a');
-    await assertSucceeds(setDoc(doc(a, 'mealPreparations', 'first'), payload));
-    await assertSucceeds(getDocs(query(collection(b, 'mealPreparations'), where('partnerId', '==', 'b'))));
-    await assertSucceeds(getDocs(query(collection(a, 'mealPreparations'), where('userId', '==', 'a'))));
-    await assertFails(getDoc(doc(c, 'mealPreparations', 'first')));
-    await assertFails(updateDoc(doc(b, 'mealPreparations', 'first'), { title: 'Outro' }));
-    await assertFails(deleteDoc(doc(b, 'mealPreparations', 'first')));
-    await deleteDoc(doc(a, 'mealShares', 'a'));
-    await assertSucceeds(getDoc(doc(b, 'mealPreparations', 'first')));
-    await assertFails(setDoc(doc(a, 'mealPreparations', 'second'), payload));
-  });
-});
-
 describe('alimentos personalizados', () => {
   it('isola alimentos por perfil e valida nutrientes', async () => {
     const a = user('a'); const b = user('b');

@@ -51,7 +51,9 @@ test('estado vazio: saudação e sugestões acima da caixa, sem nada cobrindo', 
   const composer = await page.locator('.assistant-composer').boundingBox();
   const lastChip = await page.locator('[data-suggestion]').last().boundingBox();
   expect(lastChip.y + lastChip.height).toBeLessThanOrEqual(composer.y);
+  // No celular as sugestões rolam de lado: cada uma é trazida para a tela antes da checagem.
   for (const chip of await page.locator('[data-suggestion]').all()) {
+    await chip.scrollIntoViewIfNeeded();
     const covering = await chip.evaluate(element => {
       const box = element.getBoundingClientRect();
       const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);

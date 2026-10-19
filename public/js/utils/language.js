@@ -16,7 +16,6 @@ const dictionary = {
     home: 'Home',
     workout: 'Training',
     diet: 'Diet',
-    mealPrep: 'Meal prep',
     assistant: 'Assistant',
     profile: 'Profile',
     'Mol': 'Mol',
@@ -289,7 +288,6 @@ const dictionary = {
     home: 'Inicio',
     workout: 'Entreno',
     diet: 'Dieta',
-    mealPrep: 'Preparación de comidas',
     assistant: 'Asistente',
     profile: 'Perfil',
     'Sistema': 'Sistema',
@@ -498,7 +496,7 @@ const dictionary = {
   }
 };
 
-// Textos novos (diário, pets, boas-vindas, marmitas, treino…) ficam em language-extra.js.
+// Textos novos (diário, pets, boas-vindas, treino…) ficam em language-extra.js.
 Object.assign(dictionary['en-US'], EXTRA_STRINGS['en-US']);
 Object.assign(dictionary['es-ES'], EXTRA_STRINGS['es-ES']);
 

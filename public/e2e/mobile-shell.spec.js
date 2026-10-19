@@ -13,7 +13,6 @@ const pages = [
   '/index.html',
   '/pages/treino.html',
   '/pages/dieta.html',
-  '/pages/marmitas.html',
   '/pages/perfil.html',
   '/pages/historico.html',
   '/pages/progresso.html',
@@ -90,7 +89,7 @@ test.describe('shell móvel sem backend', () => {
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(nav.locator('.mol-dock__menu')).toBeVisible();
-    await expect(nav.locator('.mol-dock__item')).toHaveCount(6);
+    await expect(nav.locator('.mol-dock__item')).toHaveCount(5);
     const box = await trigger.boundingBox();
     const viewport = page.viewportSize();
     expect((viewport?.height || 0) - ((box?.y || 0) + (box?.height || 0))).toBeGreaterThanOrEqual(12);
