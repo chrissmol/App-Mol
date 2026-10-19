@@ -1,3 +1,4 @@
+import { formatWeight } from '../utils/units.js';
 export const WORKOUT_LIMITS = Object.freeze({
   weight: 2000,
   reps: 1000,
@@ -92,25 +93,25 @@ export function setSummary(set = {}) {
   const method = setMethod(set);
   const details = normalizeSetDetails(method, set.details, set);
   if (method === SET_METHODS.DROP_SET) {
-    const parts = [details.primary, ...(details.drops || [])].filter(item => item.kg !== '' && item.reps !== '').map(item => `${item.kg} kg × ${item.reps}`);
+    const parts = [details.primary, ...(details.drops || [])].filter(item => item.kg !== '' && item.reps !== '').map(item => `${formatWeight(item.kg)} × ${item.reps}`);
     return parts.join(' → ') || 'Configure o drop set';
   }
   if (method === SET_METHODS.REST_PAUSE) {
     const blocks = (details.blocks || []).filter(item => item !== '');
-    return details.kg !== '' && blocks.length ? `${details.kg} kg · ${blocks.join(' + ')} · ${details.restSeconds}s` : 'Configure o rest-pause';
+    return details.kg !== '' && blocks.length ? `${formatWeight(details.kg)} · ${blocks.join(' + ')} · ${details.restSeconds}s` : 'Configure o rest-pause';
   }
   if (method === SET_METHODS.MYO_REPS) {
     const minis = (details.miniSets || []).filter(item => item !== '');
-    return details.activation.kg !== '' && details.activation.reps !== '' ? `${details.activation.kg} kg · ${[details.activation.reps, ...minis].join(' + ')}` : 'Configure o myo-reps';
+    return details.activation.kg !== '' && details.activation.reps !== '' ? `${formatWeight(details.activation.kg)} · ${[details.activation.reps, ...minis].join(' + ')}` : 'Configure o myo-reps';
   }
   if (method === SET_METHODS.CLUSTER) {
     const blocks = (details.blocks || []).filter(item => item !== '');
-    return details.kg !== '' && blocks.length ? `${details.kg} kg · ${blocks.join(' + ')} · ${details.restSeconds}s` : 'Configure o cluster';
+    return details.kg !== '' && blocks.length ? `${formatWeight(details.kg)} · ${blocks.join(' + ')} · ${details.restSeconds}s` : 'Configure o cluster';
   }
   if (method === SET_METHODS.ISOMETRIC) {
-    return details.kg !== '' && details.reps !== '' && details.holdSeconds !== '' ? `${details.kg} kg · ${details.reps} reps + ${details.holdSeconds}s` : 'Configure a isometria';
+    return details.kg !== '' && details.reps !== '' && details.holdSeconds !== '' ? `${formatWeight(details.kg)} · ${details.reps} reps + ${details.holdSeconds}s` : 'Configure a isometria';
   }
-  return `${set.kg || '-'} kg × ${set.reps || '-'}`;
+  return `${formatWeight(set.kg || '-')} × ${set.reps || '-'}`;
 }
 
 export function validateContextualSet(set = {}) {
@@ -226,7 +227,7 @@ export function validateSet({ kg, reps, rir }) {
   const weight = Number(kg);
   const repetitions = Number(reps);
   const reserve = rir === '' || rir == null ? null : Number(rir);
-  if (kg === '' || !Number.isFinite(weight) || weight < 0 || weight > WORKOUT_LIMITS.weight) return { valid: false, message: `Informe uma carga entre 0 e ${WORKOUT_LIMITS.weight} kg.` };
+  if (kg === '' || !Number.isFinite(weight) || weight < 0 || weight > WORKOUT_LIMITS.weight) return { valid: false, message: `Informe uma carga entre 0 e ${formatWeight(WORKOUT_LIMITS.weight)}.` };
   if (reps === '' || !Number.isInteger(repetitions) || repetitions < 1 || repetitions > WORKOUT_LIMITS.reps) return { valid: false, message: `Informe entre 1 e ${WORKOUT_LIMITS.reps} repetições inteiras.` };
   if (reserve !== null && (!Number.isInteger(reserve) || reserve < 0 || reserve > WORKOUT_LIMITS.rir)) return { valid: false, message: 'O RIR deve ser um número inteiro entre 0 e 10.' };
   return { valid: true, values: { kg: weight, reps: repetitions, rir: reserve } };

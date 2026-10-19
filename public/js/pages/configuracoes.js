@@ -210,7 +210,7 @@ function applyAppearance() {
   $('large-text').checked = appearance.largeText;
   $('reduce-motion').checked = appearance.reduceMotion;
   ['animations', 'sound', 'vibration'].forEach(id => { if ($(id)) $(id).checked = appearance[id]; });
-  [['density-segments', 'density'], ['card-style-segments', 'cardStyle'], ['dashboard-layout-segments', 'dashboardLayout']].forEach(([id, key]) => $(id)?.querySelectorAll('button').forEach(button => button.classList.toggle('is-active', button.dataset.value === appearance[key])));
+  [['density-segments', 'density'], ['card-style-segments', 'cardStyle'], ['dashboard-layout-segments', 'dashboardLayout'], ['units-segments', 'units']].forEach(([id, key]) => $(id)?.querySelectorAll('button').forEach(button => button.classList.toggle('is-active', button.dataset.value === appearance[key])));
   $('language-segments').querySelectorAll('button').forEach(button => {
     const selected = button.dataset.language === appearance.language.mode;
     button.classList.toggle('is-active', selected);
@@ -255,7 +255,8 @@ visualStyleChoices.forEach(([value, icon, label, description]) => {
 const preferenceSegments = [
   ['density-segments', 'density', [['comfortable', 'Confortável'], ['compact', 'Compacta']]],
   ['card-style-segments', 'cardStyle', [['discreet', 'Discreto'], ['elevated', 'Elevado'], ['neon', 'Neon']]],
-  ['dashboard-layout-segments', 'dashboardLayout', [['automatic', 'Automática'], ['custom', 'Personalizada']]]
+  ['dashboard-layout-segments', 'dashboardLayout', [['automatic', 'Automática'], ['custom', 'Personalizada']]],
+  ['units-segments', 'units', [['metric', 'kg e cm'], ['imperial', 'lb e pol']]]
 ];
 preferenceSegments.forEach(([id, key, choices]) => choices.forEach(([value, label]) => {
   const button = document.createElement('button'); button.type = 'button'; button.dataset.value = value; button.className = 'theme-segment flex min-h-14 items-center justify-center rounded-2xl px-3 text-xs font-bold'; button.textContent = label;

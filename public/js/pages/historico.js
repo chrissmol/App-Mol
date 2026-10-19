@@ -8,6 +8,7 @@ import { sessionMetrics, workoutDate } from '../modules/workout-analytics.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
+import { formatWeight } from '../utils/units.js';
 
 setupAppShell();
 // any: cada tela sabe o tipo do elemento (input, button...) que busca por id.
@@ -43,7 +44,7 @@ function renderSummary() {
   const summary = historySummary(sessions);
   $('total-workouts').textContent = summary.workouts.toLocaleString('pt-BR');
   $('total-workouts-label').textContent = summary.workouts === 1 ? 'sessão registrada' : 'sessões registradas';
-  $('total-volume').textContent = `${Math.round(summary.volume).toLocaleString('pt-BR')} kg`;
+  $('total-volume').textContent = `${formatWeight(Math.round(summary.volume))}`;
 }
 
 function renderCalendar() {
@@ -79,7 +80,7 @@ function setDetailsHTML(session) {
     let normalSetNumber = 0;
     const sets = (Array.isArray(exercise.series) ? exercise.series : []).slice(0, 60).map(set => {
       const weightValue = Number(set.kg); const repsValue = Number(set.reps);
-      const load = set.kg === '' || set.kg == null || !Number.isFinite(weightValue) || weightValue < 0 ? '—' : `${weightValue.toLocaleString('pt-BR')} kg`;
+      const load = set.kg === '' || set.kg == null || !Number.isFinite(weightValue) || weightValue < 0 ? '—' : `${formatWeight(weightValue)}`;
       const reps = repsValue > 0 && Number.isFinite(repsValue) ? `${repsValue.toLocaleString('pt-BR')} rep.` : '—';
       const rirValue = Number(set.rir);
       const rir = set.rir === '' || set.rir == null || !Number.isFinite(rirValue) || rirValue < 0 || rirValue > 10 ? '' : ` · RIR ${rirValue}`;
@@ -99,7 +100,7 @@ function sessionCard(session) {
   const metrics = sessionMetrics(session); const date = workoutDate(session);
   const dateLabel = date ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Data não informada';
   const timeLabel = date ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-  const details = [`${metrics.sets} ${metrics.sets === 1 ? 'série' : 'séries'}`, `${Math.round(metrics.volume).toLocaleString('pt-BR')} kg`, formatDuration(metrics.durationSeconds)].filter(Boolean).join(' · ');
+  const details = [`${metrics.sets} ${metrics.sets === 1 ? 'série' : 'séries'}`, `${formatWeight(Math.round(metrics.volume))}`, formatDuration(metrics.durationSeconds)].filter(Boolean).join(' · ');
   return `<article class="glass-card rounded-2xl p-4"><details><summary class="flex cursor-pointer list-none items-start justify-between gap-4"><div class="min-w-0"><h3 class="truncate font-bold">${escapeHTML(session.nomeRotina || 'Treino concluído')}</h3><p class="mt-1 text-xs text-gray-400">${dateLabel}${timeLabel ? ` · ${timeLabel}` : ''}</p><p class="mt-2 text-xs text-gray-500">${details}</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neon/10 text-neon"><i data-lucide="chevron-down" class="h-5 w-5"></i></span></summary><div class="mt-4 border-t border-white/5 pt-4">${setDetailsHTML(session)}</div></details></article>`;
 }
 
