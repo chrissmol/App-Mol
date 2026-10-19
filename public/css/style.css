@@ -3848,7 +3848,7 @@ html[data-reduce-motion="true"] .pet-avatar--celebra, html[data-reduce-motion="t
 
 .progress-fold > summary::-webkit-details-marker { display: none; }
 .progress-fold__chevron { transition: transform .2s ease; }
-.progress-fold[open] .progress-fold__chevron { transform: rotate(180deg); }
+.progress-fold[open] > summary .progress-fold__chevron { transform: rotate(180deg); }
 
 /* Interruptores: estado também por forma (✓ ligado, ○ desligado) e foco visível no trilho, já que o input é sr-only. */
 .app-surface input.peer.sr-only[type="checkbox"] + span { position: relative; }

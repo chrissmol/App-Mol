@@ -4,7 +4,7 @@ import { watchProtectedPage } from '../modules/auth.js';
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { withTimeout } from '../utils/timeout.js';
 import { filterHistory, historySummary, sessionsByDay, sortSessionsNewest } from '../modules/history-analytics.js';
-import { sessionMetrics, workoutDate } from '../modules/workout-analytics.js';
+import { recordSetKeys, sessionMetrics, workoutDate } from '../modules/workout-analytics.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
@@ -21,6 +21,7 @@ let sessions = [];
 let selectedDay = null;
 let filterByMonth = true;
 let visibleLimit = PAGE_SIZE;
+let recordKeys = new Set();
 
 const cacheKey = uid => `mol-history-cache-${uid}`;
 function readCache(uid) { try { const value = JSON.parse(getSessionItem(cacheKey(uid)) || 'null'); return value && Date.now() - value.updatedAt < CACHE_TTL && Array.isArray(value.sessions) ? value.sessions : null; } catch { return null; } }
@@ -76,9 +77,10 @@ function setDetailsHTML(session) {
     return Number.isFinite(number) && number >= min && number <= max ? number : '—';
   };
   const exercises = (Array.isArray(session.exercicios) ? session.exercicios : []).slice(0, 60);
-  const exerciseHTML = exercises.map(exercise => {
+  const exerciseHTML = exercises.map((exercise, exerciseIndex) => {
     let normalSetNumber = 0;
-    const sets = (Array.isArray(exercise.series) ? exercise.series : []).slice(0, 60).map(set => {
+    const sets = (Array.isArray(exercise.series) ? exercise.series : []).slice(0, 60).map((set, setIndex) => {
+      const record = recordKeys.has(`${session.id}:${exerciseIndex}:${setIndex}`);
       const weightValue = Number(set.kg); const repsValue = Number(set.reps);
       const load = set.kg === '' || set.kg == null || !Number.isFinite(weightValue) || weightValue < 0 ? '—' : `${formatWeight(weightValue)}`;
       const reps = repsValue > 0 && Number.isFinite(repsValue) ? `${repsValue.toLocaleString('pt-BR')} rep.` : '—';
@@ -87,13 +89,13 @@ function setDetailsHTML(session) {
       const rawType = String(set.tipo || 'N').toUpperCase();
       const type = ['N', 'W', 'D', 'F'].includes(rawType) ? rawType : 'N';
       const setLabel = type === 'N' ? ++normalSetNumber : escapeHTML(type);
-      return `<li class="grid grid-cols-[2.25rem_1fr_auto] items-center gap-2 rounded-xl bg-white/[.04] px-3 py-2 text-xs"><span class="set-type-badge ${type === 'N' ? 'is-normal' : `is-${type.toLowerCase()}`}" aria-label="${type === 'N' ? `Série ${setLabel}` : `Série ${type}`}"${type === 'N' ? '' : ` title="Série ${type}"`}>${setLabel}</span><span class="text-gray-300">${load} × ${reps}${rir}</span><span class="${set.concluida ? 'text-neon' : 'text-gray-600'}">${set.concluida ? 'Feita' : 'Não realizada'}</span></li>`;
+      return `<li class="grid grid-cols-[2.25rem_1fr_auto] items-center gap-2 rounded-xl bg-white/[.04] px-3 py-2 text-xs"><span class="set-type-badge ${type === 'N' ? 'is-normal' : `is-${type.toLowerCase()}`}" aria-label="${type === 'N' ? `Série ${setLabel}` : `Série ${type}`}"${type === 'N' ? '' : ` title="Série ${type}"`}>${setLabel}</span><span class="text-gray-300">${load} × ${reps}${rir}${record ? '<span class="ml-2 inline-flex items-center gap-1 rounded-full bg-neon/10 px-2 py-0.5 text-xs font-bold text-neon"><i data-lucide="trophy" class="h-3 w-3"></i>Recorde</span>' : ''}</span><span class="${set.concluida ? 'text-neon' : 'text-gray-600'}">${set.concluida ? 'Feita' : 'Não realizada'}</span></li>`;
     }).join('');
     return `<section><h4 class="text-sm font-bold">${escapeHTML(exercise.nome || 'Exercício')}</h4><p class="mt-1 text-xs uppercase text-gray-500">${escapeHTML(exercise.grupo || 'Outros')}</p><ul class="mt-2 space-y-1">${sets || '<li class="text-xs text-gray-500">Sem séries registradas.</li>'}</ul></section>`;
   }).join('');
   const checkin = session.checkinPreTreino;
   const checkinHTML = checkin ? `<div class="grid grid-cols-3 gap-2 rounded-2xl bg-white/5 p-3 text-center text-xs"><span>Energia<strong class="mt-1 block text-neon">${displayScaleValue(checkin.energia, 1, 5)}</strong></span><span>Sono<strong class="mt-1 block text-neon">${displayScaleValue(checkin.sono, 1, 5)}</strong></span><span>Dor<strong class="mt-1 block text-neon">${displayScaleValue(checkin.dor, 0, 5)}</strong></span></div>` : '';
-  return `${checkinHTML}<div class="mt-4 space-y-5">${exerciseHTML || '<p class="text-sm text-gray-500">Sem exercícios registrados.</p>'}</div><button type="button" data-delete-session="${escapeHTML(session.id)}" class="mt-5 min-h-11 w-full rounded-xl border border-danger/40 bg-danger/10 text-xs font-bold text-danger">Excluir esta sessão</button>`;
+  return `${checkinHTML}<div class="mt-4 space-y-5">${exerciseHTML || '<p class="text-sm text-gray-500">Sem exercícios registrados.</p>'}</div>${session.rotinaId ? `<a href="./treino.html?rotina=${encodeURIComponent(session.rotinaId)}" class="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-neon text-sm font-bold text-white"><i data-lucide="play" class="h-4 w-4"></i>Treinar de novo</a>` : ''}<button type="button" data-delete-session="${escapeHTML(session.id)}" class="mt-3 min-h-11 w-full rounded-xl border border-danger/40 bg-danger/10 text-xs font-bold text-danger">Excluir esta sessão</button>`;
 }
 
 function sessionCard(session) {
@@ -128,6 +130,7 @@ function renderSessions() {
   } else if (!filtered.length) {
     $('sessions').innerHTML = '<div class="mol-state"><p class="mol-state-title">Nenhuma sessão encontrada</p><p class="mol-state-copy">Altere o mês, o dia selecionado ou a busca.</p></div>';
   } else {
+    recordKeys = recordSetKeys(sessions);
     $('sessions').innerHTML = filtered.slice(0, visibleLimit).map(sessionCard).join(''); bindDeleteActions();
   }
   const remaining = Math.max(0, filtered.length - visibleLimit);

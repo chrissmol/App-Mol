@@ -167,3 +167,21 @@ export function exerciseProgress(sessions, name) {
     };
   }).filter(Boolean).sort((a, b) => a.date - b.date);
 }
+
+// Chaves "sessão:exercício:série" das séries que superaram o melhor 1RM estimado anterior do exercício.
+export function recordSetKeys(sessions) {
+  const best = new Map(); const keys = new Set();
+  (Array.isArray(sessions) ? sessions : []).map(session => ({ session, date: workoutDate(session) })).filter(item => item.date).sort((a, b) => a.date.getTime() - b.date.getTime()).forEach(({ session }) => {
+    (Array.isArray(session.exercicios) ? session.exercicios : []).slice(0, 60).forEach((exercise, exerciseIndex) => {
+      const name = normalizedExerciseName(exercise?.nome);
+      if (!name) return;
+      (Array.isArray(exercise.series) ? exercise.series : []).slice(0, 60).forEach((set, setIndex) => {
+        const e1rm = set?.concluida === true ? estimate1RM(set.kg, set.reps) : 0;
+        if (!e1rm) return;
+        if (best.has(name) && e1rm > best.get(name)) keys.add(`${session.id}:${exerciseIndex}:${setIndex}`);
+        if (!best.has(name) || e1rm > best.get(name)) best.set(name, e1rm);
+      });
+    });
+  });
+  return keys;
+}
