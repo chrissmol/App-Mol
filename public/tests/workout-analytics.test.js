@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimate1RM, exerciseTrends, normalizedGroup, personalRecords, sessionMetrics, trainingBalance, volumeByGroup, workoutDate } from '../js/modules/workout-analytics.js';
+import { estimate1RM, recordSetKeys, exerciseTrends, normalizedGroup, personalRecords, sessionMetrics, trainingBalance, volumeByGroup, workoutDate } from '../js/modules/workout-analytics.js';
 
 const timestamp = iso => ({ toDate: () => new Date(iso) });
 const session = (date, sets, name = 'Supino Reto', group = 'Peito') => ({ concluidoEm: date, exercicios: [{ nome: name, grupo: group, series: sets }] });
@@ -89,5 +89,17 @@ describe('métricas de treino', () => {
     expect(trainingBalance({})).toMatchObject({ state: 'empty' });
     expect(trainingBalance({ Peito: 12, Costas: 4, Pernas: 4 })).toMatchObject({ state: 'concentrated' });
     expect(trainingBalance({ Peito: 8, Costas: 8, Pernas: 6 })).toMatchObject({ state: 'distributed' });
+  });
+});
+
+describe('recordSetKeys', () => {
+  it('marca só as séries que superam o melhor 1RM anterior do exercício', () => {
+    const done = (kg, reps) => ({ kg, reps, concluida: true });
+    const keys = recordSetKeys([
+      { id: 'b', ...session('2026-10-10', [done(62, 8), done(60, 8), { kg: 90, reps: 5, concluida: false }]) },
+      { id: 'a', ...session('2026-10-05', [done(60, 8)], 'supino reto') },
+      { id: 'c', ...session('2026-10-12', [done(62, 8)]) }
+    ]);
+    expect([...keys]).toEqual(['b:0:0']);
   });
 });
