@@ -251,7 +251,7 @@ function configurarPainelDescanso() {
   const panel = document.getElementById('rest-timer');
   if (!panel) return;
   panel.className = 'rest-timer-panel hidden rounded-3xl border border-neon/30 mol-dialog-surface p-3 shadow-2xl backdrop-blur-xl';
-  panel.setAttribute('aria-label', 'Cronometro de descanso');
+  panel.setAttribute('aria-label', 'Cronômetro de descanso');
   panel.innerHTML = `
     <div class="rest-mini">
       <button type="button" id="btn-open-rest" class="rest-mini-button flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 text-left">
@@ -489,11 +489,11 @@ function contextoDescanso(indexExercicio, indexSerie) {
     title: exercicio?.nome || 'Descanso',
     nextTitle: next
       ? `Proxima: serie ${next.indexSerie + 1} de ${next.exercicio.series.length}${nextKg || nextReps ? ` - ${formatWeight(nextKg || '-')} - ${nextReps || '-'} reps` : ''}`
-      : 'Ultima serie registrada. Voce pode finalizar o treino.',
+      : 'Última série registrada. Você pode finalizar o treino.',
     hint: serie?.tipo === 'W'
       ? 'Aquecimento: mantenha o ritmo'
       : Number(serie?.rir) <= 1 || ['F', 'D'].includes(serie?.tipo)
-        ? 'Serie pesada: recupere de verdade'
+        ? 'Série pesada: recupere de verdade'
         : 'Recupere a respiracao'
   };
 }
@@ -560,7 +560,7 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
       const avisarDispositivo = document.hidden && 'Notification' in window && Notification.permission === 'granted';
       pararDescanso();
       navigator.vibrate?.([200, 100, 200]);
-      showToast('Descanso concluido. Vamos para a proxima!', 'success');
+      showToast('Descanso concluído. Vamos para a próxima!', 'success');
       if (avisarDispositivo) {
         notifyDevice('Descanso concluído', exercicioEmDescanso ? `Hora de voltar para ${exercicioEmDescanso}.` : 'Hora de continuar o treino.').catch(() => {});
       }
@@ -572,7 +572,7 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
 document.getElementById('btn-skip-rest')?.addEventListener('click', pararDescanso);
 document.getElementById('btn-sub-rest')?.addEventListener('click', () => ajustarDescanso(-15));
 document.getElementById('btn-add-rest')?.addEventListener('click', () => {
-  if (descansoTotal >= WORKOUT_LIMITS.rest) return showToast('O descanso maximo e de 60 minutos.');
+  if (descansoTotal >= WORKOUT_LIMITS.rest) return showToast('O descanso máximo é de 60 minutos.');
   ajustarDescanso(15);
 });
 document.getElementById('btn-pause-rest')?.addEventListener('click', () => {
@@ -1802,7 +1802,7 @@ function prepararCabecalhoModalTipo() {
   close.type = 'button';
   close.className = 'series-type-close';
   close.dataset.closeSeriesType = 'true';
-  close.setAttribute('aria-label', 'Fechar selecao de tipo');
+  close.setAttribute('aria-label', 'Fechar seleção de tipo');
   close.innerHTML = '<i data-lucide="x" class="h-5 w-5"></i>';
   header.append(copy, close);
   modalTipoSerieContent.prepend(header);

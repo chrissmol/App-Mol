@@ -2,6 +2,8 @@
 // Cada linha: [português, inglês, espanhol]. O texto em português é a chave exata exibida na tela.
 // Nomes de alimentos e exercícios do catálogo são conteúdo e ficam em português.
 
+import { PAGE_PATTERNS } from './language-pages.js';
+
 const ROWS = [
   // Memória do assistente
   ['O que o assistente lembra', 'What the assistant remembers', 'Lo que el asistente recuerda'],
@@ -383,7 +385,8 @@ const PATTERN_ROWS = [
   [/^(\d+), sem treino$/, '$1, no workout', '$1, sin entrenamiento'],
   [/^Referência do preparo: (.+)$/, 'Prep reference: $1', 'Referencia de la preparación: $1'],
   [/^Proteína · (.+)$/, 'Protein · $1', 'Proteína · $1'],
-  [/^Pesos importados do Apple Saúde: (\d+)$/, 'Weights imported from Apple Health: $1', 'Pesos importados de Apple Salud: $1']
+  [/^Pesos importados do Apple Saúde: (\d+)$/, 'Weights imported from Apple Health: $1', 'Pesos importados de Apple Salud: $1'],
+  ...PAGE_PATTERNS
 ];
 
 const build = column => Object.fromEntries(ROWS.map(row => [row[0], row[column]]));

@@ -1,4 +1,5 @@
 import { EXTRA_PATTERNS, EXTRA_STRINGS } from './language-extra.js';
+import { PAGE_STRINGS } from './language-pages.js';
 const STORAGE_KEY = 'mol-accessibility';
 const LEGACY_LANGUAGE_KEY = 'mol-language';
 
@@ -497,8 +498,8 @@ const dictionary = {
 };
 
 // Textos novos (diário, pets, boas-vindas, treino…) ficam em language-extra.js.
-Object.assign(dictionary['en-US'], EXTRA_STRINGS['en-US']);
-Object.assign(dictionary['es-ES'], EXTRA_STRINGS['es-ES']);
+// Telas e avisos que faltavam ficam em language-pages.js; o que já existe acima/abaixo tem prioridade.
+for (const code of ['en-US', 'es-ES']) dictionary[code] = { ...PAGE_STRINGS[code], ...dictionary[code], ...EXTRA_STRINGS[code] };
 
 function closestSupported(language) {
   const normalized = String(language || '').trim();
