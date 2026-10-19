@@ -49,6 +49,9 @@ export const signInWithEmailAndPassword = async () => {
 };
 export const createUserWithEmailAndPassword = signInWithEmailAndPassword;
 export const sendPasswordResetEmail = async () => {};
+export const sendSignInLinkToEmail = async () => {};
+export const isSignInWithEmailLink = () => false;
+export const signInWithEmailLink = signInWithEmailAndPassword;
 export const updateProfile = async (user, { displayName } = {}) => {
   if (displayName !== undefined) user.displayName = displayName;
 };

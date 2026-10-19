@@ -11,7 +11,10 @@
 import {
   createUserWithEmailAndPassword,
   getRedirectResult,
+  isSignInWithEmailLink,
   sendPasswordResetEmail,
+  sendSignInLinkToEmail,
+  signInWithEmailLink,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -121,6 +124,19 @@ export async function registerWithEmail(email, password, name) {
 /** Envia e-mail de redefinição de senha. */
 export function resetPassword(email) {
   return authReady.then(() => sendPasswordResetEmail(auth, email));
+}
+
+/** Envia o link de acesso sem senha; a página de login conclui a entrada ao abrir o link. */
+export function sendEmailLink(email) {
+  const url = `${window.location.origin}/pages/login.html`;
+  return authReady.then(() => sendSignInLinkToEmail(auth, email, { url, handleCodeInApp: true }));
+}
+
+export const isEmailLink = () => isSignInWithEmailLink(auth, window.location.href);
+
+export async function finishEmailLink(email) {
+  await authReady;
+  return (await signInWithEmailLink(auth, email, window.location.href)).user;
 }
 
 /** Usa navegação completa quando o navegador bloqueia popups. */
