@@ -36,7 +36,7 @@ function setPageState(state, message = '') {
     text.textContent = message || 'Não foi possível carregar seus dados.';
     const retry = document.createElement('button');
     retry.type = 'button';
-    retry.className = 'mt-3 block min-h-10 w-full rounded-xl bg-white/5 text-sm font-bold text-white';
+    retry.className = 'mt-3 block min-h-11 w-full rounded-xl bg-white/5 text-sm font-bold text-white';
     retry.textContent = 'Tentar novamente';
     retry.onclick = loadProfile;
     $('page-status').append(text, retry);

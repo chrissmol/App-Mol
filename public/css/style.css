@@ -3849,3 +3849,9 @@ html[data-reduce-motion="true"] .pet-avatar--celebra, html[data-reduce-motion="t
 .progress-fold > summary::-webkit-details-marker { display: none; }
 .progress-fold__chevron { transition: transform .2s ease; }
 .progress-fold[open] .progress-fold__chevron { transform: rotate(180deg); }
+
+/* Interruptores: estado também por forma (✓ ligado, ○ desligado) e foco visível no trilho, já que o input é sr-only. */
+.app-surface input.peer.sr-only[type="checkbox"] + span { position: relative; }
+.app-surface input.peer.sr-only[type="checkbox"] + span::after { content: ""; position: absolute; top: 50%; right: .5rem; width: .5rem; height: .5rem; border: 2px solid var(--mol-muted); border-radius: 999px; transform: translateY(-50%); }
+.app-surface input.peer.sr-only[type="checkbox"]:checked + span::after { right: auto; left: .55rem; width: .3rem; height: .6rem; border: solid #fff; border-width: 0 2px 2px 0; border-radius: 0; transform: translateY(-65%) rotate(45deg); }
+.app-surface input.peer.sr-only[type="checkbox"]:focus-visible + span { outline: 3px solid var(--mol-brand-text); outline-offset: 3px; }
