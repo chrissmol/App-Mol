@@ -3,7 +3,7 @@ const listeners = new Set();
 function readUser() {
   try {
     return localStorage.getItem('__mol_e2e_user')
-      ? { uid: 'e2e-user', displayName: 'Christian Mol', email: 'christian@example.com', photoURL: '' }
+      ? { uid: 'e2e-user', displayName: 'Christian Mol', email: localStorage.getItem('__mol_e2e_email') || 'christian@example.com', photoURL: '' }
       : null;
   } catch {
     return null;
@@ -170,6 +170,14 @@ export const setDoc = async (reference, value) => {
     data.push([path.at(-1), value]);
     localStorage.setItem('__mol_e2e_custom_foods', JSON.stringify(data));
   }
+};
+// __mol_e2e_snapshots: documentos por coleção ({ presence: [...], clientErrors: [...] }) para a página Admin.
+export const limit = value => ({ kind: 'limit', value });
+export const onSnapshot = (reference, next) => {
+  const name = (reference.path || []).at(-1);
+  const rows = JSON.parse(localStorage.getItem('__mol_e2e_snapshots') || '{}')[name] || [];
+  queueMicrotask(() => next(querySnapshot(rows.map((row, i) => [`${name}-${i}`, row]))));
+  return () => {};
 };
 export const updateDoc = async () => {};
 export const deleteDoc = async () => {};
