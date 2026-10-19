@@ -37,25 +37,28 @@
       <div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Leitura do período</p><h2 id="insight-title" class="mt-1 font-bold">Equilíbrio do treino</h2></div>
       <div id="balance-insight" class="mt-4" aria-live="polite"><p class="text-sm text-gray-500">Analisando distribuição…</p></div>
     </section>
-    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="muscle-map-title">
-      <div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Mapa muscular</p><h2 id="muscle-map-title" class="mt-1 font-bold">Onde você treinou</h2></div>
-      <div id="muscle-map" class="mt-4" aria-live="polite"><p class="text-sm text-gray-500">Carregando mapa…</p></div>
-    </section>
     <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="distribution-title">
       <div class="flex items-start justify-between gap-4"><div><p id="period-label" class="text-xs font-semibold uppercase tracking-wider text-neon">Últimos 7 dias</p><h2 id="distribution-title" class="mt-1 font-bold">Séries por grupo muscular</h2></div><span class="rounded-xl bg-white/5 p-2 text-gray-400"><i data-lucide="chart-no-axes-column-increasing" class="h-5 w-5"></i></span></div>
       <p class="mt-2 text-xs leading-relaxed text-gray-500">Séries concluídas, sem contar aquecimentos.</p>
       <div id="volume" class="mt-5 min-h-20 space-y-4" aria-live="polite"><p class="text-sm text-gray-500">Carregando distribuição…</p></div>
     </section>
+    <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="muscle-map-title">
+      <details class="progress-fold"><summary class="grid min-h-11 cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-x-4"><span class="block text-xs font-semibold uppercase tracking-wider text-neon">Mapa muscular</span><h2 id="muscle-map-title" class="mt-1 font-bold">Onde você treinou</h2><span class="col-start-2 row-span-2 row-start-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl mol-soft text-gray-400 progress-fold__chevron"><i data-lucide="chevron-down" class="h-5 w-5"></i></span></summary>
+      <div id="muscle-map" class="mt-4" aria-live="polite"><p class="text-sm text-gray-500">Carregando mapa…</p></div>
+      </details>
+    </section>
 
     <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="trends-title">
-      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Tendência</p><h2 id="trends-title" class="mt-1 font-bold">Evolução por exercício</h2></div><span class="rounded-xl mol-soft p-2 text-gray-400"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span></div>
+      <details class="progress-fold"><summary class="grid min-h-11 cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-x-4"><span class="block text-xs font-semibold uppercase tracking-wider text-neon">Tendência</span><h2 id="trends-title" class="mt-1 font-bold">Evolução por exercício</h2><span class="col-start-2 row-span-2 row-start-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl mol-soft text-gray-400 progress-fold__chevron"><i data-lucide="chevron-down" class="h-5 w-5"></i></span></summary>
       <p class="mt-2 text-xs leading-relaxed text-gray-500">Compara a primeira e a sessão mais recente no período pela estimativa de força. Use como referência, não como diagnóstico.</p>
       <div id="trends" class="mt-5 min-h-20 space-y-3" aria-live="polite"><p class="text-sm text-gray-500">Calculando tendências…</p></div>
+      </details>
     </section>
     <section class="glass-card mt-4 rounded-3xl p-5" aria-labelledby="records-title">
-      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-semibold uppercase tracking-wider text-neon">Melhores marcas</p><h2 id="records-title" class="mt-1 font-bold">Recordes pessoais</h2></div><span class="rounded-xl bg-white/5 p-2 text-gray-400"><i data-lucide="medal" class="h-5 w-5"></i></span></div>
+      <details class="progress-fold"><summary class="grid min-h-11 cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-x-4"><span class="block text-xs font-semibold uppercase tracking-wider text-neon">Melhores marcas</span><h2 id="records-title" class="mt-1 font-bold">Recordes pessoais</h2><span class="col-start-2 row-span-2 row-start-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl mol-soft text-gray-400 progress-fold__chevron"><i data-lucide="chevron-down" class="h-5 w-5"></i></span></summary>
       <p class="mt-2 text-xs leading-relaxed text-gray-500">Melhor estimativa de cada exercício, com até 15 repetições. Exercícios diferentes não são comparados entre si.</p>
       <div id="prs" class="mt-5 min-h-20 space-y-3" aria-live="polite"><p class="text-sm text-gray-500">Carregando recordes…</p></div>
+      </details>
     </section>
 
     <section class="mt-4 grid grid-cols-2 gap-3">
