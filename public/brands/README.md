@@ -18,9 +18,10 @@ Cada cliente é um arquivo `brands/<marca>.json` e um projeto Firebase próprio.
 Novo cliente:
 
 1. Copie `mol.json` para `<marca>.json` e preencha.
-2. Coloque a logo em `brands/<marca>/logo.svg` (sem ela, fica a do Mol). Vale para favicon, cabeçalho, login e notificações.
-3. No GitHub, crie o Environment `<marca>` com `FIREBASE_PROJECT_ID` e `FIREBASE_TOKEN` do projeto do cliente.
-4. Rode o workflow "Mol production deploy" com `brand = <marca>`.
+2. Ícones do app instalado: `brands/<marca>/icon-192.png` e `icon-512.png` (PNG, com fundo; sem eles ficam os do Mol). O `manifest.webmanifest` é gerado no build com o nome da marca.
+3. Coloque a logo em `brands/<marca>/logo.svg` (sem ela, fica a do Mol). Vale para favicon, cabeçalho, login e notificações.
+4. No GitHub, crie o Environment `<marca>` com `FIREBASE_PROJECT_ID` e `FIREBASE_TOKEN` do projeto do cliente.
+5. Rode o workflow "Mol production deploy" com `brand = <marca>`.
 
 Local: `BRAND=<marca> npm run build`.
 

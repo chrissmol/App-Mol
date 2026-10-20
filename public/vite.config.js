@@ -1,4 +1,4 @@
-import { cpSync, existsSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { brandReplacer, loadBrand } from './scripts/brand.mjs';
@@ -17,7 +17,10 @@ const brandPlugin = {
   transformIndexHtml: {
     order: 'pre',
     // No HTML o Vite processa a logo como asset, então o caminho aponta direto para o arquivo da marca.
-    handler: html => brandText(hasBrandLogo ? html.replace(/(?:\.{1,2}\/)*assets\/mol-mark\.svg/g, `/brands/${brand.id}/logo.svg`) : html),
+    handler: html => ({
+      html: brandText(hasBrandLogo ? html.replace(/(?:\.{1,2}\/)*assets\/mol-mark\.svg/g, `/brands/${brand.id}/logo.svg`) : html),
+      tags: [{ tag: 'link', attrs: { rel: 'manifest', href: '/manifest.webmanifest' }, injectTo: 'head' }],
+    }),
   },
   transform(code, id) {
     const file = id.replaceAll('\\', '/').split('?')[0];
@@ -26,8 +29,24 @@ const brandPlugin = {
   // Cópia estática (pwa/assets) usada pelos caminhos fixos em JS, favicon e service worker.
   writeBundle({ dir }) {
     if (hasBrandLogo) cpSync(brandLogo, resolve(dir, 'assets/mol-mark.svg'));
+    // Manifest do PWA (instalação no Android). Ícones PNG: brands/<marca>/icon-192.png e icon-512.png, senão os do Mol.
+    for (const size of [192, 512]) {
+      const icon = resolve(import.meta.dirname, 'brands', brand.id, `icon-${size}.png`);
+      if (existsSync(icon)) cpSync(icon, resolve(dir, `assets/icon-${size}.png`));
+    }
+    writeFileSync(resolve(dir, 'manifest.webmanifest'), JSON.stringify({
+      name: brand.name, short_name: brand.name, start_url: '/', scope: '/', display: 'standalone',
+      theme_color: '#070a08', background_color: '#070a08',
+      icons: [192, 512].flatMap(size => ['any', 'maskable'].map(purpose => ({ src: `/assets/icon-${size}.png`, sizes: `${size}x${size}`, type: 'image/png', purpose }))),
+    }));
     // Arte dos pets da marca (brands/<marca>/pets/<id>/<estado>.webp) em /assets/pets/<id>/.
     if (existsSync(brandPets)) cpSync(brandPets, resolve(dir, 'assets/pets'), { recursive: true });
+    // O service worker pré-carrega o avatar de cada pet; com pets próprios, aponta para os da marca.
+    if (brand.pets) {
+      const sw = resolve(dir, 'sw.js');
+      const urls = brand.pets.map(pet => `  '/assets/pets/${pet.id}/feliz-avatar.webp',\n`).join('');
+      writeFileSync(sw, readFileSync(sw, 'utf8').replace(/ {2}'\/assets\/pets\/moldrian[^\n]*\n {2}'\/assets\/pets\/marlo[^\n]*\n/, urls));
+    }
   },
 };
 
