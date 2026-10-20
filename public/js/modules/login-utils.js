@@ -1,3 +1,5 @@
+import brand from '@brand';
+
 export function authErrorMessage(error) {
   const messages = {
     'auth/popup-closed-by-user': 'Login cancelado. Tente novamente quando quiser.',
@@ -30,7 +32,8 @@ export function withTimeout(promise, milliseconds = 60000) {
   ]).finally(() => clearTimeout(timer));
 }
 
-export const LEGAL_DOCUMENTS = {
+// Marca com `legal` no brands/<marca>.json troca os textos inteiros (terms e/ou privacy, mesmo formato).
+const MOL_LEGAL = {
   terms: {
     title: 'Termos de Uso',
     updated: 'Atualizado em 19 de agosto de 2026',
@@ -63,3 +66,4 @@ export const LEGAL_DOCUMENTS = {
     ]
   }
 };
+export const LEGAL_DOCUMENTS = { ...MOL_LEGAL, ...brand.legal };

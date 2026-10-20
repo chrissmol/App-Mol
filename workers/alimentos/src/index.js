@@ -2,16 +2,20 @@
 // (sem CORS), então este Worker faz a ponte, filtra produtos do Brasil e guarda em cache por 1 dia.
 import { cleanTerm, corsHeaders, searchUrl, slimResults } from './off.js';
 
+// Origens de outras marcas (var ALLOWED_ORIGINS, separadas por vírgula); igual em todas as requisições do deploy.
+let brandOrigins = [];
+
 const json = (body, status, origin, extra = {}) => new Response(JSON.stringify(body), {
   status,
-  headers: { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders(origin), ...extra }
+  headers: { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders(origin, brandOrigins), ...extra }
 });
 
 export default {
   async fetch(request, env, ctx) {
+    brandOrigins = String(env.ALLOWED_ORIGINS || '').split(',').map(item => item.trim()).filter(Boolean);
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...corsHeaders(origin), 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Max-Age': '86400' } });
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...corsHeaders(origin, brandOrigins), 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Max-Age': '86400' } });
     if (request.method !== 'GET' || url.pathname !== '/buscar') return json({ erro: 'Não encontrado.' }, 404, origin);
     const term = cleanTerm(url.searchParams.get('q'));
     if (!term) return json({ erro: 'Digite de 2 a 60 caracteres.' }, 400, origin);
