@@ -3543,6 +3543,14 @@ html[data-theme="light"] body .mol-brand img {
 .assistant-msg--error { display: flex; align-items: flex-start; gap: .5rem; color: #FF3B5C; border-color: rgba(255, 59, 92, .4); }
 .assistant-msg--error svg { width: 1.1rem; height: 1.1rem; flex: none; margin-top: .2rem; }
 html[data-theme="light"] .assistant-msg--error { color: #b3173a; }
+.assistant-new[hidden] { display: none; }
+.assistant-new { align-self: flex-end; display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; padding: 0 1rem; border-radius: 999px; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); font-size: .85rem; font-weight: 700; color: var(--mol-muted-strong); }
+.assistant-new:hover:not(:disabled) { border-color: var(--mol-brand-text); color: var(--mol-text); }
+.assistant-new:disabled { opacity: .5; }
+.assistant-action { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; margin-top: .35rem; padding: 0 .85rem; margin-left: -.85rem; border-radius: 999px; font-size: .8rem; font-weight: 700; color: var(--mol-muted-strong); }
+.assistant-action:hover { color: var(--mol-text); }
+.assistant-msg--error .assistant-action svg { margin-top: 0; }
+.assistant-msg--error .assistant-action { color: inherit; }
 .assistant-msg--proposal { align-self: stretch; max-width: 100%; padding: 0; background: none; }
 .assistant-msg__file { display: flex; align-items: center; gap: .35rem; font-size: .8rem; opacity: .9; }
 .assistant-msg__file svg, .assistant-attachment svg { width: .95rem; height: .95rem; flex: none; }

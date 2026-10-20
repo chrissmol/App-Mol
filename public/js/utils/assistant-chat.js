@@ -49,6 +49,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       <p><strong>Antes de começar:</strong> as conversas passam pelo Gemini, do Google, que pode usá-las para melhorar os serviços dele. Envie só o necessário sobre a sua saúde.</p>
       <button type="button" class="mol-btn mol-btn-secondary" data-notice-ok>Entendi</button>
     </div>
+    <button type="button" class="assistant-new" data-new hidden><i data-lucide="plus" aria-hidden="true"></i> Nova conversa</button>
     <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
     <!-- Estado vazio no padrão dos apps de chat: saudação ao centro e sugestões logo acima da caixa. -->
     <section class="assistant-empty" data-empty aria-label="Comece uma conversa">
@@ -77,6 +78,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
   let busy = false;
   let sendPromise = null;
   let storePromise = null;
+  let lastRequest = null;
 
   const notice = $('[data-notice]');
   if (!getLocalItem(NOTICE_KEY)) notice.hidden = false;
@@ -161,6 +163,37 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     };
   }
 
+  function newConversation() {
+    if (busy) return;
+    messages.innerHTML = '';
+    sendPromise = null;
+    lastRequest = null;
+    setAttachment(null);
+    $('[data-empty]').hidden = false;
+    $('[data-new]').hidden = true;
+    container.classList.remove('assistant-chat--active');
+    showToast('Nova conversa iniciada.', 'success');
+    input.focus();
+  }
+
+  async function copyReply(text, button) {
+    try { await navigator.clipboard.writeText(text); showToast('Resposta copiada.', 'success'); button.focus(); }
+    catch { showToast('Não foi possível copiar a resposta.'); }
+  }
+
+  function showError(item, text) {
+    item.classList.add('assistant-msg--error');
+    item.innerHTML = `<i data-lucide="triangle-alert" aria-hidden="true"></i><div><span>${escapeHTML(text)}</span><br><button type="button" class="assistant-action" data-retry><i data-lucide="rotate-ccw" aria-hidden="true"></i> Tentar de novo</button></div>`;
+    icons(item);
+    pick(item, '[data-retry]').onclick = () => {
+      if (busy || !lastRequest) return;
+      item.previousElementSibling?.remove();
+      item.remove();
+      setAttachment(lastRequest.attachment);
+      submit(lastRequest.message);
+    };
+  }
+
   function setAttachment(value) {
     attachment = value;
     $('[data-attachment]').hidden = !value;
@@ -173,8 +206,11 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     busy = true;
     $('[data-send]').disabled = true;
     $('[data-empty]').hidden = true;
+    $('[data-new]').hidden = false;
+    $('[data-new]').disabled = true;
     container.classList.add('assistant-chat--active');
     const sentAttachment = attachment;
+    lastRequest = { message, attachment: sentAttachment };
     addMessage('user', `${message ? formatAssistantText(message) : ''}${sentAttachment ? `<p class="assistant-msg__file"><i data-lucide="paperclip" aria-hidden="true"></i> ${escapeHTML(sentAttachment.name)}</p>` : ''}`);
     icons(messages.lastElementChild);
     input.value = '';
@@ -184,23 +220,27 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     // O avatar ao lado da resposta muda de estado: focado escrevendo, depois apoio, curioso ou feliz.
     const setPetState = state => { if (pet.id !== 'nenhum') typing.style.setProperty('--assistant-pet', `url("${petImageSrc(pet, state, { small: true })}")`); };
     setPetState('focado');
+    let rewind = () => {};
     try {
       const [send, store] = await Promise.all([getSend(), getStore()]);
+      rewind = () => send.rewind?.();
+      send.mark?.();
       const { executors, proposals, sources } = createAssistantTools({ loadDiet: store.loadDiet, loadRoutines: store.loadRoutines, loadDiary: store.loadDiary, loadMemory: store.loadMemory });
       const attachments = sentAttachment ? [await fileToPart(sentAttachment.file, { readExcel: readExcelInBrowser })] : [];
       const result = await runAssistantTurn({ send, executors, message, attachments });
       const links = sources.length ? `<p class="assistant-sources">Fontes: ${sources.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.titulo || source.fonte)}</a>`).join(' · ')}</p>` : '';
-      typing.innerHTML = formatAssistantText(result.text || 'Pronto.') + links;
+      typing.innerHTML = formatAssistantText(result.text || 'Pronto.') + links + '<button type="button" class="assistant-action" data-copy><i data-lucide="copy" aria-hidden="true"></i> Copiar resposta</button>';
+      icons(typing);
+      pick(typing, '[data-copy]').onclick = event => copyReply(result.text || 'Pronto.', /** @type {HTMLElement} */ (event.currentTarget));
       setPetState(chatPetState(message, result.text));
       for (const proposal of proposals) await renderProposal(proposal, store);
     } catch (error) {
       console.error('[Mol] Assistente falhou:', error);
-      typing.classList.add('assistant-msg--error');
-      const reason = error?.message?.startsWith('Entre na sua conta') || /Formato|7 MB|Excel/.test(error?.message || '') ? error.message : describeAssistantError(error);
-      typing.innerHTML = `<i data-lucide="triangle-alert" aria-hidden="true"></i><span>${escapeHTML(reason)}</span>`;
-      icons(typing);
+      rewind();
+      showError(typing, error?.message?.startsWith('Entre na sua conta') || /Formato|7 MB|Excel/.test(error?.message || '') ? error.message : describeAssistantError(error));
     } finally {
       busy = false;
+      $('[data-new]').disabled = false;
       $('[data-send]').disabled = false;
       scrollToEnd();
     }
@@ -212,6 +252,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
   });
   input.addEventListener('input', () => { input.style.height = ''; input.style.height = `${Math.min(input.scrollHeight, 160)}px`; });
   container.querySelectorAll('[data-suggestion]').forEach(button => { button.addEventListener('click', () => submit(button.textContent)); });
+  $('[data-new]').onclick = newConversation;
   $('[data-attach]').onclick = () => fileInput.click();
   $('[data-attachment-remove]').onclick = () => { setAttachment(null); fileInput.value = ''; };
   fileInput.addEventListener('change', () => {

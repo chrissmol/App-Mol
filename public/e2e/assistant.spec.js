@@ -28,7 +28,7 @@ test('conversa, recusa fora do escopo, proposta confirmada e desfeita', async ({
   await expect(page.locator('.assistant-msg--assistant').last()).toContainText('28,1 g de carboidrato');
 
   await ask(page, 'Me ajuda com python?');
-  await expect(page.locator('.assistant-msg--assistant').last()).toHaveText('Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.');
+  await expect(page.locator('.assistant-msg--assistant').last()).toContainText('Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.');
 
   await ask(page, 'Troca a banana do café por aveia');
   const card = page.locator('.assistant-proposal');
@@ -99,12 +99,42 @@ test('atalhos da Dieta e do Treino abrem a gaveta do assistente', async ({ page 
   await expect(page.getByRole('dialog', { name: 'Assistente do treino' })).toBeHidden();
 });
 
+test('tentar de novo, copiar resposta e nova conversa', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/pages/assistente.html');
+  await page.getByRole('button', { name: 'Entendi' }).click();
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeHidden();
+
+  await ask(page, 'Pode quebrar?');
+  const error = page.locator('.assistant-msg--error');
+  await expect(error).toContainText('O assistente não respondeu agora');
+  await error.getByRole('button', { name: 'Tentar de novo' }).click();
+  await expect(page.locator('.assistant-typing')).toHaveCount(0);
+  await expect(page.locator('.assistant-msg--error')).toHaveCount(0);
+  await expect(page.locator('.assistant-msg--user')).toHaveCount(1);
+  const reply = page.locator('.assistant-msg--assistant').last();
+  await expect(reply).toContainText('Agora funcionou.');
+
+  await reply.getByRole('button', { name: 'Copiar resposta' }).click();
+  await expect(page.getByText('Resposta copiada.')).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Agora funcionou.');
+  for (const name of ['Copiar resposta', 'Nova conversa']) {
+    const box = await page.getByRole('button', { name }).first().boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+
+  await page.getByRole('button', { name: 'Nova conversa' }).click();
+  await expect(page.locator('.assistant-msg')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Como posso ajudar?' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeHidden();
+});
+
 test('erro aparece com ícone e botões respeitam 44 px', async ({ page }) => {
   await page.goto('/pages/assistente.html');
   await page.getByRole('button', { name: 'Entendi' }).click();
   await ask(page, 'falha-simulada');
   const error = page.locator('.assistant-msg--error');
-  await expect(error.locator('svg')).toBeVisible();
+  await expect(error.locator('svg').first()).toBeVisible();
   await expect(error).not.toBeEmpty();
   const send = await page.getByRole('button', { name: 'Enviar' }).boundingBox();
   expect(send.width).toBeGreaterThanOrEqual(44);
