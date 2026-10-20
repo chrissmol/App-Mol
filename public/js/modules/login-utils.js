@@ -51,12 +51,12 @@ const MOL_LEGAL = {
   },
   privacy: {
     title: 'Política de Privacidade',
-    updated: 'Atualizada em 19 de agosto de 2026',
+    updated: 'Atualizada em 20 de outubro de 2026',
     sections: [
       ['1. Dados tratados', 'Tratamos identificação da conta Google, e-mail, foto, preferências, treinos, alimentação, medidas, fotos corporais e demais informações que você decide registrar.'],
       ['2. Finalidades', 'Usamos os dados para autenticar sua conta, salvar e sincronizar registros, personalizar metas, produzir resumos de evolução, manter segurança e atender solicitações do usuário.'],
       ['3. Dados de saúde', 'Medidas, alimentação, fotos e atividade física podem revelar informações sensíveis. O tratamento ocorre para fornecer as funcionalidades solicitadas por você e deve ser interrompido pela exclusão desses registros ou da conta quando você não desejar mantê-los.'],
-      ['4. Serviços utilizados', 'Autenticação e armazenamento utilizam serviços Google Firebase. Esses fornecedores podem processar dados técnicos de conexão conforme seus próprios termos e medidas de segurança.'],
+      ['4. Serviços utilizados', 'Autenticação e armazenamento utilizam serviços Google Firebase. O assistente envia suas mensagens, arquivos anexados e o contexto necessário ao Google Gemini para gerar as respostas. A busca de alimentos passa pelo Cloudflare e consulta o Open Food Facts, e consultas de conhecimento podem usar a Wikipédia. Esses fornecedores podem processar dados técnicos de conexão conforme seus próprios termos e medidas de segurança.'],
       ['5. Compartilhamento', 'Não vendemos seus dados. Eles podem ser compartilhados com prestadores necessários à operação, por obrigação legal ou para proteger direitos e segurança.'],
       ['6. Armazenamento e retenção', 'Os dados permanecem vinculados à conta enquanto ela estiver ativa ou pelo período necessário ao serviço e às obrigações legais. Registros excluídos podem permanecer temporariamente em cópias de segurança.'],
       ['7. Segurança', 'Aplicamos autenticação e regras de acesso por usuário, mas nenhum sistema conectado à internet elimina todos os riscos. Proteja sua conta Google e seu dispositivo.'],
@@ -66,4 +66,8 @@ const MOL_LEGAL = {
     ]
   }
 };
-export const LEGAL_DOCUMENTS = { ...MOL_LEGAL, ...brand.legal };
+// Marca com `supportEmail` mostra o contato no lugar de "canal de suporte informado no aplicativo".
+const optional = /** @type {{ supportEmail?: string, legal?: object }} */ (brand);
+const contact = text => (optional.supportEmail ? text.replaceAll('o canal de suporte informado no aplicativo', `o e-mail ${optional.supportEmail}`) : text);
+const withContact = ({ sections, ...doc }) => ({ ...doc, sections: sections.map(([title, text]) => [title, contact(text)]) });
+export const LEGAL_DOCUMENTS = { terms: withContact(MOL_LEGAL.terms), privacy: withContact(MOL_LEGAL.privacy), ...optional.legal };

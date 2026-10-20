@@ -12,6 +12,7 @@ Cada cliente é um arquivo `brands/<marca>.json` e um projeto Firebase próprio.
 | `appCheckSiteKey` | Chave reCAPTCHA Enterprise do App Check do projeto do cliente |
 | `pets` | Opcional. Troca Moldrian e Marlô: lista de `{ id, name, gender ("m" ou "f"), style, hint, ready, excited, lines }` (frases que faltarem ficam neutras). Arte em `brands/<marca>/pets/<id>/<estado>.webp`, mesmos nomes de `pwa/assets/pets/moldrian/`. "Sem pet" sempre existe |
 | `legal` | Opcional. `{ terms, privacy }` no formato de `LEGAL_DOCUMENTS` (`js/modules/login-utils.js`: `title`, `updated`, `sections` de pares título/texto). Sem o campo ficam os textos do Mol |
+| `supportEmail` | Opcional. Contato de privacidade e suporte que aparece nos Termos e na Política (sem ele fica "canal de suporte informado no aplicativo") |
 | `allowedOrigins` | Opcional. Origens extras (`https://dominio`) que o Worker de busca libera, além do `authDomain` do Firebase |
 | `firebase` | Config web do app Firebase do cliente (`authDomain` = domínio onde o app roda) |
 

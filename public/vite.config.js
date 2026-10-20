@@ -1,4 +1,4 @@
-import { cpSync, existsSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { brandReplacer, loadBrand, manifestFor } from './scripts/brand.mjs';
@@ -35,6 +35,12 @@ const brandPlugin = {
     if (hasBrandLogo) cpSync(brandLogo, resolve(dir, 'assets/mol-mark.svg'));
     // Arte dos pets da marca (brands/<marca>/pets/<id>/<estado>.webp) em /assets/pets/<id>/.
     if (existsSync(brandPets)) cpSync(brandPets, resolve(dir, 'assets/pets'), { recursive: true });
+    // O service worker pré-carrega o avatar de cada pet; com pets próprios, aponta para os da marca.
+    if (brand.pets) {
+      const sw = resolve(dir, 'sw.js');
+      const urls = brand.pets.map(pet => `  '/assets/pets/${pet.id}/feliz-avatar.webp',\n`).join('');
+      writeFileSync(sw, readFileSync(sw, 'utf8').replace(/ {2}'\/assets\/pets\/moldrian[^\n]*\n {2}'\/assets\/pets\/marlo[^\n]*\n/, urls));
+    }
   },
 };
 
