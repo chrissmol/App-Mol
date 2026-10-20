@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { brandReplacer, loadBrand, workerOrigins } from '../scripts/brand.mjs';
+import { brandReplacer, loadBrand, manifestFor, workerOrigins } from '../scripts/brand.mjs';
 import { corsHeaders } from '../../workers/alimentos/src/off.js';
 import { applyBrand } from '../scripts/apply-brand.mjs';
 
@@ -42,6 +42,13 @@ describe('white label', () => {
     const { rules } = applyBrand(read('firestore.rules'), read('firebase.json'), { ...client, pets: [{ id: 'leo' }, { id: 'ana' }] });
     expect(rules).toContain("assistentePet in ['leo', 'ana', 'nenhum']");
     expect(rules).not.toContain('moldrian');
+  });
+
+  it('gera o manifest do PWA com os ícones PNG só quando a marca os tem', () => {
+    const mol = manifestFor(loadBrand('mol').brand, true);
+    expect(mol.name).toBe('Mol');
+    expect(mol.icons.filter(icon => icon.type === 'image/png').map(icon => icon.sizes)).toEqual(['192x192', '192x192', '512x512', '512x512']);
+    expect(manifestFor({ name: 'FitPro' }, false).icons).toEqual([{ src: '/assets/mol-mark.svg', sizes: 'any', type: 'image/svg+xml' }]);
   });
 
   it('junta as origens das marcas para o Worker e libera só elas', () => {

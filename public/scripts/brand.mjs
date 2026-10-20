@@ -47,3 +47,19 @@ export function brandReplacer(brand, base) {
 
 /** Origens que o Worker de busca precisa liberar: app de cada marca (domínio do Firebase + allowedOrigins). */
 export const workerOrigins = brands => [...new Set(brands.flatMap(brand => [`https://${brand.firebase.authDomain}`, ...(brand.allowedOrigins ?? [])]))];
+
+/** Manifest do PWA da marca. Os PNGs (192, 512) são só do Mol; outras marcas usam o SVG até terem os seus. */
+export const manifestFor = (brand, pngs) => ({
+  name: brand.name,
+  short_name: brand.name,
+  start_url: '/index.html',
+  scope: '/',
+  display: 'standalone',
+  lang: 'pt-BR',
+  background_color: '#070a08',
+  theme_color: '#070a08',
+  icons: [
+    ...(pngs ? [192, 512].flatMap(size => ['any', 'maskable'].map(purpose => ({ src: `/assets/icon-${size}.png`, sizes: `${size}x${size}`, type: 'image/png', purpose }))) : []),
+    { src: '/assets/mol-mark.svg', sizes: 'any', type: 'image/svg+xml' },
+  ],
+});

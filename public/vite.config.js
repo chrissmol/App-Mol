@@ -1,7 +1,7 @@
-import { cpSync, existsSync } from 'node:fs';
+import { cpSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import { brandReplacer, loadBrand } from './scripts/brand.mjs';
+import { brandReplacer, loadBrand, manifestFor } from './scripts/brand.mjs';
 
 // White label: BRAND=<marca> escolhe brands/<marca>.json (padrão: mol).
 const { file: brandFile, brand } = loadBrand(process.env.BRAND);
@@ -17,7 +17,13 @@ const brandPlugin = {
   transformIndexHtml: {
     order: 'pre',
     // No HTML o Vite processa a logo como asset, então o caminho aponta direto para o arquivo da marca.
-    handler: html => brandText(hasBrandLogo ? html.replace(/(?:\.{1,2}\/)*assets\/mol-mark\.svg/g, `/brands/${brand.id}/logo.svg`) : html),
+    handler: html => ({
+      html: brandText(hasBrandLogo ? html.replace(/(?:\.{1,2}\/)*assets\/mol-mark\.svg/g, `/brands/${brand.id}/logo.svg`) : html),
+      tags: [
+        { tag: 'link', attrs: { rel: 'manifest', href: '/manifest.webmanifest' }, injectTo: 'head' },
+        ...(brand.id === 'mol' ? [{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/assets/apple-touch-icon.png' }, injectTo: 'head' }] : []),
+      ],
+    }),
   },
   transform(code, id) {
     const file = id.replaceAll('\\', '/').split('?')[0];
@@ -25,6 +31,7 @@ const brandPlugin = {
   },
   // Cópia estática (pwa/assets) usada pelos caminhos fixos em JS, favicon e service worker.
   writeBundle({ dir }) {
+    writeFileSync(resolve(dir, 'manifest.webmanifest'), JSON.stringify(manifestFor(brand, brand.id === 'mol')));
     if (hasBrandLogo) cpSync(brandLogo, resolve(dir, 'assets/mol-mark.svg'));
     // Arte dos pets da marca (brands/<marca>/pets/<id>/<estado>.webp) em /assets/pets/<id>/.
     if (existsSync(brandPets)) cpSync(brandPets, resolve(dir, 'assets/pets'), { recursive: true });
