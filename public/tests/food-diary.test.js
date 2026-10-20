@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl, workoutOnDay, logAllMeals } from '../js/modules/food-diary.js';
+import { DIARY_LIMITS, addFood, changeWater, dayKey, diaryDocId, diaryTotals, mealLogged, normalizeDiary, removeItem, toggleMeal, waterGoalMl, workoutOnDay, logAllMeals, rememberFood } from '../js/modules/food-diary.js';
 
 const meal = { id: 'almoco', nome: 'Almoço', alimentos: [
   { nome: 'Arroz', gramas: 200, kcal100: 128, proteina100: 2.5, carbo100: 28, gordura100: 0.2 },
@@ -56,5 +56,16 @@ describe('atalhos do diário', () => {
     expect(mealLogged(next, 'almoco')).toBe(true);
     expect(mealLogged(next, 'lanche')).toBe(true);
     expect(next.itens).toHaveLength(3);
+  });
+});
+
+describe('alimentos recentes', () => {
+  it('põe o último no topo, sem repetir o nome, e limita a lista', () => {
+    const base = Array.from({ length: 8 }, (_, i) => ({ nome: `Item ${i}`, gramas: 100 }));
+    const list = rememberFood(rememberFood(base, { nome: 'arroz', gramas: 150, kcal100: 130 }), { nome: 'Arroz', gramas: 200, kcal100: 130 });
+    expect(list).toHaveLength(8);
+    expect(list.filter(item => item.nome.toLowerCase() === 'arroz')).toHaveLength(1);
+    expect(list[0]).toMatchObject({ nome: 'Arroz', gramas: 200 });
+    expect(rememberFood(null, { nome: 'Ovo' })).toHaveLength(1);
   });
 });

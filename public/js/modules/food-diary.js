@@ -65,6 +65,14 @@ export function addFood(diary, food, time = '') {
   return { ...current, itens: [...current.itens, entryFrom(food, { refeicaoId: null, hora: time })] };
 }
 
+/** Últimos alimentos registrados, sem repetir o nome, o mais recente primeiro. */
+export const RECENT_FOODS_LIMIT = 8;
+export function rememberFood(list, food) {
+  const { nome, gramas, kcal100, proteina100, carbo100, gordura100 } = entryFrom(food);
+  const known = Array.isArray(list) ? list : [];
+  return [{ nome, gramas, kcal100, proteina100, carbo100, gordura100 }, ...known.filter(item => item?.nome?.toLowerCase() !== nome.toLowerCase())].slice(0, RECENT_FOODS_LIMIT);
+}
+
 export const removeItem = (diary, itemId) => {
   const current = normalizeDiary(diary);
   return { ...current, itens: current.itens.filter(item => item.id !== itemId) };
