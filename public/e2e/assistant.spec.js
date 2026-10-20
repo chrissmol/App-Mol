@@ -128,3 +128,16 @@ test('tentar de novo, copiar resposta e nova conversa', async ({ page, context }
   await expect(page.getByRole('heading', { name: 'Como posso ajudar?' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Nova conversa' })).toBeHidden();
 });
+
+test('erro aparece com ícone e botões respeitam 44 px', async ({ page }) => {
+  await page.goto('/pages/assistente.html');
+  await page.getByRole('button', { name: 'Entendi' }).click();
+  await ask(page, 'falha-simulada');
+  const error = page.locator('.assistant-msg--error');
+  await expect(error.locator('svg').first()).toBeVisible();
+  await expect(error).not.toBeEmpty();
+  const send = await page.getByRole('button', { name: 'Enviar' }).boundingBox();
+  expect(send.width).toBeGreaterThanOrEqual(44);
+  const size = await page.locator('.assistant-disclaimer').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+  expect(size).toBeGreaterThanOrEqual(12);
+});

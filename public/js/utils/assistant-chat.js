@@ -183,7 +183,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
 
   function showError(item, text) {
     item.classList.add('assistant-msg--error');
-    item.innerHTML = `<p class="assistant-msg__alert"><i data-lucide="triangle-alert" aria-hidden="true"></i> ${escapeHTML(text)}</p><button type="button" class="assistant-action" data-retry><i data-lucide="rotate-ccw" aria-hidden="true"></i> Tentar de novo</button>`;
+    item.innerHTML = `<i data-lucide="triangle-alert" aria-hidden="true"></i><div><span>${escapeHTML(text)}</span><br><button type="button" class="assistant-action" data-retry><i data-lucide="rotate-ccw" aria-hidden="true"></i> Tentar de novo</button></div>`;
     icons(item);
     pick(item, '[data-retry]').onclick = () => {
       if (busy || !lastRequest) return;

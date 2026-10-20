@@ -39,6 +39,7 @@ export const getGenerativeModel = () => ({
     // Primeira tentativa de "quebrar" falha; a segunda funciona (teste do botão Tentar de novo).
     if (text.includes('quebrar') && !failedOnce) { failedOnce = true; throw new Error('falha simulada'); }
     if (text.includes('quebrar')) return reply([{ text: 'Agora funcionou.' }]);
+    if (text.includes('falha-simulada')) throw new Error('falha simulada');
     if (text.includes('python')) return reply([{ text: 'Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.' }]);
     if (text.includes('arroz')) return call('buscar_alimento', { nome: 'arroz branco' });
     if (text.includes('troca') || hasFile) return call('propor_dieta', DIET_SWAP);
