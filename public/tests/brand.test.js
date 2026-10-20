@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { brandReplacer, loadBrand } from '../scripts/brand.mjs';
+import { brandReplacer, loadBrand, workerOrigins } from '../scripts/brand.mjs';
+import { corsHeaders } from '../../workers/alimentos/src/off.js';
 import { applyBrand } from '../scripts/apply-brand.mjs';
 
 const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -35,5 +36,18 @@ describe('white label', () => {
     expect(swap('color:#1E7349;fill:#57d493')).toBe('color:#AA0000;fill:#1e7349');
     expect(swap('rgba(30, 115, 73, .4) rgba(30,115,73,.4) rgba(130, 115, 73)')).toBe('rgba(170, 0, 0, .4) rgba(170, 0, 0,.4) rgba(130, 115, 73)');
     expect(brandReplacer(mol, mol)('Mol #1e7349')).toBe('Mol #1e7349');
+  });
+
+  it('troca a lista de pets nas regras só quando a marca define pets', () => {
+    const { rules } = applyBrand(read('firestore.rules'), read('firebase.json'), { ...client, pets: [{ id: 'leo' }, { id: 'ana' }] });
+    expect(rules).toContain("assistentePet in ['leo', 'ana', 'nenhum']");
+    expect(rules).not.toContain('moldrian');
+  });
+
+  it('junta as origens das marcas para o Worker e libera só elas', () => {
+    const origins = workerOrigins([loadBrand('mol').brand, { firebase: { authDomain: 'app.cliente.com' }, allowedOrigins: ['https://www.cliente.com'] }]);
+    expect(origins).toEqual(['https://app-mol-5f3dc.web.app', 'https://app.cliente.com', 'https://www.cliente.com']);
+    expect(corsHeaders('https://app.cliente.com', origins)['Access-Control-Allow-Origin']).toBe('https://app.cliente.com');
+    expect(corsHeaders('https://app.cliente.com')['Access-Control-Allow-Origin']).toBeUndefined();
   });
 });

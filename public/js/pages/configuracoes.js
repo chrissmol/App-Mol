@@ -1,3 +1,4 @@
+import brand from '@brand';
 import { setupAppShell } from '../utils/app-shell.js';
 import { auth, getDb, googleProvider } from '../config/firebase-config.js';
 const db = await getDb();
@@ -493,6 +494,8 @@ function authErrorMessage(error, fallback) {
 
 function renderPetChoice(user) {
   const box = $('pet-choice');
+  // Marca com pets próprios: o texto fixo cita Moldrian e Marlô.
+  if (brand.pets) $('pet-copy').textContent = `${brand.pets.map(pet => pet.name).join(' e ')} sabem e fazem as mesmas coisas. Escolha quem você prefere ver.`;
   box.innerHTML = petPickerHTML('pet', getPet().id);
   box.onchange = async event => {
     const value = petId(event.target.value);

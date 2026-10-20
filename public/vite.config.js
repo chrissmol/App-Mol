@@ -11,6 +11,7 @@ const brandText = brandReplacer(brand, loadBrand('mol').brand);
 // Logo da marca (brands/<marca>/logo.svg) no lugar de assets/mol-mark.svg; sem ela fica a do Mol.
 const brandLogo = resolve(import.meta.dirname, 'brands', brand.id, 'logo.svg');
 const hasBrandLogo = existsSync(brandLogo);
+const brandPets = resolve(import.meta.dirname, 'brands', brand.id, 'pets');
 const brandPlugin = {
   name: 'mol-brand',
   transformIndexHtml: {
@@ -25,6 +26,8 @@ const brandPlugin = {
   // Cópia estática (pwa/assets) usada pelos caminhos fixos em JS, favicon e service worker.
   writeBundle({ dir }) {
     if (hasBrandLogo) cpSync(brandLogo, resolve(dir, 'assets/mol-mark.svg'));
+    // Arte dos pets da marca (brands/<marca>/pets/<id>/<estado>.webp) em /assets/pets/<id>/.
+    if (existsSync(brandPets)) cpSync(brandPets, resolve(dir, 'assets/pets'), { recursive: true });
   },
 };
 

@@ -42,7 +42,7 @@ export function slimResults(data) {
     .slice(0, 12);
 }
 
-/** Cabeçalhos de CORS só para as origens do app. */
-export function corsHeaders(origin) {
-  return ALLOWED_ORIGINS.includes(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : { Vary: 'Origin' };
+/** Cabeçalhos de CORS só para as origens do app (`extra`: origens de outras marcas, vindas de ALLOWED_ORIGINS no Worker). */
+export function corsHeaders(origin, extra = []) {
+  return ALLOWED_ORIGINS.includes(origin) || extra.includes(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : { Vary: 'Origin' };
 }

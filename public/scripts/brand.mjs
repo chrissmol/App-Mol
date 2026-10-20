@@ -15,6 +15,10 @@ export function loadBrand(id = 'mol') {
   if (missing.length) throw new Error(`brands/${id}.json sem: ${missing.join(', ')}`);
   const badColors = COLORS.filter(key => !/^#[0-9a-f]{6}$/i.test(brand.colors?.[key] || ''));
   if (badColors.length) throw new Error(`brands/${id}.json com cor inválida (use #rrggbb): ${badColors.join(', ')}`);
+  const pets = brand.pets ?? [];
+  if (!Array.isArray(pets) || pets.some(pet => !/^[a-z0-9-]+$/.test(pet?.id || '') || pet.id === 'nenhum' || !pet.name || !['m', 'f'].includes(pet.gender))) throw new Error(`brands/${id}.json: pets precisa de lista com id (slug), name e gender ("m" ou "f")`);
+  if (brand.pets && !pets.length) throw new Error(`brands/${id}.json: pets vazio (tire o campo para usar Moldrian e Marlô)`);
+  if ((brand.allowedOrigins ?? []).some(origin => !/^https:\/\/[^/]+$/.test(origin))) throw new Error(`brands/${id}.json: allowedOrigins só aceita https://dominio, sem barra no fim`);
   if (brand.id !== id) throw new Error(`brands/${id}.json tem id "${brand.id}"`);
   return { file, brand };
 }
@@ -40,3 +44,6 @@ export function brandReplacer(brand, base) {
     return colors ? named.replace(colors, match => table.get(match.toLowerCase().replace(/\s/g, ''))) : named;
   };
 }
+
+/** Origens que o Worker de busca precisa liberar: app de cada marca (domínio do Firebase + allowedOrigins). */
+export const workerOrigins = brands => [...new Set(brands.flatMap(brand => [`https://${brand.firebase.authDomain}`, ...(brand.allowedOrigins ?? [])]))];
