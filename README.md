@@ -33,7 +33,7 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 - Assistente de IA (Gemini, camada gratuita) que responde sobre treino e dieta e ajusta os dados da pessoa (dieta, rotinas, peso) a partir de conversa, foto, PDF ou planilha, sempre com confirmação e desfazer. Atalhos na Dieta e no Treino.
 - Perfil com peso, altura, objetivo, unidades, progresso corporal e backup.
 - Tema claro, escuro e opção de seguir o sistema do aparelho.
-- Experiência mobile/PWA com bloqueio de zoom, safe-area e navegação inferior.
+- Experiência mobile/PWA com bloqueio de zoom, safe-area e botão flutuante de acesso rápido.
 - Login com Google ou e-mail e senha, com recuperação de senha.
 - Testes unitários, testes E2E mobile, validação HTML, build e checks de segurança.
 - Revisão automática de código por IA em todo pull request.
@@ -50,10 +50,13 @@ O projeto roda como PWA, usa Firebase Authentication, Cloud Firestore e Firebase
 | Banco | Cloud Firestore |
 | IA | Firebase AI Logic (Gemini Developer API, sem custo) com App Check |
 | Hospedagem | Firebase Hosting |
+| Busca de alimentos | Cloudflare Worker (`workers/alimentos`) sobre o Open Food Facts |
 | Testes | Vitest, Playwright, html-validate |
 | Segurança | Firestore Rules, npm audit, scan local |
 
 ## Rodar localmente
+
+Pré-requisitos: Node.js 20+ (a CI usa o LTS).
 
 ```bash
 git clone https://github.com/chrissmol/App-Mol.git
@@ -76,10 +79,11 @@ Esse comando executa lint, testes unitários, validação HTML, build, auditoria
 
 ## Deploy
 
-```bash
-firebase deploy --only firestore:rules
-firebase deploy --only hosting
-```
+A publicação é manual, pelo workflow **Mol production deploy** (Actions > Run workflow): informe `confirm = DEPLOY-V2` e a `brand` (`mol` por padrão). Ele roda a validação, monta o build com a marca escolhida e publica regras e Hosting. Merge na `main` não publica sozinho.
+
+## White label
+
+Cada cliente é um arquivo `public/brands/<marca>.json` (nome, cores, textos legais, pets, projeto Firebase) e um GitHub Environment próprio. O código é o mesmo para todas as marcas. Veja [public/brands/README.md](public/brands/README.md). O Worker de busca de alimentos está em [workers/alimentos](workers/alimentos/README.md).
 
 ## Documentação
 
@@ -92,6 +96,12 @@ firebase deploy --only hosting
 - [Roadmap](public/docs/ROADMAP.md)
 - [Privacidade](public/docs/PRIVACIDADE.md)
 - [Termos de uso](public/docs/TERMOS.md)
+- [Contribuindo](CONTRIBUTING.md) e [Segurança](SECURITY.md)
+- [Persona do assistente](docs/ASSISTENTE_PERSONA.md)
+
+## Licença
+
+Código proprietário. Todos os direitos reservados; veja [LICENSE](LICENSE).
 
 ## Status
 
