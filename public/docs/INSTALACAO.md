@@ -60,17 +60,7 @@ Antes de publicar:
 npm run check:full
 ```
 
-Publicar regras, quando houver mudança em `firestore.rules`:
-
-```bash
-firebase deploy --only firestore:rules
-```
-
-Publicar site:
-
-```bash
-firebase deploy --only hosting
-```
+Publicar: rode o workflow **Mol production deploy** no GitHub Actions (`confirm = DEPLOY-V2`, `brand = mol`). Ele publica regras do Firestore e Hosting juntos. Para outra marca, veja `public/brands/README.md`.
 
 ## Operação
 

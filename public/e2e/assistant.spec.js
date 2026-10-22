@@ -28,7 +28,7 @@ test('conversa, recusa fora do escopo, proposta confirmada e desfeita', async ({
   await expect(page.locator('.assistant-msg--assistant').last()).toContainText('28,1 g de carboidrato');
 
   await ask(page, 'Me ajuda com python?');
-  await expect(page.locator('.assistant-msg--assistant').last()).toContainText('Só consigo ajudar com treino, exercícios, dieta, refeições, marmitas, peso e o uso do Mol.');
+  await expect(page.locator('.assistant-msg--assistant').last()).toContainText('Só consigo ajudar com treino, exercícios, dieta, refeições, peso e o uso do Mol.');
 
   await ask(page, 'Troca a banana do café por aveia');
   const card = page.locator('.assistant-proposal');

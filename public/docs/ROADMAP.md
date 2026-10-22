@@ -49,16 +49,17 @@
 
 - Domínio próprio.
 - Landing page pública.
-- Termos de uso e política de privacidade.
+- Termos de uso e política de privacidade (feitos; texto ainda precisa de revisão jurídica).
 - Pagamentos recorrentes.
 - Plano gratuito com limites.
-- Área administrativa mínima.
+- ~~Área administrativa mínima.~~ Feito.
+- White label por marca (estrutura pronta; falta o primeiro cliente).
 
 ## Segurança e confiabilidade
 
-- Testes Firestore Rules em CI.
-- App Check.
-- Monitoramento básico de erros.
+- ~~Testes Firestore Rules em CI.~~ Feito.
+- ~~App Check.~~ Feito.
+- ~~Monitoramento básico de erros~~ (painel admin). Feito.
 - Backup/exportação estruturada.
 - Revisão de CSP a cada mudança de autenticação.
 - Processo de release com checklist.
