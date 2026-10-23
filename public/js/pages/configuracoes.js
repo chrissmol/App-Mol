@@ -12,6 +12,7 @@ import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
 import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { getPet, petId, petPickerHTML, rememberPet } from '../utils/pet.js';
+import { openLegalDocument } from '../utils/legal-dialog.js';
 import { MODULE_DEFINITIONS, MODULE_PRESETS, normalizeAppModules, presetFromModules, saveAppModules, syncAppModulesForUser } from '../utils/app-modules.js';
 
 setupAppShell();
@@ -594,3 +595,5 @@ applyAppearance();
 renderAppModules();
 renderInstallCard();
 window.lucide?.createIcons();
+
+document.querySelectorAll('[data-legal]').forEach(node => { const button = /** @type {HTMLElement} */ (node); button.onclick = () => openLegalDocument(button.dataset.legal, button); });
