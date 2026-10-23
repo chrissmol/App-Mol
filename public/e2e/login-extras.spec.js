@@ -17,6 +17,7 @@ test('login: mostrar senha e lembrar o último e-mail', async ({ page }) => {
 
 test('login: link por e-mail pede o e-mail e confirma o envio', async ({ page }) => {
   await page.goto('/pages/login.html');
+  await page.locator('#consentCheck').check();
   await page.locator('#emailLinkBtn').click();
   await expect(page.locator('#loginError')).toContainText('Digite seu e-mail');
   await page.locator('#authEmail').fill('ana@exemplo.com');

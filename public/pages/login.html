@@ -102,14 +102,16 @@
         </form>
       </div>
 
-      <!-- Termos atualizados para Mol -->
-      <p class="text-xs text-gray-400 text-center leading-relaxed px-4">
-        Ao continuar, você concorda com os
-        <button type="button" data-legal="terms" class="text-neon underline underline-offset-2">Termos de Uso</button>
-        e a
-        <button type="button" data-legal="privacy" class="text-neon underline underline-offset-2">Política de Privacidade</button>
-        do Mol.
-      </p>
+      <div class="px-4 text-xs leading-relaxed text-gray-400">
+        <div class="flex items-start gap-3">
+          <input id="consentCheck" type="checkbox" aria-labelledby="consentText" class="mt-0.5 h-5 w-5 shrink-0">
+          <span id="consentText">Li e concordo com os
+            <button type="button" data-legal="terms" class="text-neon underline underline-offset-2">Termos de Uso</button>
+            e a
+            <button type="button" data-legal="privacy" class="text-neon underline underline-offset-2">Política de Privacidade</button>.
+            Autorizo o tratamento dos meus dados de saúde (treino, alimentação, medidas e fotos) e o envio das minhas mensagens ao assistente (Google Gemini) para o funcionamento do app.</span>
+        </div>
+      </div>
     </div>
   </main>
 
