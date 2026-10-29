@@ -55,3 +55,17 @@ test.describe('acessibilidade automatizada', () => {
     }
   }
 });
+
+test('login pode ser percorrido só pelo teclado e exige o aceite', async ({ page }) => {
+  await page.goto('/pages/login.html');
+  const seen = new Set();
+  for (let i = 0; i < 25; i += 1) {
+    await page.keyboard.press('Tab');
+    seen.add(await page.evaluate(() => document.activeElement?.id || ''));
+  }
+  expect(seen.has('consentCheck')).toBe(true);
+  expect(seen.has('googleLoginBtn')).toBe(true);
+  await page.locator('#googleLoginBtn').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#loginError')).toContainText('concordância');
+});

@@ -31,6 +31,7 @@ const ROWS = [
   ['Pular para o conteúdo', 'Skip to content', 'Saltar al contenido'],
   ['Navegação principal', 'Main navigation', 'Navegación principal'],
   ['Ir para o início', 'Go to home', 'Ir al inicio'],
+  ['Mol, ir para o início', 'Mol, go to home', 'Mol, ir al inicio'],
   ['Abrir navegação', 'Open navigation', 'Abrir navegación'],
   ['Abrir histórico de treinos', 'Open workout history', 'Abrir historial de entrenamientos'],
   ['Abrir evolução corporal', 'Open body progress', 'Abrir evolución corporal'],

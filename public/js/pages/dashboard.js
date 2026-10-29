@@ -480,7 +480,7 @@ function setupDashboardCards() {
   const header = document.querySelector('header');
   const headerContent = header.querySelector('div');
   if (!document.getElementById('dashboard-brand')) {
-    headerContent.insertAdjacentHTML('afterbegin', '<a id="dashboard-brand" class="mol-brand" href="./index.html" aria-label="Ir para o início"><img src="./assets/mol-mark.svg" alt="">Mol</a>');
+    headerContent.insertAdjacentHTML('afterbegin', '<a id="dashboard-brand" class="mol-brand" href="./index.html" aria-label="Mol, ir para o início"><img src="./assets/mol-mark.svg" alt="">Mol</a>');
   }
   let button = document.getElementById('btn-edit-dashboard');
   if (!button) {

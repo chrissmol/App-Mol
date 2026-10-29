@@ -1,6 +1,6 @@
 # Privacidade
 
-Este documento é uma base operacional para o Mol. Antes de vender o produto publicamente, revisar com apoio jurídico para adequação à LGPD e ao modelo comercial escolhido.
+> Os textos vigentes, mostrados no app, ficam em `js/modules/login-utils.js` (atualizados em 23/10/2026: consentimento, telemetria, reembolso, créditos, foro). Este arquivo é só base de trabalho. Faltam CNPJ/razão social, e-mail do encarregado e revisão por advogado antes da venda pública.
 
 ## Dados coletados
 
