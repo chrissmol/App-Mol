@@ -65,7 +65,7 @@ function mobileDockMarkup(inPages, current) {
 function sidebarMarkup(inPages, current) {
   return `
     <aside class="mol-sidebar" data-mol-sidebar="true" aria-label="${t('mainNavigation', 'Navegação principal')}">
-      <a class="mol-sidebar__brand" href="${hrefFor('index.html', inPages)}" aria-label="Ir para o início">
+      <a class="mol-sidebar__brand" href="${hrefFor('index.html', inPages)}" aria-label="Mol, ir para o início">
         <img src="${inPages ? '../' : './'}assets/mol-mark.svg" alt="">
         <span>Mol</span>
       </a>
