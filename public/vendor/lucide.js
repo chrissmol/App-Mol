@@ -24,10 +24,20 @@ var e = {
 		...r
 	},
 	n
-]), r = (e) => {
+]), r = (...e) => e.filter((e, t, n) => !!e && e.trim() !== "" && n.indexOf(e) === t).join(" ").trim(), i = (e) => {
 	for (let t in e) if (t.startsWith("aria-") || t === "role" || t === "title") return !0;
 	return !1;
-}, i = (...e) => e.filter((e, t, n) => !!e && e.trim() !== "" && n.indexOf(e) === t).join(" ").trim(), a = (e) => e.replace(/^([A-Z])|[\s-_]+(\w)/g, (e, t, n) => n ? n.toUpperCase() : t.toLowerCase()), ee = (e) => {
+}, a = (e) => {
+	let t = "", n = !1;
+	for (let r of e) {
+		if (r === "-" || r === "_" || r <= " ") {
+			n = t.length > 0;
+			continue;
+		}
+		t.length === 0 ? t += r.toLowerCase() : t += n ? r.toUpperCase() : r, n = !1;
+	}
+	return t;
+}, ee = (e) => {
 	let t = a(e);
 	return t.charAt(0).toUpperCase() + t.slice(1);
 }, te = (e) => Array.from(e.attributes).reduce((e, t) => (e[t.name] = t.value, e), {}), o = (e) => typeof e == "string" ? e : !e || !e.class ? "" : e.class && typeof e.class == "string" ? e.class.split(" ") : e.class && Array.isArray(e.class) ? e.class : "", s = (t, { nameAttr: a, icons: s, attrs: c }) => {
@@ -35,13 +45,13 @@ var e = {
 	if (l == null) return;
 	let u = s[ee(l)];
 	if (!u) return console.warn(`${t.outerHTML} icon name was not found in the provided icons object.`);
-	let d = te(t), f = r(d) ? {} : { "aria-hidden": "true" }, p = {
+	let d = te(t), f = i(d) ? {} : { "aria-hidden": "true" }, p = {
 		...e,
 		"data-lucide": l,
 		...f,
 		...c,
 		...d
-	}, m = o(d), h = o(c), g = i("lucide", `lucide-${l}`, ...m, ...h);
+	}, m = o(d), h = o(c), g = r("lucide", `lucide-${l}`, ...m, ...h);
 	g && Object.assign(p, { class: g });
 	let _ = n(u, p);
 	return t.parentNode?.replaceChild(_, t);
@@ -104,7 +114,7 @@ var e = {
 	cx: "12",
 	cy: "12",
 	r: "10"
-}], ["path", { d: "m9 12 2 2 4-4" }]], S = [
+}], ["path", { d: "m16 9-5.5 5.5L8 12" }]], S = [
 	["circle", {
 		cx: "12",
 		cy: "12",
