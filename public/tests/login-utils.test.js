@@ -23,8 +23,8 @@ describe('login', () => {
   });
 
   it('mantém documentos jurídicos estruturados', () => {
-    expect(LEGAL_DOCUMENTS.terms.sections.length).toBeGreaterThanOrEqual(8);
-    expect(LEGAL_DOCUMENTS.privacy.sections.length).toBeGreaterThanOrEqual(8);
+    expect(LEGAL_DOCUMENTS.terms.sections.length).toBeGreaterThanOrEqual(9);
+    expect(LEGAL_DOCUMENTS.privacy.sections.length).toBeGreaterThanOrEqual(9);
     expect(JSON.stringify(LEGAL_DOCUMENTS.privacy)).toContain('Gemini');
   });
 });

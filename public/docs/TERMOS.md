@@ -1,6 +1,6 @@
 # Termos de uso
 
-Este documento é uma base inicial para discussão. Antes de vender o Mol publicamente, revisar com apoio jurídico.
+> Os textos vigentes, mostrados no app, ficam em `js/modules/login-utils.js` (atualizados em 23/10/2026: consentimento, telemetria, reembolso, créditos, foro). Este arquivo é só base de trabalho. Faltam CNPJ/razão social, e-mail do encarregado e revisão por advogado antes da venda pública.
 
 ## Uso do aplicativo
 
