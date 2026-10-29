@@ -19,6 +19,7 @@ test('login, navegação privada, dieta e tema permanecem estáveis', async ({ p
   page.on('pageerror', error => pageErrors.push(error.message));
 
   await page.goto('/pages/login.html');
+  await page.locator('#consentCheck').check();
   await page.locator('#googleLoginBtn').click();
   await page.waitForURL('**/index.html');
   await expect(page.locator('#user-name')).toHaveText('Christian');
