@@ -22,6 +22,8 @@ permissions:
 
 jobs:
   review:
+    # Dependabot não recebe o segredo do Claude e a action recusa bots: o job só falhava.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
