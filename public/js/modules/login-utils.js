@@ -36,7 +36,7 @@ export function withTimeout(promise, milliseconds = 60000) {
 const MOL_LEGAL = {
   terms: {
     title: 'Termos de Uso',
-    updated: 'Atualizado em 19 de agosto de 2026',
+    updated: 'Atualizado em 23 de outubro de 2026',
     sections: [
       ['1. Aceitação', 'Ao entrar ou usar o Mol, você aceita estes termos. Se não concordar, não utilize o aplicativo.'],
       ['2. Finalidade do serviço', 'O Mol permite organizar treinos, alimentação, medidas e evolução pessoal. Os recursos são informativos e de organização.'],
@@ -46,23 +46,31 @@ const MOL_LEGAL = {
       ['6. Seus dados e conteúdo', 'Os registros inseridos continuam associados à sua conta. Você pode exportá-los ou solicitar a exclusão da conta em Configurações.'],
       ['7. Disponibilidade', 'O serviço pode sofrer manutenção, indisponibilidade de rede ou alterações. Recursos podem evoluir sem garantia de funcionamento ininterrupto.'],
       ['8. Responsabilidade', 'Você decide como aplicar as informações do aplicativo e deve respeitar seus limites e orientações profissionais. Nada nestes termos exclui direitos garantidos pela legislação brasileira.'],
-      ['9. Alterações e contato', 'Mudanças relevantes serão apresentadas com nova data de atualização. Dúvidas podem ser encaminhadas pelo canal de suporte informado no aplicativo.']
+      ['9. Planos pagos e reembolso', 'Hoje o Mol não cobra pelo uso. Se houver planos pagos, valores, renovação e cancelamento serão informados antes da contratação. Em compras feitas pela internet, você pode desistir em até 7 dias a contar da contratação e receber o valor pago de volta (Código de Defesa do Consumidor, art. 49), sem prejuízo de outras condições mais favoráveis informadas na oferta.'],
+      ['10. Inteligência artificial', 'As respostas do assistente são geradas por IA, podem conter erros e não são orientação médica, nutricional ou esportiva.'],
+      ['11. Créditos e licenças', 'Dados de alimentos: Open Food Facts (licença ODbL). Textos de consulta: Wikipédia (CC BY-SA). Ícones: Lucide (licença ISC). Ilustrações do Mol e dos mascotes: obra própria, todos os direitos reservados.'],
+      ['12. Lei aplicável e foro', 'Estes termos seguem a lei brasileira. Fica eleito o foro do domicílio do consumidor para resolver conflitos.'],
+      ['13. Alterações e contato', 'Mudanças relevantes serão apresentadas com nova data de atualização. Dúvidas podem ser encaminhadas pelo canal de suporte informado no aplicativo.']
     ]
   },
   privacy: {
     title: 'Política de Privacidade',
-    updated: 'Atualizada em 20 de outubro de 2026',
+    updated: 'Atualizada em 23 de outubro de 2026',
     sections: [
       ['1. Dados tratados', 'Tratamos identificação da conta Google, e-mail, foto, preferências, treinos, alimentação, medidas, fotos corporais e demais informações que você decide registrar.'],
       ['2. Finalidades', 'Usamos os dados para autenticar sua conta, salvar e sincronizar registros, personalizar metas, produzir resumos de evolução, manter segurança e atender solicitações do usuário.'],
       ['3. Dados de saúde', 'Medidas, alimentação, fotos e atividade física podem revelar informações sensíveis. O tratamento ocorre para fornecer as funcionalidades solicitadas por você e deve ser interrompido pela exclusão desses registros ou da conta quando você não desejar mantê-los.'],
-      ['4. Serviços utilizados', 'Autenticação e armazenamento utilizam serviços Google Firebase. O assistente envia suas mensagens, arquivos anexados e o contexto necessário ao Google Gemini para gerar as respostas. A busca de alimentos passa pelo Cloudflare e consulta o Open Food Facts, e consultas de conhecimento podem usar a Wikipédia. Esses fornecedores podem processar dados técnicos de conexão conforme seus próprios termos e medidas de segurança.'],
-      ['5. Compartilhamento', 'Não vendemos seus dados. Eles podem ser compartilhados com prestadores necessários à operação, por obrigação legal ou para proteger direitos e segurança.'],
-      ['6. Armazenamento e retenção', 'Os dados permanecem vinculados à conta enquanto ela estiver ativa ou pelo período necessário ao serviço e às obrigações legais. Registros excluídos podem permanecer temporariamente em cópias de segurança.'],
-      ['7. Segurança', 'Aplicamos autenticação e regras de acesso por usuário, mas nenhum sistema conectado à internet elimina todos os riscos. Proteja sua conta Google e seu dispositivo.'],
-      ['8. Seus direitos', 'Você pode acessar, corrigir, exportar e excluir dados pelas telas do aplicativo. Também pode solicitar informações sobre tratamento, revogar consentimentos aplicáveis e exercer direitos previstos na LGPD.'],
-      ['9. Crianças e adolescentes', 'O Mol não é direcionado a crianças. Menores de idade devem utilizar o serviço somente com participação e autorização do responsável legal.'],
-      ['10. Contato e alterações', 'Solicitações de privacidade devem usar o canal de suporte informado no aplicativo. Alterações relevantes terão nova data e serão comunicadas de forma adequada.']
+      ['4. Consentimento', 'Para os dados de saúde e para o envio ao assistente, pedimos sua concordância com uma caixa de seleção na entrada. Você pode revogá-la a qualquer momento excluindo os registros ou a conta em Configurações.'],
+      ['5. Serviços utilizados', 'Autenticação e armazenamento utilizam serviços Google Firebase. O assistente envia suas mensagens, arquivos anexados e o contexto necessário ao Google Gemini para gerar as respostas. A busca de alimentos passa pelo Cloudflare e consulta o Open Food Facts, e consultas de conhecimento podem usar a Wikipédia. Esses fornecedores podem processar dados técnicos de conexão conforme seus próprios termos e medidas de segurança.'],
+      ['6. Dados técnicos', 'Para suporte e correção de falhas guardamos seu e-mail, nome, página em uso, aparelho/navegador e mensagens de erro. Os registros de erro são apagados em 90 dias.'],
+      ['7. Transferência internacional', 'Google (Firebase, Gemini) e Cloudflare podem tratar dados fora do Brasil, com as garantias previstas na LGPD (art. 33).'],
+      ['8. Compartilhamento', 'Não vendemos seus dados. Eles podem ser compartilhados com prestadores necessários à operação, por obrigação legal ou para proteger direitos e segurança.'],
+      ['9. Armazenamento e retenção', 'Os dados permanecem vinculados à conta enquanto ela estiver ativa ou pelo período necessário ao serviço e às obrigações legais. Registros excluídos podem permanecer temporariamente em cópias de segurança.'],
+      ['10. Segurança', 'Aplicamos autenticação e regras de acesso por usuário, mas nenhum sistema conectado à internet elimina todos os riscos. Proteja sua conta Google e seu dispositivo.'],
+      ['11. Seus direitos', 'Você pode acessar, corrigir, exportar e excluir dados pelas telas do aplicativo. Também pode solicitar informações sobre tratamento, revogar consentimentos aplicáveis e exercer direitos previstos na LGPD.'],
+      ['12. Crianças e adolescentes', 'O Mol não é direcionado a crianças. Menores de idade devem utilizar o serviço somente com participação e autorização do responsável legal.'],
+      ['13. Controlador e encarregado', 'O controlador é o responsável pelo Mol/marca que oferece o serviço; o encarregado (DPO) atende pelo e-mail de contato abaixo.'],
+      ['14. Contato e alterações', 'Solicitações de privacidade devem usar o canal de suporte informado no aplicativo. Alterações relevantes terão nova data e serão comunicadas de forma adequada.']
     ]
   }
 };
