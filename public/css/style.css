@@ -3623,10 +3623,10 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .assistant-page .assistant-empty__intro { font-size: .88rem; }
 .assistant-page .assistant-composer { margin-top: auto; }
 /* Desktop com mouse usa a barra lateral: não há dock para descontar. */
-@media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; --assistant-dock-w: 0px; --assistant-dock-bottom: .75rem; } }
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; --assistant-dock-bottom: .75rem; } }
 /* Sempre grudada acima do dock: com o aviso aberto ou em celular baixo, a caixa ficava embaixo do botão do dock. */
-/* No celular a caixa divide a faixa de baixo com o botão do dock (à direita), em vez de ficar acima dele. */
-.assistant-page .assistant-composer { position: sticky; bottom: var(--assistant-dock-bottom, var(--mol-dock-offset, .75rem)); margin-bottom: calc(var(--assistant-dock-bottom, var(--mol-dock-offset, .75rem)) - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); margin-right: var(--assistant-dock-w, calc(var(--mol-dock-size, 66px) + .6rem)); z-index: 5; }
+/* Caixa larga no rodapé; o botão do dock sobe para o cabeçalho (bloco no fim do arquivo). */
+.assistant-page .assistant-composer { position: sticky; bottom: var(--assistant-dock-bottom, var(--mol-dock-offset, .75rem)); margin-bottom: calc(var(--assistant-dock-bottom, var(--mol-dock-offset, .75rem)) - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); z-index: 5; }
 /* Ao rolar até a mensagem nova, ela para acima da caixa de texto e do dock. */
 .assistant-page .assistant-msg { scroll-margin-bottom: calc(var(--assistant-dock-gap, var(--mol-app-nav-reserve, 5.5rem)) + 7rem); }
 /* Título alinhado à coluna do chat; em telas altas a saudação fica no meio, não colada no rodapé. */
@@ -3678,7 +3678,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
    colocar o campo logo acima do teclado em vez de deixá-los flutuando no meio da tela. */
 @media (pointer: coarse) {
   html.mol-typing .mol-app-nav { display: none; }
-  html.mol-typing .assistant-page .assistant-composer { position: static; margin-right: 0; }
+  html.mol-typing .assistant-page .assistant-composer { position: static; }
 }
 
 /* Onde o body já reserva o espaço do dock (tudo menos desktop com mouse), o main não
@@ -3877,3 +3877,17 @@ html[data-reduce-motion="true"] .pet-avatar--celebra, html[data-reduce-motion="t
 .assistant-page main { position: relative; }
 .assistant-page .assistant-new { position: absolute; top: calc(env(safe-area-inset-top, 0px) + var(--mol-page-top, .75rem) - .25rem); right: max(1rem, env(safe-area-inset-right)); z-index: 6; }
 .assistant-sheet__body .assistant-new { position: static; }
+/* No Assistente o dock vira botão de menu no canto do cabeçalho (como nos apps de IA); sobra só uma caixa larga embaixo. */
+@media not ((min-width: 1024px) and (hover: hover) and (pointer: fine)) {
+  .assistant-page { --mol-app-nav-reserve: 4.75rem; }
+  .assistant-page .mol-app-nav { right: auto; bottom: auto; left: max(1rem, env(safe-area-inset-left)); top: calc(env(safe-area-inset-top, 0px) + var(--mol-page-top) - .25rem); }
+  /* Botão discreto, igual ao "+" do outro canto: duas linhas (menu) em vez do ícone da página. */
+  html body.assistant-page .mol-dock__trigger { flex-direction: column; align-items: flex-start; justify-content: center; gap: .3rem; width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; padding-left: .85rem; border-color: var(--mol-border); background: var(--mol-surface-soft); box-shadow: none; color: var(--mol-muted-strong); }
+  .assistant-page .mol-dock__trigger::before, .assistant-page .mol-dock__trigger::after { content: ''; height: 2px; border-radius: 2px; background: currentColor; }
+  .assistant-page .mol-dock__trigger::before { width: 1.1rem; }
+  .assistant-page .mol-dock__trigger::after { width: .7rem; }
+  .assistant-page .mol-dock__trigger svg, .assistant-page .mol-dock__pulse { display: none; }
+  .assistant-page .mol-dock__menu { right: auto; left: 0; bottom: auto; top: calc(2.75rem + .5rem); transform-origin: top left; }
+}
+/* O menu fica no cabeçalho, longe do teclado: não precisa sumir enquanto digita. */
+html.mol-typing .assistant-page .mol-app-nav { display: block; }

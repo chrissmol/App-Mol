@@ -43,11 +43,12 @@ test('fim das telas não guarda espaço vazio em dobro', async ({ page }) => {
 
 test('no celular, o dock some enquanto a pessoa digita', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'Só em telas de toque.');
-  await page.goto('/pages/assistente.html');
+  // Fora do Assistente: lá o menu fica no cabeçalho e não some.
+  await page.goto('/pages/treino.html');
   const dock = page.locator('.mol-app-nav');
   await expect(dock).toBeVisible();
-  await page.getByLabel('Mensagem para o assistente').focus();
+  await page.locator('#input-busca-rotina').focus();
   await expect(dock).toBeHidden();
-  await page.getByLabel('Mensagem para o assistente').blur();
+  await page.locator('#input-busca-rotina').blur();
   await expect(dock).toBeVisible();
 });
