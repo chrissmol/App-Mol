@@ -60,13 +60,13 @@ export async function syncRemindersForUser(user) {
   return saved;
 }
 
-/** @param {string} title @param {string} body @param {{ petState?: string }} [options] Com pet, o ícone é ele no estado do lembrete. */
-export async function notify(title, body, { petState } = {}) {
+/** @param {string} title @param {string} body @param {{ petState?: string, vibrate?: number[] }} [options] Com pet, o ícone é ele no estado do lembrete. */
+export async function notify(title, body, { petState, vibrate } = {}) {
   if (!('Notification' in window)) throw new Error('Este navegador não oferece notificações.');
   if (Notification.permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
   const pet = getPet();
   const icon = petState && pet.id !== 'nenhum' ? new URL(petImageSrc(pet, petState), location.origin).href : notificationIcon;
-  const options = { body, icon, tag: `mol-${title}`, renotify: false, data: { url: '/' } };
+  const options = { body, icon, tag: `mol-${title}`, renotify: false, data: { url: '/' }, ...(vibrate && { vibrate }) };
   const registration = await navigator.serviceWorker?.getRegistration?.().catch(() => null);
   if (registration?.showNotification) {
     await registration.showNotification(title, options);

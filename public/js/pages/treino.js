@@ -546,6 +546,23 @@ function pararDescanso() {
   restTimer.classList.remove('is-expanded');
 }
 
+function tickDescanso() {
+  if (!descansoTerminaEm) return;
+  atualizarDescanso();
+  if (descansoSegundos > 0) return;
+  const exercicioEmDescanso = descansoContexto?.title;
+  const avisarDispositivo = document.hidden && 'Notification' in window && Notification.permission === 'granted';
+  pararDescanso();
+  navigator.vibrate?.([200, 100, 200]);
+  showToast('Descanso concluído. Vamos para a próxima!', 'success');
+  if (avisarDispositivo) {
+    notifyDevice('Descanso concluído', exercicioEmDescanso ? `Hora de voltar para ${exercicioEmDescanso}.` : 'Hora de continuar o treino.', { vibrate: [300, 150, 300, 150, 300] }).catch(() => {});
+  }
+}
+
+// Navegadores congelam o setInterval com a tela apagada; ao voltar, fecha na hora um descanso que já acabou.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tickDescanso(); });
+
 function iniciarDescanso(indexExercicio, indexSerie = 0) {
   clearInterval(descansoInterval);
   descansoContexto = contextoDescanso(indexExercicio, indexSerie);
@@ -556,19 +573,9 @@ function iniciarDescanso(indexExercicio, indexSerie = 0) {
   restTimer.classList.remove('hidden');
   restTimer.classList.remove('is-expanded');
   atualizarDescanso();
-  descansoInterval = setInterval(() => {
-    atualizarDescanso();
-    if (descansoSegundos <= 0) {
-      const exercicioEmDescanso = descansoContexto?.title;
-      const avisarDispositivo = document.hidden && 'Notification' in window && Notification.permission === 'granted';
-      pararDescanso();
-      navigator.vibrate?.([200, 100, 200]);
-      showToast('Descanso concluído. Vamos para a próxima!', 'success');
-      if (avisarDispositivo) {
-        notifyDevice('Descanso concluído', exercicioEmDescanso ? `Hora de voltar para ${exercicioEmDescanso}.` : 'Hora de continuar o treino.').catch(() => {});
-      }
-    }
-  }, 1000);
+  descansoInterval = setInterval(tickDescanso, 1000);
+  // Pede permissão no toque da série (gesto do usuário) para o fim do descanso avisar com a tela apagada e espelhar no relógio.
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
   renderIcons(restTimer);
 }
 
