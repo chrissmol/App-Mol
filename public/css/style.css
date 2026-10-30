@@ -3678,7 +3678,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
    colocar o campo logo acima do teclado em vez de deixá-los flutuando no meio da tela. */
 @media (pointer: coarse) {
   html.mol-typing .mol-app-nav { display: none; }
-  html.mol-typing .assistant-page .assistant-composer { position: static; }
+  html.mol-typing .assistant-page .assistant-composer { position: static; margin-right: 0; }
 }
 
 /* Onde o body já reserva o espaço do dock (tudo menos desktop com mouse), o main não
