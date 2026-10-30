@@ -4,7 +4,7 @@ import { withTimeout } from '../utils/timeout.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { DIET_PLANS } from '../data/diet-plans.js';
-import { FASTING_PROTOCOLS, FOOD_CATALOG, dietPlanText, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, nextMeal, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
+import { FASTING_PROTOCOLS, FOOD_CATALOG, dietPlanText, foodNutrients, mealFoods, mealIsOutsideFastingWindow, mealOptionGroups, mealsForDay, normalizeDietMeals, normalizeFastingSettings, nutritionTotals, searchFoodCatalog, validateFood, validateMeal } from '../modules/nutrition.js';
 import { confirmAction, escapeHTML, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { getLocalItem, getSessionItem, setLocalItem, setSessionItem } from '../utils/storage.js';
@@ -233,9 +233,6 @@ function render() {
   $('protein-focus').classList.toggle('hidden', !focus);
   $('protein-focus').classList.toggle('flex', Boolean(focus));
   $('macro-total').innerHTML = [['Proteína', totals.protein, goals.protein], ['Carbo', totals.carbs, goals.carbs], ['Gordura', totals.fat, goals.fat]].map(([label, value, goal]) => `<div class="rounded-2xl mol-soft p-3"><strong class="block text-sm">${rounded(value)} g</strong><span class="mt-1 block text-xs text-gray-400">${label}</span><span class="block text-xs text-gray-500">de ${goal} g</span></div>`).join('');
-  const next = nextMeal(dayMeals, selectedDay === new Date().getDay() ? new Date().toTimeString().slice(0, 5) : '00:00');
-  $('next-meal').innerHTML = next.meal ? `<p class="text-xs font-bold uppercase tracking-wider text-neon">Próxima refeição${next.tomorrow ? ' · amanhã' : ''}</p><div class="mt-2 flex items-end justify-between gap-4"><div><h2 class="text-xl font-extrabold">${escapeHTML(next.meal.nome)}</h2><p class="mt-1 text-sm text-gray-400">${escapeHTML(next.meal.hora)} · ${mealFoods(next.meal).length} ${mealFoods(next.meal).length === 1 ? 'alimento' : 'alimentos'}</p></div><button type="button" data-open-next class="min-h-11 rounded-xl bg-neon px-3 text-xs font-bold text-black">Ver</button></div>` : '<div class="text-center"><p class="font-bold">Nenhuma refeição planejada</p><p class="mt-1 text-sm text-gray-500">Adicione sua primeira refeição do dia.</p></div>';
-  $('next-meal').querySelector('[data-open-next]')?.addEventListener('click', () => openMeal(next.meal.id));
   $('meal-count').textContent = `${dayMeals.length}/${meals.length}`;
   $('meal-list').innerHTML = dayMeals.length ? [...dayMeals].sort((a, b) => a.hora.localeCompare(b.hora)).map(meal => {
     const total = nutritionTotals([meal]);

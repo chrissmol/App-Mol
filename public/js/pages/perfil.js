@@ -146,8 +146,9 @@ function renderStats(profile = {}, latestWeight = null) {
   const number = value => Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
   $('stat-workouts').textContent = Number.isFinite(completedWorkouts) ? number(completedWorkouts) : '—';
   $('stat-goal').textContent = Number(profile.metaSemanal) > 0 ? `${profile.metaSemanal}×/sem` : '—';
-  const goal = Number(profile.metaPesoKg) > 0 ? ` → ${formatWeight(profile.metaPesoKg)}` : '';
-  $('stat-weight').textContent = latestWeight ? `${formatWeight(latestWeight)}${goal}` : '—';
+  const goal = Number(profile.metaPesoKg) > 0 ? `meta ${formatWeight(profile.metaPesoKg)}` : '';
+  $('stat-weight').replaceChildren(latestWeight ? formatWeight(latestWeight) : '—');
+  if (latestWeight && goal) $('stat-weight').append(Object.assign(document.createElement('small'), { textContent: goal }));
 }
 
 async function loadProfile(account) {

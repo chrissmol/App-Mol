@@ -326,7 +326,7 @@ function setFastingCard(settings) {
   if (!card) return;
   const fasting = normalizeFastingSettings(settings);
   const status = fasting.ativo ? fastingStatus(fasting) : null;
-  if (!status?.active) { card.dataset.available = 'false'; card.classList.add('hidden'); return; }
+  if (!status?.active || status.eating) { card.dataset.available = 'false'; card.classList.add('hidden'); return; }
   card.dataset.available = 'true';
   card.classList.remove('hidden');
   $('fasting-eyebrow').textContent = status.active ? (status.eating ? 'Janela alimentar aberta' : `Em jejum há ${Math.floor(status.elapsedFastMinutes / 60)}h`) : (status.offDay ? 'Jejum programado' : 'Jejum pausado hoje');
