@@ -3188,10 +3188,6 @@ html[data-theme="light"] body .mol-brand img {
     grid-row: auto;
   }
 
-  .diet-page #diet-summary-section > .grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
-  }
-
   .diet-page #diet-content > section:nth-of-type(4),
   .diet-page #diet-content > p:last-child,
   .diet-page #diet-edit-content > #diet-edit-list {
@@ -3818,7 +3814,8 @@ body.has-active-workout main { padding-bottom: 5rem; }
 .profile-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; width: 100%; margin-top: 1.25rem; }
 .profile-stats > div { padding: .75rem .5rem; border-radius: 1rem; background: var(--mol-surface-soft); text-align: center; }
 .profile-stats dt { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mol-muted); }
-.profile-stats dd { margin-top: .25rem; font-size: 1rem; font-weight: 800; color: var(--mol-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-stats dd { margin-top: .25rem; font-size: 1rem; font-weight: 800; color: var(--mol-text); overflow-wrap: anywhere; }
+.profile-stats dd small { display: block; font-size: .75rem; font-weight: 600; color: var(--mol-muted); }
 .profile-frame-btn { position: absolute; right: -.35rem; bottom: -.35rem; display: flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 999px; border: 3px solid var(--mol-surface); background: var(--mol-brand-green); color: #fff; }
 .profile-frame-btn svg { width: 1.1rem; height: 1.1rem; }
 
