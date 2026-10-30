@@ -44,7 +44,7 @@ function renderPet(step) {
 function goalInputs() {
   const data = new FormData(form);
   const text = name => String(data.get(name) || '');
-  return { sexo: text('sex'), nascimento: text('birth'), alturaCm: Number(text('height')), pesoKg: Number(text('weight').replace(',', '.')), nivelAtividade: text('activity'), objetivo: text('goal') };
+  return { sexo: text('sex'), nascimento: text('birth'), alturaCm: Number(text('height')), pesoKg: Number(text('weight').replace(',', '.')), nivelAtividade: text('activity'), treinosSemana: weekly, objetivo: text('goal') };
 }
 
 function show(next) {

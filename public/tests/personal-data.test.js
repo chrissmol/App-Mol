@@ -7,7 +7,7 @@ describe('dados pessoais', () => {
   });
 
   it('valida sexo, nascimento e nível de atividade', () => {
-    expect(parsePersonalData({ sex: 'feminino', birth: '1996-10-11', activity: 'leve', goal: 'Saúde' })).toMatchObject({ sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'leve' });
+    expect(parsePersonalData({ sex: 'feminino', birth: '1996-10-11', activity: 'em-pe', goal: 'Saúde' })).toMatchObject({ sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'em-pe' });
     expect(() => parsePersonalData({ sex: 'x' })).toThrow('sexo');
     expect(() => parsePersonalData({ birth: '11/10/1996' })).toThrow('nascimento');
     expect(() => parsePersonalData({ activity: 'extremo' })).toThrow('atividade');

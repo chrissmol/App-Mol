@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ageFrom, calculateNutritionGoals, missingGoalInputs } from '../js/modules/nutrition-goals.js';
+import { activityFactor, ageFrom, calculateNutritionGoals, missingGoalInputs } from '../js/modules/nutrition-goals.js';
 
 const today = new Date(2026, 9, 10);
-const base = { sexo: 'masculino', nascimento: '1996-10-11', alturaCm: 180, pesoKg: 80, nivelAtividade: 'moderado' };
+const base = { sexo: 'masculino', nascimento: '1996-10-11', alturaCm: 180, pesoKg: 80, nivelAtividade: 'sedentario', treinosSemana: 4 };
 
 describe('meta calórica calculada', () => {
   it('conta a idade pelo aniversário', () => {
@@ -19,6 +19,17 @@ describe('meta calórica calculada', () => {
     expect(calculateNutritionGoals({ ...base, objetivo: 'Emagrecimento' }, today)).toMatchObject({ kcal: 2350, macroGoals: { protein: 160 } });
     expect(calculateNutritionGoals({ ...base, objetivo: 'Hipertrofia' }, today).kcal).toBe(3050);
     expect(calculateNutritionGoals({ ...base, objetivo: 'Emagrecimento' }, today).explicacao).toMatch(/2\.770 kcal.*menos 15%/);
+  });
+
+  it('combina rotina e treinos por semana no fator de atividade', () => {
+    expect(activityFactor('sedentario', 0)).toBe(1.2);
+    expect(activityFactor('sedentario', 2)).toBeCloseTo(1.375);
+    expect(activityFactor('sedentario', 4)).toBeCloseTo(1.55);
+    expect(activityFactor('sedentario', 5)).toBeCloseTo(1.725);
+    expect(activityFactor('em-pe', 4)).toBeCloseTo(1.65);
+    expect(activityFactor('bracal', 7)).toBe(1.9);
+    // valor antigo ('moderado' = treino 3–4x) continua calculando
+    expect(calculateNutritionGoals({ ...base, nivelAtividade: 'moderado', objetivo: 'Saúde' }, today).kcal).toBe(2770);
   });
 
   it('usa o ritmo escolhido no lugar do percentual', () => {

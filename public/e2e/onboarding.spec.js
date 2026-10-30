@@ -32,14 +32,14 @@ test('conta nova cai nas boas-vindas e sai com meta calculada e pet escolhido', 
   await page.getByLabel('Altura (cm)').fill('165');
   await page.getByLabel('Peso atual (kg)').fill('68');
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await page.getByText('Treino 3–4 vezes por semana').click();
+  await page.getByText('Fico sentado quase o dia todo').click();
   await page.getByRole('button', { name: 'Continuar' }).click();
 
   await expect(page.getByRole('heading', { name: 'Seu plano inicial' })).toBeVisible();
   await expect(page.getByText(/kcal/).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Continuar' })).toBeHidden();
   await expect(page.getByRole('button', { name: /primeiro treino com Marlô/ })).toBeVisible();
-  expect(await profile(page)).toMatchObject({ assistentePet: 'marlo', onboardingConcluido: true, objetivo: 'Emagrecimento', sexo: 'feminino', nivelAtividade: 'moderado', metaSemanal: 3 });
+  expect(await profile(page)).toMatchObject({ assistentePet: 'marlo', onboardingConcluido: true, objetivo: 'Emagrecimento', sexo: 'feminino', nivelAtividade: 'sedentario', metaSemanal: 3 });
   expect((await profile(page)).metaCalorias).toBeGreaterThan(1200);
 
   await page.getByRole('button', { name: 'Começar a usar o Mol' }).click();

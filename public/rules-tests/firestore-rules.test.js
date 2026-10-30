@@ -49,7 +49,7 @@ describe('regras do Firestore', () => {
 
   it('aceita dados da meta calculada e do assistente só com valores válidos', async () => {
     const reference = doc(user('user-a'), 'users', 'user-a');
-    await assertSucceeds(setDoc(reference, { name: 'A', sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'moderado', assistentePet: 'marlo', onboardingConcluido: true }));
+    await assertSucceeds(setDoc(reference, { name: 'A', sexo: 'feminino', nascimento: '1996-10-11', nivelAtividade: 'em-pe', assistentePet: 'marlo', onboardingConcluido: true }));
     await assertFails(setDoc(reference, { name: 'A', sexo: 'outro-valor' }));
     await assertFails(setDoc(reference, { name: 'A', nascimento: '11/10/1996' }));
     await assertFails(setDoc(reference, { name: 'A', nivelAtividade: 'extremo' }));
