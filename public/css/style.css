@@ -3536,12 +3536,13 @@ html[data-theme="light"] body .mol-brand img {
 .assistant-msg ul { margin: .35rem 0 0; padding-left: 1.1rem; list-style: disc; }
 .assistant-msg li + li { margin-top: .2rem; }
 .assistant-msg--user { align-self: flex-end; background: var(--mol-brand-green); color: #fff; border-bottom-right-radius: .35rem; }
-.assistant-msg--assistant { align-self: flex-start; background: var(--mol-surface-soft); border: 1px solid var(--mol-border); color: var(--mol-text); border-bottom-left-radius: .35rem; }
+.assistant-msg--assistant { align-self: flex-start; max-width: 100%; padding-inline: 0; color: var(--mol-text); }
 .assistant-msg--error { display: flex; align-items: flex-start; gap: .5rem; color: #FF3B5C; border-color: rgba(255, 59, 92, .4); }
 .assistant-msg--error svg { width: 1.1rem; height: 1.1rem; flex: none; margin-top: .2rem; }
 html[data-theme="light"] .assistant-msg--error { color: #b3173a; }
 .assistant-new[hidden] { display: none; }
-.assistant-new { align-self: flex-end; display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; padding: 0 1rem; border-radius: 999px; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); font-size: .85rem; font-weight: 700; color: var(--mol-muted-strong); }
+.assistant-new { align-self: flex-end; display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); color: var(--mol-muted-strong); }
+.assistant-new svg { width: 1.2rem; height: 1.2rem; }
 .assistant-new:hover:not(:disabled) { border-color: var(--mol-brand-text); color: var(--mol-text); }
 .assistant-new:disabled { opacity: .5; }
 .assistant-action { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; margin-top: .35rem; padding: 0 .85rem; margin-left: -.85rem; border-radius: 999px; font-size: .8rem; font-weight: 700; color: var(--mol-muted-strong); }
@@ -3593,7 +3594,7 @@ html[data-theme="light"] .assistant-msg--error { color: #b3173a; }
   .assistant-chip { flex: 0 0 min(15rem, 80%); scroll-snap-align: start; }
 }
 .assistant-chip:active, .assistant-send:active, .assistant-entry:active { transform: scale(.97); }
-.assistant-composer { display: grid; gap: .45rem; border: 1px solid var(--mol-border); background: var(--mol-surface); border-radius: 1.4rem; padding: .45rem; }
+.assistant-composer { display: grid; grid-template-columns: minmax(0, 1fr); gap: .45rem; border: 1px solid var(--mol-border); background: var(--mol-surface); border-radius: 1.4rem; padding: .45rem; }
 .assistant-composer:focus-within { border-color: var(--mol-brand-text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mol-brand-text) 35%, transparent); }
 /* O contorno da caixa inteira já mostra o foco; evita um segundo retângulo dentro dela. */
 .assistant-composer textarea:focus, .assistant-composer textarea:focus-visible { outline: none; box-shadow: none; }
@@ -3610,7 +3611,7 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .assistant-attachment { display: flex; align-items: center; gap: .4rem; border-radius: .9rem; background: var(--mol-surface-soft); padding: .25rem .25rem .25rem .7rem; font-size: .8rem; color: var(--mol-muted-strong); }
 .assistant-attachment span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .assistant-attachment .assistant-icon-btn { width: 2.75rem; height: 2.75rem; }
-.assistant-disclaimer { text-align: center; font-size: .75rem; color: var(--mol-muted); }
+.assistant-disclaimer { margin-top: 1rem; text-align: center; font-size: .75rem; color: var(--mol-muted); }
 /* Tela própria: composer fixo acima do dock. */
 /* Antes da conversa a coluna ocupa a altura da tela e a caixa fica no rodapé pelo fluxo (sem sticky). */
 .assistant-page main { display: flex; flex-direction: column; min-height: calc(100svh - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); }
@@ -3619,9 +3620,10 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .assistant-page .assistant-empty__intro { font-size: .88rem; }
 .assistant-page .assistant-composer { margin-top: auto; }
 /* Desktop com mouse usa a barra lateral: não há dock para descontar. */
-@media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; } }
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; --assistant-dock-bottom: .75rem; } }
 /* Sempre grudada acima do dock: com o aviso aberto ou em celular baixo, a caixa ficava embaixo do botão do dock. */
-.assistant-page .assistant-composer { position: sticky; bottom: calc(var(--assistant-dock-gap, var(--mol-app-nav-reserve, 5.5rem)) + .25rem); z-index: 5; }
+/* Caixa larga no rodapé; o botão do dock sobe para o cabeçalho (bloco no fim do arquivo). */
+.assistant-page .assistant-composer { position: sticky; bottom: var(--assistant-dock-bottom, var(--mol-dock-offset, .75rem)); margin-bottom: calc(var(--assistant-dock-bottom, var(--mol-dock-offset, .75rem)) - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); z-index: 5; }
 /* Ao rolar até a mensagem nova, ela para acima da caixa de texto e do dock. */
 .assistant-page .assistant-msg { scroll-margin-bottom: calc(var(--assistant-dock-gap, var(--mol-app-nav-reserve, 5.5rem)) + 7rem); }
 /* Título alinhado à coluna do chat; em telas altas a saudação fica no meio, não colada no rodapé. */
@@ -3688,8 +3690,8 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 /* Pet do assistente (docs/ASSISTENTE_PERSONA.md): avatar ao lado das respostas, sem animação constante. */
 .pet-avatar { display: block; flex-shrink: 0; object-fit: contain; }
 .assistant-empty__pet { margin-inline: auto; }
-.assistant-chat[data-pet] .assistant-msg--assistant { position: relative; margin-left: 2.25rem; }
-.assistant-chat[data-pet] .assistant-msg--assistant::before { content: ''; position: absolute; left: -2.4rem; bottom: -.15rem; width: 2rem; height: 2rem; background: var(--assistant-pet) center / contain no-repeat; }
+.assistant-chat[data-pet] .assistant-msg--assistant { position: relative; margin-left: 2.25rem; min-height: 2rem; }
+.assistant-chat[data-pet] .assistant-msg--assistant::before { content: ''; position: absolute; left: -2.4rem; top: 0; width: 2rem; height: 2rem; background: var(--assistant-pet) center / contain no-repeat; }
 .pet-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
 .pet-option { display: flex; flex-direction: column; align-items: center; gap: .35rem; min-height: 9rem; padding: .9rem .5rem; border-radius: 1.5rem; border: 1px solid var(--mol-border); background: var(--mol-surface-soft); text-align: center; cursor: pointer; transition: border-color .2s, background-color .2s, transform .12s; }
 .pet-option:active { transform: scale(.97); }
@@ -3868,3 +3870,22 @@ html[data-reduce-motion="true"] .pet-avatar--celebra, html[data-reduce-motion="t
 .app-surface input.peer.sr-only[type="checkbox"] + span::after { content: ""; position: absolute; top: 50%; right: .5rem; width: .5rem; height: .5rem; border: 2px solid var(--mol-muted); border-radius: 999px; transform: translateY(-50%); }
 .app-surface input.peer.sr-only[type="checkbox"]:checked + span::after { right: auto; left: .55rem; width: .3rem; height: .6rem; border: solid #fff; border-width: 0 2px 2px 0; border-radius: 0; transform: translateY(-65%) rotate(45deg); }
 .app-surface input.peer.sr-only[type="checkbox"]:focus-visible + span { outline: 3px solid var(--mol-brand-text); outline-offset: 3px; }
+
+/* Tela própria: botão "Nova conversa" fica no canto do cabeçalho, como nos apps de IA. */
+.assistant-page main { position: relative; }
+.assistant-page .assistant-new { position: absolute; top: calc(env(safe-area-inset-top, 0px) + var(--mol-page-top, .75rem) - .25rem); right: max(1rem, env(safe-area-inset-right)); z-index: 6; }
+.assistant-sheet__body .assistant-new { position: static; }
+/* No Assistente o dock vira botão de menu no canto do cabeçalho (como nos apps de IA); sobra só uma caixa larga embaixo. */
+@media not ((min-width: 1024px) and (hover: hover) and (pointer: fine)) {
+  .assistant-page { --mol-app-nav-reserve: 4.75rem; }
+  .assistant-page .mol-app-nav { right: auto; bottom: auto; left: max(1rem, env(safe-area-inset-left)); top: calc(env(safe-area-inset-top, 0px) + var(--mol-page-top) - .25rem); }
+  /* Botão discreto, igual ao "+" do outro canto: duas linhas (menu) em vez do ícone da página. */
+  html body.assistant-page .mol-dock__trigger { flex-direction: column; align-items: flex-start; justify-content: center; gap: .3rem; width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; padding-left: .85rem; border-color: var(--mol-border); background: var(--mol-surface-soft); box-shadow: none; color: var(--mol-muted-strong); }
+  .assistant-page .mol-dock__trigger::before, .assistant-page .mol-dock__trigger::after { content: ''; height: 2px; border-radius: 2px; background: currentColor; }
+  .assistant-page .mol-dock__trigger::before { width: 1.1rem; }
+  .assistant-page .mol-dock__trigger::after { width: .7rem; }
+  .assistant-page .mol-dock__trigger svg, .assistant-page .mol-dock__pulse { display: none; }
+  .assistant-page .mol-dock__menu { right: auto; left: 0; bottom: auto; top: calc(2.75rem + .5rem); transform-origin: top left; }
+}
+/* O menu fica no cabeçalho, longe do teclado: não precisa sumir enquanto digita. */
+html.mol-typing .assistant-page .mol-app-nav { display: block; }

@@ -49,7 +49,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       <p><strong>Antes de começar:</strong> as conversas passam pelo Gemini, do Google, que pode usá-las para melhorar os serviços dele. Envie só o necessário sobre a sua saúde.</p>
       <button type="button" class="mol-btn mol-btn-secondary" data-notice-ok>Entendi</button>
     </div>
-    <button type="button" class="assistant-new" data-new hidden><i data-lucide="plus" aria-hidden="true"></i> Nova conversa</button>
+    <button type="button" class="assistant-new" data-new hidden aria-label="Nova conversa" title="Nova conversa"><i data-lucide="plus" aria-hidden="true"></i></button>
     <ol class="assistant-messages" data-messages aria-live="polite" aria-label="Conversa com o assistente"></ol>
     <!-- Estado vazio no padrão dos apps de chat: saudação ao centro e sugestões logo acima da caixa. -->
     <section class="assistant-empty" data-empty aria-label="Comece uma conversa">
@@ -57,18 +57,18 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       <h2 class="assistant-empty__title">Como posso ajudar?</h2>
       ${intro ? `<div class="assistant-empty__intro">${formatAssistantText(intro)}</div>` : ''}
       <div class="assistant-suggestions" data-suggestions>${suggestions.map(text => `<button type="button" class="assistant-chip" data-suggestion>${escapeHTML(text)}</button>`).join('')}</div>
+      <p class="assistant-disclaimer">A IA pode errar e não substitui médico, nutricionista ou educador físico.</p>
     </section>
     <form class="assistant-composer" data-form>
       <div class="assistant-attachment" data-attachment hidden><i data-lucide="paperclip" aria-hidden="true"></i><span data-attachment-name></span><button type="button" class="assistant-icon-btn" data-attachment-remove aria-label="Remover anexo"><i data-lucide="x"></i></button></div>
       <div class="assistant-composer__row">
         <button type="button" class="assistant-icon-btn" data-attach aria-label="Anexar foto, PDF ou planilha"><i data-lucide="paperclip"></i></button>
         <label class="sr-only" for="${id}-input">Mensagem para o assistente</label>
-        <textarea id="${id}-input" data-input rows="1" maxlength="${MAX_MESSAGE_CHARS}" placeholder="Escreva sua pergunta…" autocomplete="off"></textarea>
+        <textarea id="${id}-input" data-input rows="1" maxlength="${MAX_MESSAGE_CHARS}" placeholder="Pergunte algo…" autocomplete="off"></textarea>
         <button type="submit" class="assistant-send" data-send aria-label="Enviar"><i data-lucide="send"></i></button>
       </div>
       <input type="file" data-file accept="${ASSISTANT_FILE_ACCEPT}" hidden>
-    </form>
-    <p class="assistant-disclaimer">A IA pode errar e não substitui médico, nutricionista ou educador físico.</p>`;
+    </form>`;
   const $ = selector => container.querySelector(selector);
   const messages = $('[data-messages]');
   const input = $('[data-input]');
