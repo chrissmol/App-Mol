@@ -75,14 +75,16 @@ function salvarRascunho({ force = false } = {}) {
   if (!force && Date.now() - ultimoRascunhoSalvoEm < 5000) return;
   const rotina = rotinasReais.find(r => r.id === rotinaAbertaId);
   if (!rotina) return;
-  if (setLocalItem(draftKey(usuarioAtual.uid), JSON.stringify({ versao: 2, rotinaId: rotinaAbertaId, nomeRotina: rotina.nome, exercicios: rotina.exercicios, tempoSegundos, atualizadoEm: new Date().toISOString(), iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino }))) ultimoRascunhoSalvoEm = Date.now();
+  const raw = JSON.stringify({ versao: 2, rotinaId: rotinaAbertaId, nomeRotina: rotina.nome, exercicios: rotina.exercicios, tempoSegundos, atualizadoEm: new Date().toISOString(), iniciadaEm: sessaoIniciadaEm?.toISOString(), checkinPreTreino });
+  if (setLocalItem(draftKey(usuarioAtual.uid), raw)) { ultimoRascunhoSalvoEm = Date.now(); pushWorkoutDraft(usuarioAtual.uid, raw, { force }); }
 }
-function limparRascunho() { if (usuarioAtual) removeLocalItems(draftKey(usuarioAtual.uid)); }
+function limparRascunho() { if (usuarioAtual) { removeLocalItems(draftKey(usuarioAtual.uid)); clearWorkoutDraftRemote(usuarioAtual.uid); } }
 function exerciciosParaPersistir(rotina) { return treinoIniciado ? cleanRoutineExercises(rotina.exercicios) : rotina.exercicios; }
 
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
 import { exercisePoseFrames, exercisePoseLabel } from '../modules/exercise-poses.js';
 import { plural } from '../utils/plural.js';
+import { clearWorkoutDraftRemote, pullWorkoutDraft, pushWorkoutDraft } from '../utils/workout-draft-sync.js';
 import { getPet, petAvatarHTML, showPetMoment } from '../utils/pet.js';
 import { formatWeight, fromDisplayWeight, toDisplayWeight, weightUnit } from '../utils/units.js';
 let favoritosExercicios = [];
@@ -354,11 +356,12 @@ async function carregarRotinasDoBanco() {
     querySnapshot.forEach(item => { rotinasReais.push({ id: item.id, ...normalizeRoutineRecord(item.data()) }); });
     writeRoutinesCache();
     renderRotinas();
+    await pullWorkoutDraft(usuarioAtual.uid);
     let draft = lerRascunho(usuarioAtual.uid);
     if (draft && !isRecoverableWorkoutDraft(draft, rotinasReais.map(routine => routine.id))) { limparRascunho(); draft = null; }
     if (draft) {
       // Vindo da barra "Treino em andamento" (?retomar=1) a pessoa já escolheu voltar: sem perguntar.
-      const recuperar = requestedWorkout.get('retomar') === '1' || await confirmAction({ title: 'Retomar treino?', message: 'Encontramos um treino que ficou em andamento neste dispositivo.', confirmText: 'Retomar', cancelText: 'Descartar' });
+      const recuperar = requestedWorkout.get('retomar') === '1' || await confirmAction({ title: 'Retomar treino?', message: 'Encontramos um treino que ficou em andamento.', confirmText: 'Retomar', cancelText: 'Descartar' });
       if (!recuperar) { limparRascunho(); return; }
       const routine = rotinasReais.find(r => r.id === draft.rotinaId);
       routine.exercicios = normalizeRoutineExercises(cloneValue(draft.exercicios));

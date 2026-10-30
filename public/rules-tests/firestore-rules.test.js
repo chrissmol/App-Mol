@@ -88,6 +88,23 @@ describe('regras do Firestore', () => {
     await assertFails(updateDoc(reference, { appModules: { treino: true, financeiro: true } }));
   });
 
+  it('espelhos de treino em andamento e conversa do assistente são só do dono', async () => {
+    const owner = user('user-a');
+    const now = new Date().toISOString();
+    await assertSucceeds(setDoc(doc(owner, 'lembretes', 'user-a'), { userId: 'user-a', enabled: true, workoutTime: '18:30', mealTime: '12:00' }));
+    await assertFails(setDoc(doc(owner, 'lembretes', 'user-a'), { userId: 'user-a', enabled: true, workoutTime: '25:00', mealTime: '12:00' }));
+    await assertFails(setDoc(doc(owner, 'lembretes', 'user-b'), { userId: 'user-b', enabled: true, workoutTime: '18:30', mealTime: '12:00' }));
+    await assertSucceeds(setDoc(doc(owner, 'treinoRascunho', 'user-a'), { userId: 'user-a', draft: '{"versao":2}', atualizadoEm: now }));
+    await assertSucceeds(setDoc(doc(owner, 'treinoRascunho', 'user-a'), { userId: 'user-a', draft: null, atualizadoEm: now }));
+    await assertFails(setDoc(doc(owner, 'treinoRascunho', 'user-b'), { userId: 'user-b', draft: null, atualizadoEm: now }));
+    await assertFails(setDoc(doc(owner, 'treinoRascunho', 'user-a'), { userId: 'user-a', draft: 'x'.repeat(200001), atualizadoEm: now }));
+    await assertFails(getDoc(doc(user('user-b'), 'treinoRascunho', 'user-a')));
+    await assertSucceeds(setDoc(doc(owner, 'assistenteConversa', 'user-a'), { userId: 'user-a', mensagens: [{ role: 'user', text: 'oi' }], atualizadoEm: now }));
+    await assertFails(setDoc(doc(owner, 'assistenteConversa', 'user-a'), { userId: 'user-a', mensagens: Array.from({ length: 31 }, () => ({ role: 'user', text: 'x' })), atualizadoEm: now }));
+    await assertFails(getDoc(doc(user('user-b'), 'assistenteConversa', 'user-a')));
+    await assertSucceeds(deleteDoc(doc(owner, 'assistenteConversa', 'user-a')));
+  });
+
   it('valida dono, nome e limite estrutural das rotinas', async () => {
     const owner = user('user-a');
     await assertSucceeds(setDoc(doc(owner, 'treinos', 'rotina-a'), routine('user-a')));

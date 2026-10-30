@@ -9,7 +9,7 @@ import { applyAccessibilityPreferences, getAccessibilityPreferences, saveAccessi
 import { applyLanguage, supportedLanguages } from '../utils/language.js';
 import { clearUserCaches, removeLocalItemsWithPrefix } from '../utils/storage.js';
 import { isTrustedDevice, setTrustedDevice } from '../utils/offline.js';
-import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder } from '../utils/reminders.js';
+import { getReminderPreferences, requestReminderPermission, saveReminderPreferences, sendTestReminder, syncRemindersForUser } from '../utils/reminders.js';
 import { watchProtectedPage } from '../modules/auth.js';
 import { getPet, petId, petPickerHTML, rememberPet } from '../utils/pet.js';
 import { openLegalDocument } from '../utils/legal-dialog.js';
@@ -537,6 +537,9 @@ watchProtectedPage(async user => {
   ]);
   if (accessibilityResult.status === 'rejected') console.warn('Preferências da conta não carregadas:', accessibilityResult.reason?.message);
   applyAppearance();
+  syncRemindersForUser(user).then(saved => {
+    $('reminders-enabled').checked = saved.enabled; $('workout-time').value = saved.workoutTime; $('meal-time').value = saved.mealTime;
+  }).catch(error => console.warn('Lembretes da conta não carregados:', error.message));
   if (modulesResult.status === 'rejected') console.warn('Módulos da conta não carregados:', modulesResult.reason?.message);
   renderAppModules();
   renderPetChoice(user);

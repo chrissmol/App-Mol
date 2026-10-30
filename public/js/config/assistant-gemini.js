@@ -64,6 +64,8 @@ export async function createGeminiSend({ systemInstruction, toolDeclarations, mo
     return { text: calls.length ? '' : response.text(), functionCalls: calls.map(call => ({ name: call.name, args: call.args || {} })) };
   };
   // Se a pergunta falhar no meio (ex.: depois de uma ferramenta), "Tentar de novo" volta ao ponto anterior.
+  // Retoma uma conversa guardada na conta: só o texto das trocas anteriores.
+  send.seed = turns => { history.push(...turns.map(item => ({ role: item.role === 'assistant' ? 'model' : 'user', parts: [{ text: item.text }] }))); };
   send.mark = () => { mark = history.length; };
   send.rewind = () => { history.length = mark; };
   return send;

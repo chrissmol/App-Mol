@@ -1,5 +1,8 @@
 import { getPet, petImageSrc } from './pet.js';
+import { auth, getDb } from '../config/firebase-config.js';
+import { withTimeout } from './timeout.js';
 const KEY = 'mol-reminders';
+const COLLECTION = 'lembretes';
 // Mesmo caminho fixo da logo nas páginas, para a marca poder trocá-la (brands/<marca>/public).
 const notificationIcon = '/assets/mol-mark.svg';
 const defaults = { enabled: false, workoutTime: '18:00', mealTime: '12:00' };
@@ -27,12 +30,34 @@ export function getReminderPreferences() {
 
 export function saveReminderPreferences(prefs) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(normalizeReminderPreferences({ ...getReminderPreferences(), ...prefs })));
+    const saved = normalizeReminderPreferences({ ...getReminderPreferences(), ...prefs });
+    localStorage.setItem(KEY, JSON.stringify(saved));
+    pushReminderPreferences(saved);
     return true;
   } catch (error) {
     console.warn('Preferências de lembretes não armazenadas:', error.message);
     return false;
   }
+}
+
+// Espelho em lembretes/{uid} para os horários valerem em qualquer aparelho; a permissão de notificação continua por aparelho.
+function pushReminderPreferences(value) {
+  const user = auth.currentUser;
+  if (!user) return;
+  void Promise.all([getDb(), import('firebase/firestore')])
+    .then(([db, { doc, setDoc }]) => setDoc(doc(db, COLLECTION, user.uid), { userId: user.uid, ...value }))
+    .catch(error => console.warn('Lembretes não sincronizados:', error.message));
+}
+
+export async function syncRemindersForUser(user) {
+  if (!user) return getReminderPreferences();
+  const { doc, getDoc } = await import('firebase/firestore');
+  const snapshot = await withTimeout(getDoc(doc(await getDb(), COLLECTION, user.uid)), 'Os lembretes');
+  const remote = snapshot.data();
+  if (!remote) { pushReminderPreferences(getReminderPreferences()); return getReminderPreferences(); }
+  const saved = normalizeReminderPreferences(remote);
+  try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* sem armazenamento: vale só nesta sessão */ }
+  return saved;
 }
 
 /** @param {string} title @param {string} body @param {{ petState?: string }} [options] Com pet, o ícone é ele no estado do lembrete. */

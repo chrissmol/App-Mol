@@ -37,9 +37,9 @@ const listHTML = lines => `<ul>${lines.map(line => `<li>${escapeHTML(line)}</li>
 /**
  * Monta o chat dentro de `container`.
  * @param {HTMLElement} container
- * @param {{ context?: string, intro?: string, suggestions?: string[], onDataChanged?: (tipo: string) => void, autofocus?: boolean }} [options]
+ * @param {{ context?: string, intro?: string, suggestions?: string[], onDataChanged?: (tipo: string) => void, autofocus?: boolean, persist?: boolean }} [options] persist: guarda e retoma a conversa na conta
  */
-export function mountAssistantChat(container, { context = '', intro = '', suggestions = [], onDataChanged, autofocus = false, pickFile = '' } = {}) {
+export function mountAssistantChat(container, { context = '', intro = '', suggestions = [], onDataChanged, autofocus = false, pickFile = '', persist = false } = {}) {
   const id = `assistant-${++chatCount}`;
   const pet = getPet();
   container.classList.add('assistant-chat');
@@ -79,6 +79,8 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
   let sendPromise = null;
   let storePromise = null;
   let lastRequest = null;
+  let history = [];
+  let historyReady = Promise.resolve();
 
   const notice = $('[data-notice]');
   if (!getLocalItem(NOTICE_KEY)) notice.hidden = false;
@@ -89,7 +91,9 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       const user = auth.currentUser;
       if (!user) throw new Error('Entre na sua conta para usar o assistente.');
       const { createAssistantStore } = await import('../modules/assistant-store.js');
-      return createAssistantStore(await getDb(), user.uid);
+      const db = await getDb();
+      const { createAssistantHistory } = await import('../modules/assistant-history.js');
+      return { ...createAssistantStore(db, user.uid), history: createAssistantHistory(db, user.uid) };
     })();
     return storePromise;
   }
@@ -100,7 +104,10 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       const memory = await getStore().then(store => store.loadMemory()).catch(() => []);
       const base = ASSISTANT_SYSTEM_INSTRUCTION + personaInstruction(pet) + memoryInstruction(memory);
       const systemInstruction = context ? `${base}\n\nCONTEXTO DA TELA: ${context}` : base;
-      return createGeminiSend({ systemInstruction, toolDeclarations: ASSISTANT_TOOL_DECLARATIONS });
+      const send = await createGeminiSend({ systemInstruction, toolDeclarations: ASSISTANT_TOOL_DECLARATIONS });
+      await historyReady;
+      send.seed?.(history);
+      return send;
     })().catch(error => { sendPromise = null; throw error; });
     return sendPromise;
   }
@@ -168,6 +175,8 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     messages.innerHTML = '';
     sendPromise = null;
     lastRequest = null;
+    history = [];
+    if (persist) void getStore().then(store => store.history.clear()).catch(error => console.warn('Conversa não apagada da conta:', error.message));
     setAttachment(null);
     $('[data-empty]').hidden = false;
     $('[data-new]').hidden = true;
@@ -233,6 +242,8 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       icons(typing);
       pick(typing, '[data-copy]').onclick = event => copyReply(result.text || 'Pronto.', /** @type {HTMLElement} */ (event.currentTarget));
       setPetState(chatPetState(message, result.text));
+      history = [...history, { role: 'user', text: message || `(anexo: ${sentAttachment?.name || 'arquivo'})` }, { role: 'assistant', text: result.text || 'Pronto.' }];
+      if (persist) store.history.save(history).catch(error => console.warn('Conversa não sincronizada:', error.message));
       for (const proposal of proposals) await renderProposal(proposal, store);
     } catch (error) {
       console.error('[Mol] Assistente falhou:', error);
@@ -261,6 +272,21 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
     fileInput.value = '';
     input.focus();
   });
+  if (persist) {
+    historyReady = getStore().then(store => store.history.load()).then(saved => {
+      history = saved;
+      if (!saved.length || messages.children.length) return;
+      $('[data-empty]').hidden = true;
+      $('[data-new]').hidden = false;
+      container.classList.add('assistant-chat--active');
+      saved.forEach(item => {
+        const node = addMessage(item.role, formatAssistantText(item.text) + (item.role === 'assistant' ? '<button type="button" class="assistant-action" data-copy><i data-lucide="copy" aria-hidden="true"></i> Copiar resposta</button>' : ''));
+        const copy = pick(node, '[data-copy]');
+        if (copy) copy.onclick = event => copyReply(item.text, /** @type {HTMLElement} */ (event.currentTarget));
+        icons(node);
+      });
+    }).catch(error => console.warn('Conversa da conta não carregada:', error.message));
+  }
   icons(container);
   // pickFile: abre o seletor já no clique (o navegador só deixa dentro do gesto) e deixa o pedido escrito.
   if (pickFile) { input.value = pickFile; fileInput.click(); }
