@@ -3616,7 +3616,11 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 .assistant-disclaimer { text-align: center; font-size: .75rem; color: var(--mol-muted); }
 /* Tela própria: composer fixo acima do dock. */
 /* Antes da conversa a coluna ocupa a altura da tela e a caixa fica no rodapé pelo fluxo (sem sticky). */
-.assistant-page .assistant-chat:not(.assistant-chat--active) { min-height: calc(100svh - 14rem - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); }
+.assistant-page main { display: flex; flex-direction: column; min-height: calc(100svh - var(--assistant-dock-gap, var(--mol-app-nav-reserve, 0px))); }
+.assistant-page .assistant-chat { flex: 1; }
+.assistant-page .assistant-chat:not(.assistant-chat--active) .assistant-empty { justify-content: center; }
+.assistant-page .assistant-empty__intro { font-size: .88rem; }
+.assistant-page .assistant-composer { margin-top: auto; }
 /* Desktop com mouse usa a barra lateral: não há dock para descontar. */
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .assistant-page { --assistant-dock-gap: 0px; } }
 /* Sempre grudada acima do dock: com o aviso aberto ou em celular baixo, a caixa ficava embaixo do botão do dock. */
@@ -3626,8 +3630,6 @@ html body .assistant-composer textarea { -webkit-appearance: none; appearance: n
 /* Título alinhado à coluna do chat; em telas altas a saudação fica no meio, não colada no rodapé. */
 .assistant-page .app-page-header { max-width: 48rem; margin-inline: auto; }
 @media (min-width: 768px) {
-  .assistant-page .assistant-chat:not(.assistant-chat--active) { justify-content: center; }
-  .assistant-page .assistant-chat:not(.assistant-chat--active) .assistant-empty { flex: none; }
 }
 .assistant-sheet__body .assistant-msg { scroll-margin-bottom: 6.5rem; }
 /* Botão de entrada nas outras telas. */
