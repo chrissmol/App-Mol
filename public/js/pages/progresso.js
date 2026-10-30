@@ -41,14 +41,16 @@ function renderSummary(volume, records) {
   $('record-count').textContent = records.length.toLocaleString('pt-BR');
 }
 
-function renderVolume(volume) {
+function renderVolume(volume, previous = {}) {
   const entries = Object.entries(volume).sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
     $('volume').innerHTML = `<div class="mol-state"><p class="mol-state-title">Nenhuma série nos últimos ${selectedDays} dias</p><p class="mol-state-copy">Conclua um treino para visualizar a distribuição.</p><a href="./treino.html" class="mol-state-action mt-4">Ir para treinos</a></div>`;
     return;
   }
   const max = Math.max(...entries.map(([, sets]) => sets), 1);
-  $('volume').innerHTML = entries.map(([group, sets]) => `<div><div class="flex items-center justify-between gap-3 text-sm"><span class="truncate font-medium">${escapeHTML(group)}</span><span class="shrink-0 font-bold">${sets} ${sets === 1 ? 'série' : 'séries'}</span></div><div class="mt-2 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="${escapeHTML(group)}: ${sets} ${sets === 1 ? 'série' : 'séries'}" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${sets}"><div class="h-full rounded-full bg-neon transition-[width] duration-300" style="width:${Math.round((sets / max) * 100)}%"></div></div></div>`).join('');
+  // Diferença para o período anterior de mesmo tamanho; some quando não há base de comparação.
+  const delta = (group, sets) => { const before = previous[group] || 0; const diff = sets - before; return before && diff ? ` <small class="text-xs font-semibold ${diff > 0 ? 'text-neon' : 'text-gray-500'}">${diff > 0 ? '+' : '−'}${Math.abs(diff)} vs. anterior</small>` : ''; };
+  $('volume').innerHTML = entries.map(([group, sets]) => `<div><div class="flex items-center justify-between gap-3 text-sm"><span class="truncate font-medium">${escapeHTML(group)}</span><span class="shrink-0 font-bold">${sets} ${sets === 1 ? 'série' : 'séries'}${delta(group, sets)}</span></div><div class="mt-2 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="${escapeHTML(group)}: ${sets} ${sets === 1 ? 'série' : 'séries'}" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${sets}"><div class="h-full rounded-full bg-neon transition-[width] duration-300" style="width:${Math.round((sets / max) * 100)}%"></div></div></div>`).join('');
 }
 
 function recordCard(record) {
@@ -114,7 +116,7 @@ function renderProgress() {
     button.className = `min-h-11 shrink-0 rounded-xl px-4 text-xs font-bold ${active ? 'bg-neon text-black' : 'bg-white/5 text-gray-400'}`;
     button.setAttribute('aria-pressed', String(active));
   });
-  renderSummary(volume, records); renderInsight(volume); renderMuscleHeatmap(muscleScores); renderVolume(volume); renderTrends(trends); renderRecords(records);
+  renderSummary(volume, records); renderInsight(volume); renderMuscleHeatmap(muscleScores); renderVolume(volume, volumeByGroup(sessions, selectedDays, new Date(Date.now() - selectedDays * 86400000))); renderTrends(trends); renderRecords(records);
   window.lucide?.createIcons();
 }
 
