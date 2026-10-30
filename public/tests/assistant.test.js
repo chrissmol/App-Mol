@@ -26,6 +26,10 @@ describe('assistente: escopo e declarações', () => {
     expect(ASSISTANT_SYSTEM_INSTRUCTION).toMatch(/programação, matemática/);
   });
 
+  it('inclui a base de conhecimento com fontes e limites de segurança', () => {
+    for (const termo of ['ACSM', 'ISSN', 'OMS', 'TACO', 'USDA', 'nutricionista ou médico', 'Fonte:']) expect(ASSISTANT_SYSTEM_INSTRUCTION).toContain(termo);
+  });
+
   it('toda ferramenta declarada tem executor', () => {
     const { executors } = createAssistantTools(data);
     expect(ASSISTANT_TOOL_DECLARATIONS.map(tool => tool.name).sort()).toEqual(Object.keys(executors).sort());
