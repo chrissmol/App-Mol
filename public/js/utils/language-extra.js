@@ -223,7 +223,7 @@ const ROWS = [
   ['Oi! Eu respondo sobre treino, exercícios, alimentos e dieta, e posso', 'Hi! I answer questions about training, exercises, food and diet, and I can', '¡Hola! Respondo sobre entrenamiento, ejercicios, alimentos y dieta, y puedo'],
   ['ajustar seus dados por você', 'adjust your data for you', 'ajustar tus datos por ti'],
   [': trocar alimentos, montar rotinas, registrar o peso ou importar uma dieta de foto, PDF ou planilha. Nada muda sem você confirmar.', ': swap foods, build routines, log your weight or import a diet from a photo, PDF or spreadsheet. Nothing changes without your confirmation.', ': cambiar alimentos, armar rutinas, registrar el peso o importar una dieta de foto, PDF u hoja de cálculo. Nada cambia sin tu confirmación.'],
-  ['Escreva sua pergunta…', 'Type your question…', 'Escribe tu pregunta…'],
+  ['Pergunte algo…', 'Ask anything…', 'Pregunta algo…'],
   ['Mensagem para o assistente', 'Message to the assistant', 'Mensaje para el asistente'],
   ['Chat com o assistente', 'Chat with the assistant', 'Chat con el asistente'],
   ['Conversa com o assistente', 'Conversation with the assistant', 'Conversación con el asistente'],
