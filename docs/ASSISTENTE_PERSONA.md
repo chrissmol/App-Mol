@@ -73,6 +73,7 @@ O pet **nunca** substitui a informação principal da tela nem cobre cargas, sé
 
 ## 6. Implementação
 
+- **Base de conhecimento:** `public/js/modules/assistant-knowledge.js` resume ACSM, ISSN, OMS, Guia Alimentar Brasileiro, TACO e USDA (faixas de treino por nível, proteína, calorias, suplementos e limites de segurança) e entra na instrução do sistema. Só consensos; revise as fontes ao editar.
 - **Instrução do sistema:** `ASSISTANT_SYSTEM_INSTRUCTION` ganha um bloco curto de persona montado por função (`personaInstruction(pet)`), com nome, gênero gramatical de si e duas ou três falas de exemplo. As regras de escopo continuam no topo e valem acima da persona.
 - **Textos fixos do app** (boas-vindas, cartões, toasts) vêm de uma tabela por pet, sem chamar a IA. A IA entra só onde há conversa ou explicação variável. Isso economiza a cota gratuita do Gemini e funciona offline.
 - **Avatar:** componente único `petAvatar(pet, estado, tamanho)`. Com `'nenhum'`, mostra o símbolo do Mol.

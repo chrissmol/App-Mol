@@ -6,6 +6,7 @@ import { FOOD_CATALOG, nutritionTotals, normalizeDietMeals, searchFoodCatalog, v
 import { WORKOUT_STRUCTURE_LIMITS, cleanRoutineExercises } from './workout-session.js';
 import { bibliotecaDeExercicios } from '../data/exercicios-data.js';
 import { lookupBarcode, searchFoodsOnline, searchWikipedia } from './assistant-web.js';
+import { ASSISTANT_KNOWLEDGE } from './assistant-knowledge.js';
 
 const LIMITS = Object.freeze({ meals: 12, foodsPerMeal: 50, routines: WORKOUT_STRUCTURE_LIMITS.routines, exercises: WORKOUT_STRUCTURE_LIMITS.exercises, sets: 20, weightMin: 20, weightMax: 400, steps: 6 });
 
@@ -100,7 +101,9 @@ COMO TRABALHAR:
 - Preferência duradoura que a pessoa contar (alimento que não come, restrição, equipamento que tem, horário que treina, objetivo): ofereça guardar com lembrar_preferencia, em uma frase curta. "Esquece que..." usa esquecer_preferencia. Não guarde e-mail, documentos, nomes de outras pessoas nem nada fora do escopo.
 - Ao alterar a dieta, leia a atual primeiro e envie a lista completa, mantendo o que não muda.
 - Se uma ferramenta devolver "erro", corrija os dados e tente de novo, ou explique o problema.
-- Dieta e treino: lembre, quando fizer sentido, que você não substitui nutricionista ou educador físico. Não dê orientação médica nem diagnóstico; para dor, lesão ou doença, oriente procurar um profissional.`;
+- Dieta e treino: lembre, quando fizer sentido, que você não substitui nutricionista ou educador físico. Não dê orientação médica nem diagnóstico; para dor, lesão ou doença, oriente procurar um profissional.
+
+${ASSISTANT_KNOWLEDGE}`;
 
 export const MEMORY_LIMITS = Object.freeze({ items: 15, chars: 120 });
 
