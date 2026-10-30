@@ -2,7 +2,7 @@ import { enhanceSelects } from './ui.js';
 import { initializeAccessibility } from './accessibility.js';
 import { setupMobileAppMode } from './mobile-app.js';
 import { connectivityState, isTrustedDevice } from './offline.js';
-import { startReminderMonitor } from './reminders.js';
+import { startReminderMonitor, syncRemindersForUser } from './reminders.js';
 import { applyLanguage, initializeLanguage, t } from './language.js';
 import { setupTelemetry } from '../modules/telemetry.js';
 import { setupAppNavigation } from './app-nav.js';
@@ -104,6 +104,7 @@ export function setupAppShell() {
     window.__molAppModulesAuthListener = true;
     watchAuthState(user => {
       if (!user) return;
+      syncRemindersForUser(user).catch(error => console.warn('Lembretes não sincronizados:', error.message));
       syncAppModulesForUser(user).then(modules => {
         applyModuleVisibility(modules);
         if (!isPageAllowed(location.pathname.split('/').pop() || 'index.html', modules)) {

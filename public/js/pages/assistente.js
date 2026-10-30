@@ -9,6 +9,7 @@ watchProtectedPage(user => {
   if (!user || mounted) return;
   mounted = true;
   mountAssistantChat(document.getElementById('assistant-chat'), {
+    persist: true,
     intro: 'Tire dúvidas de treino e dieta ou peça para ajustar seus dados. Nada muda sem você confirmar.',
     suggestions: [
       'Quanto de proteína tem no peito de frango?',

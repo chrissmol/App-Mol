@@ -10,6 +10,7 @@ import { fastingStatus, foodNutrients, mealFoods, nextMeal, normalizeDietMeals, 
 import { normalizeRoutineRecord } from '../modules/workout-session.js';
 import { showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
+import { pullWorkoutDraft } from '../utils/workout-draft-sync.js';
 import { getLocalItem, getSessionItem, removeLocalItems, removeSessionItems, setLocalItem, setSessionItem } from '../utils/storage.js';
 import { cardAllowed, normalizeAppModules, presetFromModules } from '../utils/app-modules.js';
 import { plural } from '../utils/plural.js';
@@ -620,6 +621,7 @@ watchProtectedPage(async user => {
       const routineSnapshot = await dashboardData.routines;
       const routines = routineSnapshot.docs.map(item => ({ id: item.id, ...normalizeRoutineRecord(item.data()) }));
       writeDashboardDataCache(user.uid, { routines });
+      await pullWorkoutDraft(user.uid);
       setToday(routines, user);
       firstSteps.routine = routines.length > 0;
     } catch (error) {

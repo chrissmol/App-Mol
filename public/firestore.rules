@@ -230,6 +230,37 @@ service cloud.firestore {
       allow update: if ownsExisting() && ownsNew() && validRoutine();
     }
 
+    // Lembretes: documento próprio (id = uid) porque o documento do perfil já está no limite de expressões das regras.
+    match /lembretes/{uid} {
+      allow read, delete: if signedIn() && uid == request.auth.uid;
+      allow create, update: if signedIn() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'enabled', 'workoutTime', 'mealTime'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.enabled is bool
+        && request.resource.data.workoutTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$')
+        && request.resource.data.mealTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+    }
+
+    // Espelho do treino em andamento: um documento por pessoa (id = uid); draft null = treino encerrado.
+    match /treinoRascunho/{uid} {
+      allow read, delete: if signedIn() && uid == request.auth.uid;
+      allow create, update: if signedIn() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'draft', 'atualizadoEm'])
+        && request.resource.data.userId == request.auth.uid
+        && (request.resource.data.draft == null || (request.resource.data.draft is string && request.resource.data.draft.size() <= 200000))
+        && request.resource.data.atualizadoEm is string;
+    }
+
+    // Conversa do assistente (últimas trocas, só texto): um documento por pessoa.
+    match /assistenteConversa/{uid} {
+      allow read, delete: if signedIn() && uid == request.auth.uid;
+      allow create, update: if signedIn() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'mensagens', 'atualizadoEm'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.mensagens is list && request.resource.data.mensagens.size() <= 30
+        && request.resource.data.atualizadoEm is string;
+    }
+
     match /sessoes/{sessaoId} {
       allow read, delete: if ownsExisting();
       allow create: if ownsNew() && validSession();

@@ -29,10 +29,12 @@ export async function setupActiveWorkoutBar() {
   // Treino: já é a sessão. Início: o cartão "Treino em andamento" já faz esse papel.
   if (/\/(treino\.html|index\.html)?$/.test(location.pathname) && !location.pathname.endsWith('/pages/')) return;
   const { watchAuthState } = await import('../modules/auth.js');
-  watchAuthState(user => {
+  const { pullWorkoutDraft } = await import('./workout-draft-sync.js');
+  watchAuthState(async user => {
     clearInterval(timer);
     document.getElementById('mol-active-workout')?.remove();
     document.body.classList.remove('has-active-workout');
+    if (user) await pullWorkoutDraft(user.uid);
     const active = user && activeWorkoutFrom(getLocalItem(`mol-workout-draft-${user.uid}`));
     if (!active) return;
     const inPages = location.pathname.includes('/pages/');
