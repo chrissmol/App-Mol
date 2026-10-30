@@ -265,7 +265,8 @@ body {
 
 /* Links de termos/privacidade ficam inline no parágrafo; 44px de altura
    mínima os infla e quebra o fluxo do texto. */
-.login-page p button {
+.login-page p button,
+.login-page #consentText button {
   min-height: auto;
 }
 
