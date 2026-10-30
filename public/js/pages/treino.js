@@ -399,7 +399,7 @@ function renderWorkoutTemplates() {
     list.className = 'space-y-3';
     viewExplorar.appendChild(list);
   }
-  list.innerHTML = `<p class="text-sm text-gray-400">Comece com uma estrutura editável e ajuste depois.</p>${Object.entries(WORKOUT_TEMPLATES).map(([name, template]) => `<button type="button" data-template-name="${escapeHTML(name)}" class="w-full rounded-2xl border border-white/10 mol-panel p-4 text-left active:scale-[.98]"><span class="block font-bold">${escapeHTML(name)}</span><span class="mt-1 block text-xs text-gray-500">${escapeHTML(template.description)}</span><span class="mt-3 inline-flex rounded-full bg-neon/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neon">${template.exercises.length} exercícios</span></button>`).join('')}`;
+  list.innerHTML = `<p class="text-sm text-gray-400">Comece com uma estrutura editável e ajuste depois.</p>${Object.entries(WORKOUT_TEMPLATES).map(([name, template]) => `<button type="button" data-template-name="${escapeHTML(name)}" class="w-full rounded-2xl border border-white/10 mol-panel p-4 text-left active:scale-[.98]"><span class="block font-bold">${escapeHTML(name)}</span><span class="mt-1 block text-xs text-gray-500">${escapeHTML(template.description)}</span><span class="mt-3 inline-flex rounded-full bg-neon/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neon">${template.routines.length} treino${template.routines.length > 1 ? 's' : ''}</span></button>`).join('')}`;
   list.querySelectorAll('[data-template-name]').forEach(button => button.addEventListener('click', () => void window.criarTemplate(button.dataset.templateName)));
 }
 
@@ -1023,21 +1023,25 @@ btnSalvarNova.addEventListener('click', async () => {
 
 window.criarTemplate = async (nome) => {
   const template = WORKOUT_TEMPLATES[nome];
-  const exercicios = (template?.exercises || []).map(([exerciseName, group, repsMin, repsMax, rirAlvo, descansoSegundos]) => ({
-    nome: exerciseName,
-    grupo: group,
-    repsMin,
-    repsMax,
-    rirAlvo,
-    descansoSegundos,
-    notas: nome === 'Casa / Sem academia' ? 'Use carga disponível e priorize amplitude controlada.' : '',
-    series: Array.from({ length: template.sets || 3 }, () => ({ tipo: 'N', method: SET_METHODS.NORMAL, kg: '', reps: '', rir: String(rirAlvo), anteriorKg: '', anteriorReps: '', anteriorRir: '', concluida: false }))
-  }));
   if (!template) return showToast('Modelo não encontrado.');
   if (!usuarioAtual) return showToast('A sessão ainda está carregando.');
-  if (rotinasReais.length >= WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
+  if (rotinasReais.length + template.routines.length > WORKOUT_STRUCTURE_LIMITS.routines) return showToast(`Você pode salvar até ${WORKOUT_STRUCTURE_LIMITS.routines} rotinas.`);
+  const rotinas = template.routines.map(routine => ({
+    nome: `${nome} · ${routine.name}`.slice(0, 60),
+    diasSemana: routine.days,
+    exercicios: routine.exercises.map(([exerciseName, group, repsMin, repsMax, rirAlvo, descansoSegundos, sets, nota]) => ({
+      nome: exerciseName,
+      grupo: group,
+      repsMin,
+      repsMax,
+      rirAlvo,
+      descansoSegundos,
+      notas: [nota, template.progression].filter(Boolean).join(' '),
+      series: Array.from({ length: sets }, () => ({ tipo: 'N', method: SET_METHODS.NORMAL, kg: '', reps: '', rir: String(rirAlvo), anteriorKg: '', anteriorReps: '', anteriorRir: '', concluida: false }))
+    }))
+  }));
   try {
-    await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome, descricao: template.description, diasSemana: template.days, exercicios, criadoEm: serverTimestamp() });
+    for (const rotina of rotinas) await addDoc(collection(db, 'treinos'), { userId: usuarioAtual.uid, nome: rotina.nome, descricao: template.description, diasSemana: rotina.diasSemana, exercicios: rotina.exercicios, criadoEm: serverTimestamp() });
     showToast('Modelo criado. Ajuste-o para sua realidade.', 'success'); await carregarRotinasDoBanco(); esconderTudo(); viewRotinas.classList.remove('hidden');
   } catch (error) { console.error(error); showToast('Não foi possível criar o modelo.'); }
 };
