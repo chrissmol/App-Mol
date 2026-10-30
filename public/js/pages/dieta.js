@@ -144,8 +144,9 @@ function renderDaySelector() {
     selector.className = 'mt-6';
     $('diet-content')?.prepend(selector);
   }
-  selector.innerHTML = `<div class="flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Dia do plano</p><h2 class="mt-1 text-lg font-extrabold">${escapeHTML(DAY_LABELS[selectedDay])}</h2></div><button type="button" data-today class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300">Hoje</button></div><div class="mt-3 grid grid-cols-7 gap-1">${DAY_LABELS.map((label, day) => `<button type="button" data-day="${day}" aria-pressed="${day === selectedDay}" class="min-h-11 rounded-xl px-1 text-xs font-bold ${day === selectedDay ? 'bg-neon text-black' : 'mol-soft text-gray-400'}">${label}</button>`).join('')}</div>`;
-  selector.querySelector('[data-today]').onclick = () => { selectedDay = new Date().getDay(); render(); };
+  selector.innerHTML = `<div class="flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-[.16em] text-neon">Dia do plano</p><h2 class="mt-1 text-lg font-extrabold">${escapeHTML(DAY_LABELS[selectedDay])}</h2></div>${selectedDay === new Date().getDay() ? '' : '<button type="button" data-today class="min-h-11 rounded-xl mol-soft px-3 text-xs font-bold text-gray-300">Hoje</button>'}</div><div class="mt-3 grid grid-cols-7 gap-1">${DAY_LABELS.map((label, day) => `<button type="button" data-day="${day}" aria-pressed="${day === selectedDay}" class="min-h-11 rounded-xl px-1 text-xs font-bold ${day === selectedDay ? 'bg-neon text-black' : 'mol-soft text-gray-400'}">${label}</button>`).join('')}</div>`;
+  const todayButton = selector.querySelector('[data-today]');
+  if (todayButton) todayButton.onclick = () => { selectedDay = new Date().getDay(); render(); };
   selector.querySelectorAll('[data-day]').forEach(button => {
     button.onclick = () => { selectedDay = Number(button.dataset.day); render(); };
   });
