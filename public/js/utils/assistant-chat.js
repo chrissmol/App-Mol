@@ -68,7 +68,7 @@ export function mountAssistantChat(container, { context = '', intro = '', sugges
       </div>
       <input type="file" data-file accept="${ASSISTANT_FILE_ACCEPT}" hidden>
     </form>
-    <p class="assistant-disclaimer">O assistente pode errar e não substitui nutricionista nem educador físico.</p>`;
+    <p class="assistant-disclaimer">A IA pode errar e não substitui médico, nutricionista ou educador físico.</p>`;
   const $ = selector => container.querySelector(selector);
   const messages = $('[data-messages]');
   const input = $('[data-input]');
