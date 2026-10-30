@@ -7,7 +7,7 @@ import { setButtonLoading, showToast } from '../utils/ui.js';
 import { setupAppShell } from '../utils/app-shell.js';
 import { parsePersonalData } from '../modules/personal-data.js';
 import { recentWeightTrend } from '../modules/dashboard-analytics.js';
-import { ACTIVITY_LEVELS, calculateNutritionGoals, goalSummaryHTML, missingGoalInputs, paceApplies } from '../modules/nutrition-goals.js';
+import { ACTIVITY_LEVELS, normalizeActivity, calculateNutritionGoals, goalSummaryHTML, missingGoalInputs, paceApplies } from '../modules/nutrition-goals.js';
 import { getSessionItem, removeSessionItems, setSessionItem } from '../utils/storage.js';
 import { applyUnitLabels, weightUnit, fromDisplayLength, fromDisplayWeight, toDisplayLength, toDisplayWeight } from '../utils/units.js';
 
@@ -50,7 +50,7 @@ function setPageState(state, message = '') {
 const heightCm = () => { const cm = fromDisplayLength($('height').value); return cm === '' ? '' : Math.round(Number(cm)); };
 
 function goalInputs() {
-  return { sexo: $('sex').value, nascimento: $('birth').value, alturaCm: Number(heightCm()), pesoKg: Number(fromDisplayWeight($('current-weight').value)), nivelAtividade: $('activity').value, objetivo: $('goal').value, ritmoMetaKg: Number($('pace').value) || null };
+  return { sexo: $('sex').value, nascimento: $('birth').value, alturaCm: Number(heightCm()), pesoKg: Number(fromDisplayWeight($('current-weight').value)), nivelAtividade: $('activity').value, treinosSemana: Number($('weekly').value) || 0, objetivo: $('goal').value, ritmoMetaKg: Number($('pace').value) || null };
 }
 
 function renderGoal() {
@@ -71,7 +71,7 @@ async function loadLatestWeight() {
 function fillProfile(profile) {
   $('sex').value = ['masculino', 'feminino'].includes(profile.sexo) ? profile.sexo : '';
   $('birth').value = /^\d{4}-\d{2}-\d{2}$/.test(profile.nascimento || '') ? profile.nascimento : '';
-  $('activity').value = ACTIVITY_LEVELS.some(level => level.id === profile.nivelAtividade) ? profile.nivelAtividade : '';
+  $('activity').value = ACTIVITY_LEVELS.some(level => level.id === normalizeActivity(profile.nivelAtividade)) ? normalizeActivity(profile.nivelAtividade) : '';
   $('height').value = Number(profile.alturaCm) > 0 ? toDisplayLength(profile.alturaCm) : '';
   $('goal-weight').value = Number(profile.metaPesoKg) > 0 ? toDisplayWeight(profile.metaPesoKg) : '';
   $('goal').value = ['Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'].includes(profile.objetivo) ? profile.objetivo : '';
@@ -131,7 +131,7 @@ $('save').onclick = async () => {
   } finally { setButtonLoading(button, false); }
 };
 
-['sex', 'birth', 'height', 'current-weight', 'activity', 'goal', 'pace'].forEach(id => $(id).addEventListener('input', renderGoal));
+['sex', 'birth', 'height', 'current-weight', 'activity', 'weekly', 'goal', 'pace'].forEach(id => $(id).addEventListener('input', renderGoal));
 
 watchProtectedPage(user => {
   currentUser = user;

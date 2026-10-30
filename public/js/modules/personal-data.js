@@ -4,7 +4,7 @@ export const BACKUP_FILE_LIMIT = 5 * 1024 * 1024;
 
 const goals = ['', 'Hipertrofia', 'Força', 'Emagrecimento', 'Saúde'];
 const sexes = ['', 'masculino', 'feminino'];
-const activityLevels = ['', 'sedentario', 'leve', 'moderado', 'alto', 'muito-alto'];
+const activityLevels = ['', 'sedentario', 'em-pe', 'bracal', 'leve', 'moderado', 'alto', 'muito-alto'];
 
 function optionalNumber(value, { min, max, integer = false, label }) {
   if (String(value ?? '').trim() === '') return null;

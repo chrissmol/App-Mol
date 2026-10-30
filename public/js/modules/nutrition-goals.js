@@ -1,12 +1,26 @@
-// Meta calórica e de macros a partir do corpo, da rotina e do objetivo (Mifflin-St Jeor).
+// Meta calórica e de macros a partir do corpo, da rotina, dos treinos e do objetivo (Mifflin-St Jeor).
 
+// Rotina fora do treino (ocupação). O treino entra à parte, pelas sessões por semana.
 export const ACTIVITY_LEVELS = [
-  { id: 'sedentario', label: 'Fico sentado quase o dia todo', factor: 1.2 },
-  { id: 'leve', label: 'Ando um pouco ou treino 1–2 vezes por semana', factor: 1.375 },
-  { id: 'moderado', label: 'Treino 3–4 vezes por semana', factor: 1.55 },
-  { id: 'alto', label: 'Treino 5–6 vezes ou trabalho em pé', factor: 1.725 },
-  { id: 'muito-alto', label: 'Treino pesado todo dia ou trabalho braçal', factor: 1.9 }
+  { id: 'sedentario', label: 'Fico sentado quase o dia todo', offset: 0 },
+  { id: 'em-pe', label: 'Fico em pé ou ando bastante', offset: 0.1 },
+  { id: 'bracal', label: 'Trabalho braçal ou muito esforço físico', offset: 0.2 }
 ];
+
+// Valores salvos antes da separação (rotina + treino misturados) viram a rotina equivalente.
+const LEGACY_ACTIVITY = { leve: 'sedentario', moderado: 'sedentario', alto: 'em-pe', 'muito-alto': 'bracal' };
+export const normalizeActivity = id => LEGACY_ACTIVITY[id] || id;
+
+// Fator de atividade = 1,2 (sedentário) + rotina + treino. Os acréscimos de treino reproduzem a tabela
+// clássica de fatores (Harris-Benedict revisado, Roza e Shizgal 1984; usada com Mifflin-St Jeor):
+// 1–2 treinos/semana 1,375 · 3–4 → 1,55 · 5–6 → 1,725 · 7 → 1,9. Limite de 1,9.
+const TRAINING_ADD = [[0, 0], [2, 0.175], [4, 0.35], [6, 0.525], [7, 0.675]];
+export function activityFactor(activity, trainingPerWeek) {
+  const level = ACTIVITY_LEVELS.find(item => item.id === normalizeActivity(activity));
+  const days = Math.max(0, Math.min(7, Math.round(Number(trainingPerWeek) || 0)));
+  const add = TRAINING_ADD.find(([max]) => days <= max)[1];
+  return Math.min(1.9, 1.2 + level.offset + add);
+}
 
 export const SEXES = [{ id: 'masculino', label: 'Masculino' }, { id: 'feminino', label: 'Feminino' }];
 
@@ -35,7 +49,7 @@ export function ageFrom(birthDate, today = new Date()) {
 }
 
 /**
- * @typedef {{ sexo?: string, nascimento?: string, alturaCm?: number, pesoKg?: number, nivelAtividade?: string, objetivo?: string, ritmoMetaKg?: number | null }} GoalInputs
+ * @typedef {{ sexo?: string, nascimento?: string, alturaCm?: number, pesoKg?: number, nivelAtividade?: string, treinosSemana?: number, objetivo?: string, ritmoMetaKg?: number | null }} GoalInputs
  */
 
 /** O que falta para calcular; lista vazia = dá para calcular. @param {GoalInputs} [inputs] */
@@ -46,7 +60,7 @@ export function missingGoalInputs({ sexo, nascimento, alturaCm, pesoKg, nivelAti
     !(age >= 14 && age <= 100) && 'data de nascimento',
     !(Number(alturaCm) >= 100 && Number(alturaCm) <= 250) && 'altura',
     !(Number(pesoKg) >= 20 && Number(pesoKg) <= 400) && 'peso atual',
-    !ACTIVITY_LEVELS.some(item => item.id === nivelAtividade) && 'nível de atividade'
+    !ACTIVITY_LEVELS.some(item => item.id === normalizeActivity(nivelAtividade)) && 'nível de atividade'
   ].filter(Boolean);
 }
 
@@ -60,9 +74,8 @@ export function calculateNutritionGoals(input = {}, today = new Date()) {
   const age = ageFrom(input.nascimento, today);
   const weight = Number(input.pesoKg);
   const base = 10 * weight + 6.25 * Number(input.alturaCm) - 5 * age + (input.sexo === 'masculino' ? 5 : -161);
-  const level = ACTIVITY_LEVELS.find(item => item.id === input.nivelAtividade);
   const rule = GOAL_RULES[input.objetivo] || GOAL_RULES[''];
-  const gasto = Math.round(base * level.factor / 10) * 10;
+  const gasto = Math.round(base * activityFactor(input.nivelAtividade, input.treinosSemana) / 10) * 10;
   const floor = input.sexo === 'masculino' ? 1500 : 1200;
   const pace = paceApplies(input.objetivo) && GOAL_PACES.includes(Number(input.ritmoMetaKg)) ? Number(input.ritmoMetaKg) : 0;
   const paceKcal = pace ? PACE_SIGN[input.objetivo] * Math.round(pace * 7700 / 7 / 10) * 10 : 0;
