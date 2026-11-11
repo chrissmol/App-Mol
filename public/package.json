@@ -37,7 +37,7 @@
     "axe-core": "4.14.0",
     "cross-env": "10.1.0",
     "eslint": "10.8.1",
-    "globals": "17.11.0",
+    "globals": "17.13.0",
     "html-validate": "11.8.0",
     "jsdom": "30.0.1",
     "postcss": "8.5.31",
