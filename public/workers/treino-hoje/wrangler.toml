@@ -1,0 +1,7 @@
+name = "mol-treino-hoje"
+main = "index.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+PROJECT_ID = "app-mol-5f3dc"
+# Secrets: wrangler secret put API_TOKEN | SA_JSON | MOL_UID
